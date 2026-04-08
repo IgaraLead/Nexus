@@ -203,16 +203,14 @@ export default {
       this.updateContactField({ [field]: value });
     },
     async updateContactField(attrs) {
+      const contactId = this.contact.id;
       try {
         await this.$store.dispatch('contacts/update', {
-          id: this.contact.id,
+          id: contactId,
           ...attrs,
         });
         useAlert(this.$t('CONTACT_FORM.SUCCESS_MESSAGE'));
-        await this.$store.dispatch(
-          'contacts/fetchContactableInbox',
-          this.contact.id
-        );
+        await this.$store.dispatch('contacts/fetchContactableInbox', contactId);
       } catch (error) {
         if (error instanceof DuplicateContactException) {
           const detail = error.contactErrorDetail;
