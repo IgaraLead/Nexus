@@ -18,6 +18,12 @@ class CreateCalls < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
+    add_call_indexes
+  end
+
+  private
+
+  def add_call_indexes
     add_index :calls, [:provider, :provider_call_id], unique: true
     add_index :calls, [:account_id, :conversation_id]
     add_index :calls, :message_id
