@@ -78,7 +78,14 @@ export const ChatwootProvider = ({
     window.axios = createAxios(axios);
 
     // Initialize user in store and ActionCable
-    store.dispatch('setUser').then(() => {
+    store.dispatch('setUser').then(async () => {
+      // Fetch inboxes once per session. Guarded against the shared Vuex store
+      // so remounting the provider (e.g. when the consumer re-keys per
+      // conversation) doesn't trigger redundant /inboxes requests.
+      const hasInboxes = store.getters['inboxes/getInboxes'].length > 0;
+      if (!hasInboxes) {
+        await store.dispatch('inboxes/get');
+      }
       vueActionCable.init(store, config.pubsubToken);
       setInitializationComplete(true);
     });
