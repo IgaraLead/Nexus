@@ -259,6 +259,26 @@ RSpec.describe Webhooks::WhatsappEventsJob do
       job.perform_now(wb_params)
     end
 
+    it 'finds channel when display_phone_number contains formatting characters' do
+      formatted_channel = create(:channel_whatsapp, phone_number: '+14155552671', provider: 'whatsapp_cloud',
+                                                    sync_templates: false, validate_provider_config: false)
+      wb_params = {
+        object: 'whatsapp_business_account',
+        entry: [{
+          changes: [{
+            value: {
+              metadata: {
+                phone_number_id: formatted_channel.provider_config['phone_number_id'],
+                display_phone_number: '+1 415-555-2671'
+              }
+            }
+          }]
+        }]
+      }
+      allow(Whatsapp::IncomingMessageWhatsappCloudService).to receive(:new).and_return(process_service)
+      expect(Whatsapp::IncomingMessageWhatsappCloudService).to receive(:new).with(inbox: formatted_channel.inbox, params: wb_params)
+      job.perform_now(wb_params)
+    end
     it 'will not enque Whatsapp::IncomingMessageWhatsappCloudService when invalid phone number id' do
       other_channel = create(:channel_whatsapp, phone_number: '+1987654', provider: 'whatsapp_cloud', sync_templates: false,
                                                 validate_provider_config: false)
