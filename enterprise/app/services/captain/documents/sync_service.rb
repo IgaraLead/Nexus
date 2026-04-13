@@ -4,6 +4,7 @@ class Captain::Documents::SyncService
   end
 
   def perform
+    @document.store_sync_step('fetching')
     result = Captain::Documents::SinglePageFetcher.new(@document.external_link).fetch
 
     unless result.success
@@ -11,6 +12,7 @@ class Captain::Documents::SyncService
       return :failed
     end
 
+    @document.store_sync_step('comparing')
     fingerprint = compute_fingerprint(result.content)
 
     if fingerprint == @document.content_fingerprint
@@ -18,6 +20,7 @@ class Captain::Documents::SyncService
       return :unchanged
     end
 
+    @document.store_sync_step('updating')
     update_content(result, fingerprint)
     :updated
   end
@@ -32,7 +35,8 @@ class Captain::Documents::SyncService
     @document.update!(
       sync_status: :failed,
       last_sync_error_code: error_code,
-      last_sync_attempted_at: Time.current
+      last_sync_attempted_at: Time.current,
+      metadata: cleared_sync_step_metadata
     )
   end
 
@@ -40,7 +44,9 @@ class Captain::Documents::SyncService
     @document.update!(
       sync_status: :synced,
       last_synced_at: Time.current,
-      last_sync_attempted_at: Time.current
+      last_sync_attempted_at: Time.current,
+      last_sync_error_code: nil,
+      metadata: cleared_sync_step_metadata
     )
   end
 
@@ -52,7 +58,12 @@ class Captain::Documents::SyncService
       sync_status: :synced,
       last_synced_at: Time.current,
       last_sync_attempted_at: Time.current,
-      last_sync_error_code: nil
+      last_sync_error_code: nil,
+      metadata: cleared_sync_step_metadata
     )
+  end
+
+  def cleared_sync_step_metadata
+    (@document.metadata || {}).except('sync_step')
   end
 end
