@@ -4,6 +4,7 @@
 #
 #  id             :bigint           not null, primary key
 #  contacts_count :integer
+#  crm_url        :string
 #  description    :text
 #  domain         :string
 #  name           :string           not null
@@ -27,6 +28,9 @@ class Company < ApplicationRecord
   }
   validates :domain, uniqueness: { scope: :account_id }, if: -> { domain.present? }
   validates :description, length: { maximum: Limits::COMPANY_DESCRIPTION_LENGTH_LIMIT }
+  validates :crm_url, allow_blank: true,
+                      length: { maximum: Limits::URL_LENGTH_LIMIT },
+                      format: URI::DEFAULT_PARSER.make_regexp(%w[http https])
 
   belongs_to :account
   has_many :contacts, dependent: :nullify

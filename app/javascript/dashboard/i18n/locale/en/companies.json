@@ -21,6 +21,100 @@
     "LOADING": "Loading companies...",
     "UNNAMED": "Unnamed Company",
     "CONTACTS_COUNT": "{n} contact | {n} contacts",
+    "DETAIL": {
+      "LOADING": "Loading company details...",
+      "EMPTY_STATE": {
+        "TITLE": "Company not found",
+        "SUBTITLE": "This company may have been removed or is no longer available in this account."
+      },
+      "AVATAR": {
+        "UPDATING": "Updating company avatar...",
+        "UPLOAD_SUCCESS": "Company avatar updated.",
+        "UPLOAD_ERROR": "Could not update the company avatar.",
+        "DELETE_SUCCESS": "Company avatar removed.",
+        "DELETE_ERROR": "Could not remove the company avatar."
+      },
+      "PROFILE": {
+        "TITLE": "Company profile",
+        "SUBTITLE": "Basic company information and metadata.",
+        "NOT_PROVIDED": "Not provided",
+        "DESCRIPTION_PLACEHOLDER": "Add a short description for this company",
+        "ACTIONS": {
+          "EDIT_DESCRIPTION": "Edit description",
+          "CANCEL": "Cancel",
+          "SAVE": "Save changes"
+        },
+        "MESSAGES": {
+          "UPDATE_SUCCESS": "Company updated.",
+          "UPDATE_ERROR": "Could not update the company."
+        },
+        "FIELDS": {
+          "NAME": "Name",
+          "DOMAIN": "Domain",
+          "CRM": "CRM",
+          "DESCRIPTION": "Description",
+          "CONTACTS_COUNT": "Linked contacts",
+          "CREATED_AT": "Created",
+          "UPDATED_AT": "Last updated"
+        }
+      },
+      "CONTACTS": {
+        "TITLE": "Linked contacts",
+        "SUBTITLE": "Contacts currently associated with this company.",
+        "LOADING": "Loading linked contacts...",
+        "EMPTY": "No contacts are linked to this company yet.",
+        "VIEW_CONTACT": "View contact",
+        "ACTIONS": {
+          "ADD": "Add contact",
+          "CREATE": "Create contact",
+          "REMOVE": "Remove contact"
+        },
+        "DIALOGS": {
+          "ADD": {
+            "TITLE": "Add an existing contact",
+            "DESCRIPTION": "Search contacts in this account and link them to this company.",
+            "SEARCH_PLACEHOLDER": "Search by name, email, or phone",
+            "INITIAL": "Start typing to search contacts in this account.",
+            "EMPTY": "No contacts matched that search.",
+            "CURRENT_COMPANY": "Currently assigned to {companyName}",
+            "ADD": "Add contact",
+            "REASSIGN": "Reassign contact"
+          },
+          "CREATE": {
+            "TITLE": "Create a contact",
+            "SAVE": "Create contact"
+          },
+          "REASSIGN": {
+            "TITLE": "Reassign contact?",
+            "DESCRIPTION": "{contactName} is currently assigned to {fromCompany}. Reassign them to {toCompany}?",
+            "CONFIRM": "Reassign contact"
+          }
+        },
+        "MESSAGES": {
+          "ADD_SUCCESS": "Contact linked to company.",
+          "ADD_ERROR": "Could not link the contact to this company.",
+          "REASSIGN_SUCCESS": "Contact reassigned to company.",
+          "REASSIGN_ERROR": "Could not reassign the contact.",
+          "CREATE_SUCCESS": "Contact created and linked to company.",
+          "CREATE_ERROR": "Could not create the contact in this company.",
+          "REMOVE_SUCCESS": "Contact removed from company.",
+          "REMOVE_ERROR": "Could not remove the contact from this company."
+        }
+      },
+      "DELETE": {
+        "SECTION_TITLE": "Danger zone",
+        "SECTION_DESCRIPTION": "Delete this company and unlink its contacts. The contacts will remain in the account.",
+        "BUTTON": "Delete company",
+        "TITLE": "Delete company?",
+        "DESCRIPTION": "This will remove the company and unlink all associated contacts. Contacts themselves will be preserved.",
+        "DESCRIPTION_WITH_NAME": "This will remove {companyName} and unlink all associated contacts. Contacts themselves will be preserved.",
+        "CONFIRM": "Delete company",
+        "MESSAGES": {
+          "SUCCESS": "Company deleted.",
+          "ERROR": "Could not delete the company."
+        }
+      }
+    },
     "EMPTY_STATE": {
       "TITLE": "No companies found"
     }

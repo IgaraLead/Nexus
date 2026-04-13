@@ -7,9 +7,10 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
 
   RESULTS_PER_PAGE = 25
 
-  before_action :check_authorization
+  before_action :ensure_enterprise!
+  before_action :authorize_company_collection!, only: [:index, :search, :create]
   before_action :set_current_page, only: [:index, :search]
-  before_action :fetch_company, only: [:show, :update, :destroy]
+  before_action :fetch_company, only: [:show, :update, :destroy, :avatar]
 
   def index
     @companies = fetch_companies(resolved_companies)
@@ -35,12 +36,22 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   end
 
   def update
-    @company.update!(company_params)
+    ActiveRecord::Base.transaction do
+      @company.update!(company_params)
+      sync_linked_contact_names if @company.saved_change_to_name?
+    end
   end
 
   def destroy
-    @company.destroy!
+    ActiveRecord::Base.transaction do
+      membership_service.cleanup_on_company_delete
+      @company.destroy!
+    end
     head :ok
+  end
+
+  def avatar
+    @company.avatar.purge if @company.avatar.attached?
   end
 
   private
@@ -59,17 +70,34 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
       .per(RESULTS_PER_PAGE)
   end
 
-  def check_authorization
+  def ensure_enterprise!
     raise Pundit::NotAuthorizedError unless ChatwootApp.enterprise?
+  end
 
-    authorize(Company)
+  def authorize_company_collection!
+    authorize Company, :"#{action_name}?"
   end
 
   def fetch_company
     @company = Current.account.companies.find(params[:id])
+    authorize @company, company_policy_action
   end
 
   def company_params
-    params.require(:company).permit(:name, :domain, :description, :avatar)
+    params.require(:company).permit(:name, :domain, :description, :crm_url, :avatar)
+  end
+
+  def company_policy_action
+    return :update? if action_name == 'avatar'
+
+    :"#{action_name}?"
+  end
+
+  def membership_service
+    @membership_service ||= Companies::ContactMembershipService.new(company: @company)
+  end
+
+  def sync_linked_contact_names
+    membership_service.sync_company_name
   end
 end

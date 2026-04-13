@@ -111,6 +111,16 @@ const onPageChange = page => {
   fetchCompanies(page, searchValue.value, sortParam.value);
 };
 
+const showCompany = companyId => {
+  router.push({
+    name: 'companies_dashboard_show',
+    params: {
+      accountId: route.params.accountId,
+      companyId,
+    },
+  });
+};
+
 const handleSort = async ({ sort, order }) => {
   Object.assign(sortState, { activeSort: sort, activeOrdering: order });
 
@@ -165,6 +175,7 @@ onMounted(() => {
         :description="company.description"
         :avatar-url="company.avatarUrl"
         :updated-at="company.updatedAt"
+        @show-company="showCompany"
       />
     </div>
   </CompaniesListLayout>

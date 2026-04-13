@@ -17,6 +17,11 @@ export const buildSearchParams = (query, page, sort) => {
   return params;
 };
 
+export const buildCompanyContactParams = page => `page=${page}`;
+
+export const buildCompanyContactSearchParams = (query, page) =>
+  `q=${encodeURIComponent(query)}&page=${page}`;
+
 class CompanyAPI extends ApiClient {
   constructor() {
     super('companies', { accountScoped: true });
@@ -31,6 +36,33 @@ class CompanyAPI extends ApiClient {
   search(query = '', page = 1, sort = 'name') {
     const requestURL = `${this.url}/search?${buildSearchParams(query, page, sort)}`;
     return axios.get(requestURL);
+  }
+
+  listContacts(id, page = 1) {
+    return axios.get(
+      `${this.url}/${id}/contacts?${buildCompanyContactParams(page)}`
+    );
+  }
+
+  searchContacts(id, query, page = 1) {
+    return axios.get(
+      `${this.url}/${id}/contacts/search?${buildCompanyContactSearchParams(
+        query,
+        page
+      )}`
+    );
+  }
+
+  createContact(id, payload) {
+    return axios.post(`${this.url}/${id}/contacts`, payload);
+  }
+
+  removeContact(id, contactId) {
+    return axios.delete(`${this.url}/${id}/contacts/${contactId}`);
+  }
+
+  destroyAvatar(id) {
+    return axios.delete(`${this.url}/${id}/avatar`);
   }
 }
 
