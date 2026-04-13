@@ -26,6 +26,7 @@ const createInitialState = () => ({
   contactSearchResults: [],
   contactSearchMeta: {},
   activeCompanyId: null,
+  companyDetailRequestToken: 0,
   companyContactsRequestToken: 0,
   contactSearchRequestToken: 0,
   activeContactSearchQuery: '',
@@ -223,18 +224,31 @@ export const useCompaniesStore = defineStore('companies', {
     async show(id) {
       this.setUIFlag({ fetchingItem: true });
       this.setActiveCompanyId(id);
+      const activeCompanyId = Number(id);
+      const requestToken = this.companyDetailRequestToken + 1;
+      this.companyDetailRequestToken = requestToken;
       try {
         const {
           data: { payload },
         } = await CompanyAPI.show(id);
         const company = normalizeCompanyRecord(payload);
         this.upsertCompanyRecord(company);
+
+        if (
+          this.companyDetailRequestToken !== requestToken ||
+          this.activeCompanyId !== activeCompanyId
+        ) {
+          return company;
+        }
+
         this.setActiveCompanyId(company.id);
         return company;
       } catch (error) {
         return throwErrorMessage(error);
       } finally {
-        this.setUIFlag({ fetchingItem: false });
+        if (this.companyDetailRequestToken === requestToken) {
+          this.setUIFlag({ fetchingItem: false });
+        }
       }
     },
 
