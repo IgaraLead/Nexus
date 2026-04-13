@@ -169,6 +169,19 @@ export const useCompaniesStore = defineStore('companies', {
       this.activeCompanyId = Number(companyId);
     },
 
+    hasActiveCompanyContext(companyId) {
+      return (
+        this.activeCompanyId === null ||
+        this.activeCompanyId === Number(companyId)
+      );
+    },
+
+    ensureActiveCompanyContext(companyId) {
+      if (this.activeCompanyId === null) {
+        this.setActiveCompanyId(companyId);
+      }
+    },
+
     upsertCompanyRecord(record) {
       this.records = upsertRecord(this.records, normalizeCompanyRecord(record));
     },
@@ -308,8 +321,12 @@ export const useCompaniesStore = defineStore('companies', {
     },
 
     async getCompanyContacts(companyId, page = 1) {
+      if (!this.hasActiveCompanyContext(companyId)) {
+        return [];
+      }
+
       this.setUIFlag({ fetchingContacts: true });
-      this.setActiveCompanyId(companyId);
+      this.ensureActiveCompanyContext(companyId);
       const activeCompanyId = Number(companyId);
       const requestToken = this.companyContactsRequestToken + 1;
       this.companyContactsRequestToken = requestToken;
@@ -340,7 +357,11 @@ export const useCompaniesStore = defineStore('companies', {
     },
 
     async searchCompanyContactCandidates(companyId, query, page = 1) {
-      this.setActiveCompanyId(companyId);
+      if (!this.hasActiveCompanyContext(companyId)) {
+        return [];
+      }
+
+      this.ensureActiveCompanyContext(companyId);
       const activeCompanyId = Number(companyId);
       const normalizedQuery = query?.trim() || '';
       const requestToken = this.contactSearchRequestToken + 1;
@@ -385,7 +406,7 @@ export const useCompaniesStore = defineStore('companies', {
 
     async attachContactToCompany(companyId, contactId) {
       this.setUIFlag({ creatingContact: true });
-      this.setActiveCompanyId(companyId);
+      this.ensureActiveCompanyContext(companyId);
       const currentPage = this.companyContactsMeta.page || 1;
       const previousCompanyId = this.contactSearchResults.find(
         contact => contact.id === Number(contactId)
@@ -421,7 +442,7 @@ export const useCompaniesStore = defineStore('companies', {
 
     async createContactInCompany(companyId, attrs) {
       this.setUIFlag({ creatingContact: true });
-      this.setActiveCompanyId(companyId);
+      this.ensureActiveCompanyContext(companyId);
       const currentPage = this.companyContactsMeta.page || 1;
       try {
         const payload = snakecaseKeys(attrs, { deep: true });
@@ -445,7 +466,7 @@ export const useCompaniesStore = defineStore('companies', {
 
     async removeContactFromCompany(companyId, contactId) {
       this.setUIFlag({ removingContact: true });
-      this.setActiveCompanyId(companyId);
+      this.ensureActiveCompanyContext(companyId);
       const currentPage = this.companyContactsMeta.page || 1;
       try {
         await CompanyAPI.removeContact(companyId, contactId);
@@ -471,7 +492,7 @@ export const useCompaniesStore = defineStore('companies', {
 
     async deleteCompanyAvatar(companyId) {
       this.setUIFlag({ deletingAvatar: true });
-      this.setActiveCompanyId(companyId);
+      this.ensureActiveCompanyContext(companyId);
       try {
         const {
           data: { payload },

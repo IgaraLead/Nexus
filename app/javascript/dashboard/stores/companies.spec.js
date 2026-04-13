@@ -5,6 +5,8 @@ import { useCompaniesStore } from './companies';
 vi.mock('dashboard/api/companies', () => ({
   default: {
     show: vi.fn(),
+    listContacts: vi.fn(),
+    searchContacts: vi.fn(),
   },
 }));
 
@@ -73,5 +75,38 @@ describe('companies store', () => {
       expect.objectContaining({ id: 2, name: 'Beta Company' })
     );
     expect(companiesStore.getUIFlags.fetchingItem).toBe(false);
+  });
+
+  it('ignores stale company contacts requests when another company is active', async () => {
+    const companiesStore = useCompaniesStore();
+    companiesStore.setActiveCompanyId(2);
+
+    const staleRequest = companiesStore.getCompanyContacts(1);
+
+    expect(companiesStore.activeCompanyId).toBe(2);
+
+    await staleRequest;
+
+    expect(CompanyAPI.listContacts).not.toHaveBeenCalled();
+    expect(companiesStore.activeCompanyId).toBe(2);
+    expect(companiesStore.companyContacts).toEqual([]);
+    expect(companiesStore.companyContactsMeta).toEqual({});
+    expect(companiesStore.getUIFlags.fetchingContacts).toBe(false);
+  });
+
+  it('ignores stale company contact searches when another company is active', async () => {
+    const companiesStore = useCompaniesStore();
+    companiesStore.setActiveCompanyId(2);
+
+    const results = await companiesStore.searchCompanyContactCandidates(
+      1,
+      'alpha'
+    );
+
+    expect(results).toEqual([]);
+    expect(CompanyAPI.searchContacts).not.toHaveBeenCalled();
+    expect(companiesStore.activeCompanyId).toBe(2);
+    expect(companiesStore.contactSearchResults).toEqual([]);
+    expect(companiesStore.contactSearchMeta).toEqual({});
   });
 });
