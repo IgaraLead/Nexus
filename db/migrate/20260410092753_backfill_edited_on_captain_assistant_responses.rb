@@ -11,8 +11,6 @@ class BackfillEditedOnCaptainAssistantResponses < ActiveRecord::Migration[7.0]
   end
 
   def down
-    # rubocop:disable Rails/SkipsModelValidations
-    Captain::AssistantResponse.where(edited: true).update_all(edited: false)
-    # rubocop:enable Rails/SkipsModelValidations
+    # no-op: rolling back migration of edited column will drop the edited column entirely
   end
 end
