@@ -131,6 +131,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_12_190000) do
     t.bigint "account_id"
     t.integer "bot_type", default: 0
     t.jsonb "bot_config", default: {}
+    t.string "secret"
     t.index ["account_id"], name: "index_agent_bots_on_account_id"
   end
 
@@ -413,6 +414,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_12_190000) do
     t.string "hmac_token"
     t.boolean "hmac_mandatory", default: false
     t.jsonb "additional_attributes", default: {}
+    t.string "secret"
     t.index ["hmac_token"], name: "index_channel_api_on_hmac_token", unique: true
     t.index ["identifier"], name: "index_channel_api_on_identifier", unique: true
   end
@@ -1123,6 +1125,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_12_190000) do
     t.index ["inbox_id"], name: "index_reporting_events_on_inbox_id"
     t.index ["name"], name: "index_reporting_events_on_name"
     t.index ["user_id"], name: "index_reporting_events_on_user_id"
+  end
+
+  create_table "reporting_events_rollups", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.date "date", null: false
+    t.string "dimension_type", null: false
+    t.bigint "dimension_id", null: false
+    t.string "metric", null: false
+    t.bigint "count", default: 0, null: false
+    t.float "sum_value", default: 0.0, null: false
+    t.float "sum_value_business_hours", default: 0.0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "date", "dimension_type", "dimension_id", "metric"], name: "index_rollup_unique_key", unique: true
+    t.index ["account_id", "dimension_type", "date"], name: "index_rollup_summary"
+    t.index ["account_id", "metric", "date"], name: "index_rollup_timeseries"
   end
 
   create_table "sla_events", force: :cascade do |t|

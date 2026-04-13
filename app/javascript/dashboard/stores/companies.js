@@ -87,7 +87,7 @@ const updateContactInCollection = (contacts, contactId, updater) =>
     contact.id === Number(contactId) ? updater(contact) : contact
   );
 
-const buildFormData = payload => {
+const buildFormData = (payload, rootKey = '') => {
   const formData = new FormData();
 
   const appendFormDataValue = (key, value) => {
@@ -123,7 +123,8 @@ const buildFormData = payload => {
   };
 
   Object.entries(payload).forEach(([key, value]) => {
-    appendFormDataValue(key, value);
+    const formKey = rootKey ? `${rootKey}[${key}]` : key;
+    appendFormDataValue(formKey, value);
   });
 
   return formData;
@@ -242,7 +243,7 @@ export const useCompaniesStore = defineStore('companies', {
       try {
         const payload = snakecaseKeys(companyAttrs, { deep: true });
         const requestPayload = companyAttrs.avatar
-          ? buildFormData(payload)
+          ? buildFormData(payload, 'company')
           : payload;
         const {
           data: { payload: updatedPayload },
