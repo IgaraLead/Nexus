@@ -480,7 +480,7 @@ export const useCompaniesStore = defineStore('companies', {
             company: null,
           })
         );
-        this.updateActiveCompanyCount(-1);
+        this.updateCompanyCount(companyId, -1);
         await this.getCompanyContacts(companyId, currentPage);
         return Number(contactId);
       } catch (error) {

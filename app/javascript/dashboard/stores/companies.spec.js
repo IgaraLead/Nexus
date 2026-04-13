@@ -7,6 +7,7 @@ vi.mock('dashboard/api/companies', () => ({
     show: vi.fn(),
     listContacts: vi.fn(),
     searchContacts: vi.fn(),
+    removeContact: vi.fn(),
   },
 }));
 
@@ -108,5 +109,31 @@ describe('companies store', () => {
     expect(companiesStore.activeCompanyId).toBe(2);
     expect(companiesStore.contactSearchResults).toEqual([]);
     expect(companiesStore.contactSearchMeta).toEqual({});
+  });
+
+  it('decrements the removed contact count on the company being modified even if the active company changes mid-request', async () => {
+    const removeRequest = createDeferred();
+    CompanyAPI.removeContact.mockImplementationOnce(
+      () => removeRequest.promise
+    );
+
+    const companiesStore = useCompaniesStore();
+    companiesStore.records = [
+      { id: 1, name: 'Alpha Company', contactsCount: 3 },
+      { id: 2, name: 'Beta Company', contactsCount: 7 },
+    ];
+    companiesStore.companyContactsMeta = { page: 1 };
+    companiesStore.setActiveCompanyId(1);
+
+    const removal = companiesStore.removeContactFromCompany(1, 101);
+
+    companiesStore.setActiveCompanyId(2);
+
+    removeRequest.resolve({});
+    await removal;
+
+    expect(companiesStore.getRecord(1).contactsCount).toBe(2);
+    expect(companiesStore.getRecord(2).contactsCount).toBe(7);
+    expect(companiesStore.activeCompanyId).toBe(2);
   });
 });
