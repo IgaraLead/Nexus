@@ -6,16 +6,25 @@ class Whatsapp::WebhookTeardownService
   def perform
     return unless should_teardown_webhook?
 
-    access_token = @channel.provider_config['api_key']
+    access_token = provider_config['api_key']
     api_client = Whatsapp::FacebookApiClient.new(access_token)
 
     # Each clear is isolated so a failure on the phone-level clear
     # still allows the legacy WABA-level fallback to run, and vice versa.
     clear_phone_number_override(api_client)
     clear_legacy_waba_override(api_client)
+  rescue StandardError => e
+    # Outer safety net: channel deletion runs this via before_destroy, and
+    # any unexpected error (including precondition helpers hitting a nil or
+    # malformed provider_config) must not block the delete.
+    Rails.logger.error "[WHATSAPP] Webhook teardown failed for channel #{@channel&.id}: #{e.message}"
   end
 
   private
+
+  def provider_config
+    @channel.provider_config || {}
+  end
 
   def should_teardown_webhook?
     whatsapp_cloud_provider? && embedded_signup_source? && webhook_config_present?
@@ -26,7 +35,7 @@ class Whatsapp::WebhookTeardownService
   end
 
   def embedded_signup_source?
-    @channel.provider_config['source'] == 'embedded_signup'
+    provider_config['source'] == 'embedded_signup'
   end
 
   # Accept teardown as long as we have an access token and at least one of the
@@ -34,14 +43,14 @@ class Whatsapp::WebhookTeardownService
   # reauthorized ones) may have only business_account_id, and we still need to
   # clear any lingering WABA-level override in that case.
   def webhook_config_present?
-    return false if @channel.provider_config['api_key'].blank?
+    return false if provider_config['api_key'].blank?
 
-    @channel.provider_config['phone_number_id'].present? ||
-      @channel.provider_config['business_account_id'].present?
+    provider_config['phone_number_id'].present? ||
+      provider_config['business_account_id'].present?
   end
 
   def clear_phone_number_override(api_client)
-    phone_number_id = @channel.provider_config['phone_number_id']
+    phone_number_id = provider_config['phone_number_id']
     return if phone_number_id.blank?
 
     api_client.clear_phone_number_callback_override(phone_number_id)
@@ -56,7 +65,7 @@ class Whatsapp::WebhookTeardownService
   # the WABA override when its current value matches this channel's own
   # callback URL — i.e. this channel is the one that set it.
   def clear_legacy_waba_override(api_client)
-    waba_id = @channel.provider_config['business_account_id']
+    waba_id = provider_config['business_account_id']
     return if waba_id.blank? || @channel.phone_number.blank?
 
     return unless waba_override_owned_by_channel?(api_client, waba_id)
