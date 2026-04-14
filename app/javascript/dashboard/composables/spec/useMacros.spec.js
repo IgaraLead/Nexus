@@ -111,7 +111,7 @@ describe('useMacros', () => {
     useStoreGetters.mockReturnValue({
       'labels/getLabels': { value: mockLabels },
       'teams/getTeams': { value: mockTeams },
-      'agents/getAgents': { value: mockAgents },
+      'agents/getVerifiedAgents': { value: mockAgents },
     });
   });
 
@@ -129,7 +129,10 @@ describe('useMacros', () => {
   it('returns teams with "None" option for assign_team and teams only for send_email_to_team', () => {
     const { getMacroDropdownValues } = useMacros();
     const assignTeamResult = getMacroDropdownValues('assign_team');
-    expect(assignTeamResult[0]).toEqual({ id: 'nil', name: 'AUTOMATION.NONE_OPTION' });
+    expect(assignTeamResult[0]).toEqual({
+      id: 'nil',
+      name: 'AUTOMATION.NONE_OPTION',
+    });
     expect(assignTeamResult.slice(1)).toEqual(mockTeams);
     expect(getMacroDropdownValues('send_email_to_team')).toEqual(mockTeams);
   });
@@ -170,7 +173,7 @@ describe('useMacros', () => {
     useStoreGetters.mockReturnValue({
       'labels/getLabels': { value: [] },
       'teams/getTeams': { value: [] },
-      'agents/getAgents': { value: [] },
+      'agents/getVerifiedAgents': { value: [] },
     });
 
     const { getMacroDropdownValues } = useMacros();

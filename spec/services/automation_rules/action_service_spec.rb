@@ -88,7 +88,35 @@ RSpec.describe AutomationRules::ActionService do
       end
     end
 
+    describe '#perform with remove assignment actions' do
+      let!(:team) { create(:team, account: account) }
+
+      before do
+        conversation.update!(assignee: agent, team: team)
+        rule.actions = [
+          { action_name: 'remove_assigned_agent', action_params: [] },
+          { action_name: 'remove_assigned_team', action_params: [] }
+        ]
+        rule.save!
+      end
+
+      it 'removes assignee and team from the conversation' do
+        described_class.new(rule, account, conversation).perform
+
+        expect(conversation.reload.assignee).to be_nil
+        expect(conversation.team).to be_nil
+      end
+    end
+
     describe '#perform with send_email_transcript action' do
+      let(:account_double) do
+        double(
+          email_transcript_enabled?: true,
+          within_email_rate_limit?: true,
+          increment_email_sent_count: true
+        )
+      end
+
       before do
         rule.actions << { action_name: 'send_email_transcript', action_params: ['contact@example.com, agent@example.com,agent1@example.com'] }
         rule.save
@@ -101,7 +129,7 @@ RSpec.describe AutomationRules::ActionService do
         allow(mailer).to receive(:conversation_transcript).with(conversation, 'agent@example.com')
         allow(mailer).to receive(:conversation_transcript).with(conversation, 'agent1@example.com')
 
-        described_class.new(rule, account, conversation).perform
+        described_class.new(rule, account_double, conversation).perform
         expect(mailer).to have_received(:conversation_transcript).exactly(3).times
       end
 
@@ -113,7 +141,7 @@ RSpec.describe AutomationRules::ActionService do
         allow(ConversationReplyMailer).to receive(:with).and_return(mailer)
         allow(mailer).to receive(:conversation_transcript).with(conversation, conversation.contact.email)
 
-        described_class.new(rule.reload, account, conversation).perform
+        described_class.new(rule.reload, account_double, conversation).perform
         expect(mailer).to have_received(:conversation_transcript).exactly(1).times
       end
     end

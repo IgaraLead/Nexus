@@ -50,6 +50,26 @@ describe ActionService do
       action_service.assign_agent(['nil'])
       expect(conversation.reload.assignee).to be_nil
     end
+
+    context 'when agent is confirmed' do
+      it 'assigns the agent to the conversation' do
+        inbox_member
+        action_service.assign_agent([agent.id])
+        expect(conversation.reload.assignee).to eq(agent)
+      end
+    end
+
+    context 'when agent is unconfirmed' do
+      let(:unconfirmed_agent) { create(:user, account: account, role: :agent, skip_confirmation: false) }
+      let(:unconfirmed_inbox_member) { create(:inbox_member, inbox: conversation.inbox, user: unconfirmed_agent) }
+
+      it 'does not assign unconfirmed agent to the conversation' do
+        unconfirmed_inbox_member
+        original_assignee = conversation.assignee
+        action_service.assign_agent([unconfirmed_agent.id])
+        expect(conversation.reload.assignee).to eq(original_assignee)
+      end
+    end
   end
 
   describe '#assign_team' do
@@ -90,6 +110,28 @@ describe ActionService do
           action_service.assign_team([invalid_team_id])
         end.not_to change { conversation.reload.team }.from(original_team)
       end
+    end
+  end
+
+  describe '#remove_assigned_agent' do
+    let(:conversation) { create(:conversation, :with_assignee, account: account) }
+    let(:action_service) { described_class.new(conversation) }
+
+    it 'unassigns the conversation' do
+      expect(conversation.reload.assignee).to be_present
+      action_service.remove_assigned_agent(nil)
+      expect(conversation.reload.assignee).to be_nil
+    end
+  end
+
+  describe '#remove_assigned_team' do
+    let(:conversation) { create(:conversation, :with_team, account: account) }
+    let(:action_service) { described_class.new(conversation) }
+
+    it 'unassigns the team' do
+      expect(conversation.reload.team).to be_present
+      action_service.remove_assigned_team(nil)
+      expect(conversation.reload.team).to be_nil
     end
   end
 end

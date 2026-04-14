@@ -13,7 +13,12 @@ export const useMacros = () => {
 
   const labels = computed(() => getters['labels/getLabels'].value);
   const teams = computed(() => getters['teams/getTeams'].value);
-  const agents = computed(() => getters['agents/getAgents'].value);
+  const agents = computed(() => getters['agents/getVerifiedAgents'].value);
+
+  const withNoneOption = options => [
+    { id: 'nil', name: t('AUTOMATION.NONE_OPTION') },
+    ...(options || []),
+  ];
 
   /**
    * Get dropdown values based on the specified type
@@ -23,15 +28,12 @@ export const useMacros = () => {
   const getMacroDropdownValues = type => {
     switch (type) {
       case 'assign_team':
-        return [
-          { id: 'nil', name: t('AUTOMATION.NONE_OPTION') },
-          ...teams.value,
-        ];
+        return withNoneOption(teams.value);
       case 'send_email_to_team':
         return teams.value;
       case 'assign_agent':
         return [
-          { id: 'nil', name: t('AUTOMATION.NONE_OPTION') },
+          ...withNoneOption(),
           { id: 'self', name: 'Self' },
           ...agents.value,
         ];
