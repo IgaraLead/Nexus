@@ -33,7 +33,7 @@ module Enterprise::Api::V1::Accounts::InboxesController
 
   def get_channel_attributes(channel_type)
     attrs = super
-    attrs += [:voice_enabled, :api_key_sid, :api_key_secret] if channel_type == 'Channel::TwilioSms'
+    attrs += [:voice_enabled, :api_key_sid, :api_key_secret] if channel_type == 'Channel::TwilioSms' && @inbox&.channel&.medium == 'sms'
     attrs
   end
 
