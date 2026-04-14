@@ -69,11 +69,14 @@ RSpec.describe Channel::TwilioSms do
     let(:channel) { create(:channel_twilio_sms, :with_voice, account: account) }
     let(:app_context) { instance_double(Twilio::REST::Api::V2010::AccountContext::ApplicationContext) }
     let(:twilio_client) { instance_double(Twilio::REST::Client) }
+    let(:numbers_list) { instance_double(Twilio::REST::Api::V2010::AccountContext::IncomingPhoneNumberList) }
 
     before do
       allow(Twilio::REST::Client).to receive(:new).and_return(twilio_client)
       allow(twilio_client).to receive(:applications).with(channel.twiml_app_sid).and_return(app_context)
       allow(app_context).to receive(:delete)
+      allow(twilio_client).to receive(:incoming_phone_numbers).and_return(numbers_list)
+      allow(numbers_list).to receive(:list).with(phone_number: channel.phone_number).and_return([])
     end
 
     it 'deletes the TwiML app and clears twiml_app_sid' do
