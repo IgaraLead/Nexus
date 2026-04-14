@@ -1,4 +1,6 @@
 class Captain::Tools::FirecrawlService
+  FIRECRAWL_EXCLUDE_TAGS = %w[iframe nav footer header .sidebar .cookie-banner [role=navigation] [role=banner] [role=contentinfo]].freeze
+
   def initialize
     @api_key = InstallationConfig.find_by!(name: 'CAPTAIN_FIRECRAWL_API_KEY').value
     raise 'Missing API key' if @api_key.empty?
@@ -24,9 +26,9 @@ class Captain::Tools::FirecrawlService
       limit: crawl_limit,
       webhook: webhook_url,
       scrapeOptions: {
-        onlyMainContent: false,
+        onlyMainContent: true,
         formats: ['markdown'],
-        excludeTags: ['iframe']
+        excludeTags: FIRECRAWL_EXCLUDE_TAGS
       }
     }.to_json
   end
