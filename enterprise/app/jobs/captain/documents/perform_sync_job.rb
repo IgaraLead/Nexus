@@ -20,7 +20,7 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   def acquire_sync_lock(document)
     acquired = false
     document.with_lock do
-      next if document.sync_syncing?
+      next if document.sync_syncing? && !sync_stale?(document)
 
       document.update!(
         sync_status: :syncing,
@@ -29,5 +29,11 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
       acquired = true
     end
     acquired
+  end
+
+  # A single page fetch + fingerprint compare should complete in seconds.
+  # 10 minutes is generous headroom — if still "syncing" after that, the worker likely died mid-run.
+  def sync_stale?(document)
+    document.last_sync_attempted_at.present? && document.last_sync_attempted_at < 10.minutes.ago
   end
 end
