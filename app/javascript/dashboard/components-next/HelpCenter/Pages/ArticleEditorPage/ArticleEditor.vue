@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
+import { useDocumentVisibility } from '@vueuse/core';
 import { debounce } from '@chatwoot/utils';
 import { useI18n } from 'vue-i18n';
 import { ARTICLE_EDITOR_MENU_OPTIONS } from 'dashboard/constants/editor';
@@ -35,22 +36,32 @@ const emit = defineEmits([
 ]);
 
 const { t } = useI18n();
+const visibility = useDocumentVisibility();
 
 const isNewArticle = computed(() => !props.article?.id);
 
 const localTitle = ref(props.article?.title ?? '');
 const localContent = ref(props.article?.content ?? '');
 
+const syncLocalState = () => {
+  localTitle.value = props.article?.title ?? '';
+  localContent.value = props.article?.content ?? '';
+};
+
 // Sync local state when navigating to a different article or on initial fetch
 watch(
   () => props.article?.id,
   newId => {
-    if (newId) {
-      localTitle.value = props.article?.title ?? '';
-      localContent.value = props.article?.content ?? '';
-    }
+    if (newId) syncLocalState();
   }
 );
+
+// Sync local state when user returns to tab (fresh data from re-fetch)
+watch(visibility, state => {
+  if (state === 'visible') {
+    nextTick(syncLocalState);
+  }
+});
 
 const debouncedSave = debounce(value => emit('saveArticle', value), 500, false);
 

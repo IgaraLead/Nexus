@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useDocumentVisibility } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert, useTrack } from 'dashboard/composables';
@@ -13,6 +14,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
+const visibility = useDocumentVisibility();
 
 const { articleSlug, portalSlug } = route.params;
 
@@ -97,6 +99,11 @@ const previewArticle = () => {
     status: article.value?.status,
   });
 };
+
+// Re-fetch article when user returns to this tab
+watch(visibility, state => {
+  if (state === 'visible') fetchArticleDetails();
+});
 
 onMounted(fetchArticleDetails);
 </script>
