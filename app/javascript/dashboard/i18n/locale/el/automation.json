@@ -130,6 +130,7 @@
       "ATLEAST_ONE_ACTION_REQUIRED": "At least one action is required"
     },
     "NONE_OPTION": "Κανένα",
+    "LAST_RESPONDING_AGENT": "Last Responding Agent",
     "EVENTS": {
       "CONVERSATION_CREATED": "Δημιουργήθηκε Συνομιλία",
       "CONVERSATION_UPDATED": "Η Συνομιλία Ενημερώθηκε",
