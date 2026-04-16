@@ -130,6 +130,7 @@
       "ATLEAST_ONE_ACTION_REQUIRED": "נדרשת לפחות פעולה אחת"
     },
     "NONE_OPTION": "אין",
+    "LAST_RESPONDING_AGENT": "Last Responding Agent",
     "EVENTS": {
       "CONVERSATION_CREATED": "שיחה נוצרה",
       "CONVERSATION_UPDATED": "שיחה עודכנה",
