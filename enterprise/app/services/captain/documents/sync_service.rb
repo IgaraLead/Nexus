@@ -1,4 +1,12 @@
 class Captain::Documents::SyncService
+  class PermanentSyncError < StandardError
+  end
+
+  class TransientSyncError < StandardError
+  end
+
+  PERMANENT_ERROR_CODES = %w[not_found access_denied content_empty].freeze
+
   def initialize(document)
     @document = document
   end
@@ -9,7 +17,7 @@ class Captain::Documents::SyncService
 
     unless result.success
       mark_failed(result.error_code)
-      return :failed
+      raise_for_error_code(result.error_code)
     end
 
     @document.store_sync_step('comparing')
@@ -58,5 +66,11 @@ class Captain::Documents::SyncService
       last_sync_attempted_at: Time.current,
       last_sync_error_code: nil
     )
+  end
+
+  def raise_for_error_code(error_code)
+    raise PermanentSyncError, error_code if PERMANENT_ERROR_CODES.include?(error_code)
+
+    raise TransientSyncError, error_code
   end
 end
