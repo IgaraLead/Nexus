@@ -130,6 +130,7 @@
       "ATLEAST_ONE_ACTION_REQUIRED": "至少需要一個動作"
     },
     "NONE_OPTION": "無",
+    "LAST_RESPONDING_AGENT": "Last Responding Agent",
     "EVENTS": {
       "CONVERSATION_CREATED": "對話已建立",
       "CONVERSATION_UPDATED": "對話已更新",
