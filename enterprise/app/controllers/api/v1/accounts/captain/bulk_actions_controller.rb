@@ -15,13 +15,13 @@ class Api::V1::Accounts::Captain::BulkActionsController < Api::V1::Accounts::Bas
   def validate_params
     return if params[:type].present? && params[:ids].present? && params[:fields].present?
 
-    render json: { success: false }, status: :unprocessable_entity
+    render json: { success: false }, status: :unprocessable_content
   end
 
   def type_matches?
     return if MODEL_TYPE.include?(params[:type])
 
-    render json: { success: false }, status: :unprocessable_entity
+    render json: { success: false }, status: :unprocessable_content
   end
 
   def process_bulk_action
@@ -48,12 +48,30 @@ class Api::V1::Accounts::Captain::BulkActionsController < Api::V1::Accounts::Bas
   end
 
   def handle_documents
-    return [] unless params[:fields][:status] == 'delete'
+    case params[:fields][:status]
+    when 'delete'
+      delete_documents
+    when 'sync'
+      sync_documents
+    else
+      []
+    end
+  end
 
+  def delete_documents
     documents = Current.account.captain_documents.where(id: params[:ids])
     return [] unless documents.exists?
 
     documents.destroy_all
+    []
+  end
+
+  def sync_documents
+    Current.account.captain_documents.where(id: params[:ids]).find_each do |document|
+      next if document.pdf_document?
+
+      Captain::Documents::PerformSyncJob.perform_later(document)
+    end
     []
   end
 

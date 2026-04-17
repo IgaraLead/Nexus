@@ -1,4 +1,11 @@
 module Enterprise::Account
+  CAPTAIN_SYNC_INTERVALS = {
+    'hacker' => nil,
+    'startups' => 7.days,
+    'business' => 1.day,
+    'enterprise' => 6.hours
+  }.freeze
+
   # TODO: Remove this when we upgrade administrate gem to the latest version
   # this is a temporary method since current administrate doesn't support virtual attributes
   def manually_managed_features; end
@@ -32,6 +39,17 @@ module Enterprise::Account
 
   def unmark_for_deletion
     custom_attributes.delete('marked_for_deletion_at') && custom_attributes.delete('marked_for_deletion_reason') && save
+  end
+
+  def captain_document_sync_interval
+    plan = custom_attributes['plan_name']
+    return nil if plan.blank?
+
+    CAPTAIN_SYNC_INTERVALS[plan.downcase]
+  end
+
+  def captain_document_sync_enabled?
+    captain_document_sync_interval.present?
   end
 
   def saml_enabled?

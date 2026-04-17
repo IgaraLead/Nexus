@@ -14,11 +14,12 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
     attempts: 4
   )
 
-  def perform(document)
+  def perform(document, triggered_by: nil)
     return if document.pdf_document?
     return unless acquire_sync_lock(document)
 
-    Captain::Documents::SyncService.new(document.reload).perform
+    result = Captain::Documents::SyncService.new(document.reload).perform
+    notify_admins(document) if result == :updated && triggered_by == 'scheduler'
   rescue Captain::Documents::SyncService::PermanentSyncError,
          Captain::Documents::SyncService::TransientSyncError
     # Let discard_on / retry_on handle these
@@ -52,5 +53,15 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   # 10 minutes is generous headroom — if still "syncing" after that, the worker likely died mid-run.
   def sync_stale?(document)
     document.last_sync_attempted_at.present? && document.last_sync_attempted_at < 10.minutes.ago
+  end
+
+  def notify_admins(document)
+    account = document.account
+    return if account.captain_document_sync_notifications == false
+
+    AdministratorNotifications::AccountNotificationMailer
+      .with(account: account)
+      .captain_document_sync_content_changed(document)
+      .deliver_later
   end
 end

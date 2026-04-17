@@ -4,7 +4,7 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
 
   before_action :set_current_page, only: [:index]
   before_action :set_documents, except: [:create]
-  before_action :set_document, only: [:show, :destroy]
+  before_action :set_document, only: [:show, :destroy, :sync]
   before_action :set_assistant, only: [:create]
   RESULTS_PER_PAGE = 25
 
@@ -27,6 +27,13 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
     render_could_not_create_error(e.message)
   rescue ActiveRecord::RecordInvalid => e
     render_could_not_create_error(e.record.errors.full_messages.join(', '))
+  end
+
+  def sync
+    return render_could_not_create_error(I18n.t('captain.documents.sync_not_supported_for_pdf')) if @document.pdf_document?
+
+    Captain::Documents::PerformSyncJob.perform_later(@document)
+    head :accepted
   end
 
   def destroy
