@@ -36,7 +36,9 @@ class Api::V1::Accounts::ConferenceController < Api::V1::Accounts::BaseControlle
     sid = params[:call_sid].presence
     raise ActionController::ParameterMissing, :call_sid if sid.blank?
 
-    Call.where(inbox_id: @voice_inbox.id, provider: :twilio).find_by!(provider_call_id: sid)
+    conversation = fetch_conversation_by_display_id
+    Call.where(inbox_id: @voice_inbox.id, provider: :twilio, conversation_id: conversation.id)
+        .find_by!(provider_call_id: sid)
   end
 
   def set_voice_inbox_for_conference
