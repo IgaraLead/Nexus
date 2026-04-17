@@ -1,40 +1,31 @@
 class Voice::Provider::Twilio::ConferenceService
-  pattr_initialize [:conversation!, { twilio_client: nil }]
+  pattr_initialize [:call!, { twilio_client: nil }]
 
   def ensure_conference_sid
-    existing = conversation.additional_attributes&.dig('conference_sid')
-    return existing if existing.present?
+    return call.conference_sid if call.conference_sid.present?
 
-    sid = Voice::Conference::Name.for(conversation)
-    merge_attributes('conference_sid' => sid)
-    sid
+    call.update!(conference_sid: Voice::Conference::Name.for(call))
+    call.conference_sid
   end
 
   def mark_agent_joined(user:)
-    merge_attributes(
-      'agent_joined' => true,
-      'joined_at' => Time.current.to_i,
-      'joined_by' => { id: user.id, name: user.name }
-    )
+    call.update!(accepted_by_agent: user)
   end
 
   def end_conference
+    return if call.conference_sid.blank?
+
     twilio_client
       .conferences
-      .list(friendly_name: Voice::Conference::Name.for(conversation), status: 'in-progress')
+      .list(friendly_name: call.conference_sid, status: 'in-progress')
       .each { |conf| twilio_client.conferences(conf.sid).update(status: 'completed') }
   end
 
   private
 
-  def merge_attributes(attrs)
-    current = conversation.additional_attributes || {}
-    conversation.update!(additional_attributes: current.merge(attrs))
-  end
-
   def twilio_client
     @twilio_client ||= begin
-      channel = conversation.inbox.channel
+      channel = call.inbox.channel
       if channel.api_key_sid.present? && channel.try(:api_key_secret).present?
         ::Twilio::REST::Client.new(channel.api_key_sid, channel.api_key_secret, channel.account_sid)
       else

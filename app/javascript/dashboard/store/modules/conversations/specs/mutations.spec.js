@@ -2,44 +2,6 @@ import { mutations } from '../index';
 import types from '../../../mutation-types';
 
 describe('#mutations', () => {
-  describe('#UPDATE_CONVERSATION_CALL_STATUS', () => {
-    it('does nothing if conversation is not found', () => {
-      const state = { allConversations: [] };
-      mutations[types.UPDATE_CONVERSATION_CALL_STATUS](state, {
-        conversationId: 1,
-        callStatus: 'ringing',
-      });
-      expect(state.allConversations).toEqual([]);
-    });
-
-    it('updates call_status preserving existing additional_attributes', () => {
-      const state = {
-        allConversations: [
-          { id: 1, additional_attributes: { other_attr: 'value' } },
-        ],
-      };
-      mutations[types.UPDATE_CONVERSATION_CALL_STATUS](state, {
-        conversationId: 1,
-        callStatus: 'in-progress',
-      });
-      expect(state.allConversations[0].additional_attributes).toEqual({
-        other_attr: 'value',
-        call_status: 'in-progress',
-      });
-    });
-
-    it('creates additional_attributes if it does not exist', () => {
-      const state = { allConversations: [{ id: 1 }] };
-      mutations[types.UPDATE_CONVERSATION_CALL_STATUS](state, {
-        conversationId: 1,
-        callStatus: 'completed',
-      });
-      expect(state.allConversations[0].additional_attributes).toEqual({
-        call_status: 'completed',
-      });
-    });
-  });
-
   describe('#UPDATE_MESSAGE_CALL_STATUS', () => {
     it('does nothing if conversation is not found', () => {
       const state = { allConversations: [] };

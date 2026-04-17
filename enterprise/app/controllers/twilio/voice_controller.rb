@@ -20,30 +20,26 @@ class Twilio::VoiceController < ApplicationController
   end
 
   def call_twiml
-    account = current_account
     Rails.logger.info(
-      "TWILIO_VOICE_TWIML account=#{account.id} call_sid=#{twilio_call_sid} from=#{twilio_from} direction=#{twilio_direction}"
+      "TWILIO_VOICE_TWIML account=#{current_account.id} call_sid=#{twilio_call_sid} from=#{twilio_from} direction=#{twilio_direction}"
     )
 
-    conversation = resolve_conversation
-    conference_sid = ensure_conference_sid!(conversation)
-
-    render xml: conference_twiml(conference_sid, agent_leg?(twilio_from))
+    call = resolve_call
+    render xml: conference_twiml(call)
   end
 
   def conference_status
     event = mapped_conference_event
     return head :no_content unless event
 
-    conversation = find_conversation_for_conference!(
+    call = find_call_for_conference!(
       friendly_name: params[:FriendlyName],
       call_sid: twilio_call_sid
     )
 
     Voice::Conference::Manager.new(
-      conversation: conversation,
+      call: call,
       event: event,
-      call_sid: twilio_call_sid,
       participant_label: participant_label
     ).process
 
@@ -80,8 +76,8 @@ class Twilio::VoiceController < ApplicationController
     from_number.start_with?('client:')
   end
 
-  def resolve_conversation
-    return find_conversation_for_agent if agent_leg?(twilio_from)
+  def resolve_call
+    return find_call_for_agent if agent_leg?(twilio_from)
 
     case twilio_direction
     when 'inbound'
@@ -92,62 +88,51 @@ class Twilio::VoiceController < ApplicationController
         call_sid: twilio_call_sid
       )
     when 'outbound-api', 'outbound-dial'
-      sync_outbound_leg(
-        call_sid: twilio_call_sid,
-        from_number: twilio_from,
-        direction: twilio_direction
-      )
+      sync_outbound_leg(call_sid: twilio_call_sid, direction: twilio_direction)
     else
       raise ArgumentError, "Unsupported Twilio direction: #{twilio_direction}"
     end
   end
 
-  def find_conversation_for_agent
-    if params[:conversation_id].present?
-      current_account.conversations.find_by!(display_id: params[:conversation_id])
+  def find_call_for_agent
+    if params[:call_sid].present?
+      Call.find_by!(provider: :twilio, provider_call_id: params[:call_sid])
+    elsif params[:conversation_id].present?
+      conversation = current_account.conversations.find_by!(display_id: params[:conversation_id])
+      Call.where(conversation_id: conversation.id).active.order(created_at: :desc).first!
     else
-      current_account.conversations.find_by!(identifier: twilio_call_sid)
+      Call.find_by!(provider: :twilio, provider_call_id: twilio_call_sid)
     end
   end
 
-  def sync_outbound_leg(call_sid:, from_number:, direction:)
+  def sync_outbound_leg(call_sid:, direction:)
     parent_sid = params['ParentCallSid'].presence
     lookup_sid = direction == 'outbound-dial' ? parent_sid || call_sid : call_sid
-    conversation = current_account.conversations.find_by!(identifier: lookup_sid)
+    call = Call.find_by!(provider: :twilio, provider_call_id: lookup_sid)
 
-    Voice::CallSessionSyncService.new(
-      conversation: conversation,
-      call_sid: call_sid,
-      message_call_sid: conversation.identifier,
-      leg: {
-        from_number: from_number,
-        to_number: twilio_to,
-        direction: 'outbound'
-      }
-    ).perform
+    Voice::CallSessionSyncService.new(call: call, parent_call_sid: parent_sid).perform
   end
 
-  def ensure_conference_sid!(conversation)
-    attrs = conversation.additional_attributes || {}
-    attrs['conference_sid'] ||= Voice::Conference::Name.for(conversation)
-    conversation.update!(additional_attributes: attrs)
-    attrs['conference_sid']
-  end
-
-  def conference_twiml(conference_sid, agent_leg)
+  def conference_twiml(call)
     Twilio::TwiML::VoiceResponse.new.tap do |response|
       response.dial do |dial|
         dial.conference(
-          conference_sid,
-          start_conference_on_enter: agent_leg,
+          call.conference_sid,
+          start_conference_on_enter: agent_leg?(twilio_from),
           end_conference_on_exit: false,
           status_callback: conference_status_callback_url,
           status_callback_event: 'start end join leave',
           status_callback_method: 'POST',
-          participant_label: agent_leg ? 'agent' : 'contact'
+          participant_label: participant_label_for(twilio_from)
         )
       end
     end.to_s
+  end
+
+  def participant_label_for(from_number)
+    return from_number.delete_prefix('client:') if from_number.start_with?('client:')
+
+    'contact'
   end
 
   def conference_status_callback_url
@@ -155,16 +140,10 @@ class Twilio::VoiceController < ApplicationController
     Rails.application.routes.url_helpers.twilio_voice_conference_status_url(phone: phone_digits)
   end
 
-  def find_conversation_for_conference!(friendly_name:, call_sid:)
+  def find_call_for_conference!(friendly_name:, call_sid:)
     name = friendly_name.to_s
-    scope = current_account.conversations
-
-    if name.present?
-      conversation = scope.where("additional_attributes->>'conference_sid' = ?", name).first
-      return conversation if conversation
-    end
-
-    scope.find_by!(identifier: call_sid)
+    call = Call.twilio.by_conference_sid(name).first if name.present?
+    call || Call.find_by!(provider: :twilio, provider_call_id: call_sid)
   end
 
   def set_inbox!

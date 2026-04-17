@@ -307,19 +307,6 @@ export const mutations = {
     }
   },
 
-  [types.UPDATE_CONVERSATION_CALL_STATUS](
-    _state,
-    { conversationId, callStatus }
-  ) {
-    const chat = getConversationById(_state)(conversationId);
-    if (!chat) return;
-
-    chat.additional_attributes = {
-      ...chat.additional_attributes,
-      call_status: callStatus,
-    };
-  },
-
   [types.UPDATE_MESSAGE_CALL_STATUS](_state, { conversationId, callStatus }) {
     const chat = getConversationById(_state)(conversationId);
     if (!chat) return;

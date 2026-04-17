@@ -95,10 +95,13 @@ const isInboxNameVisible = computed(() => !activeInbox.value);
 
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
 
-const voiceCallData = computed(() => ({
-  status: props.chat.additional_attributes?.call_status,
-  direction: props.chat.additional_attributes?.call_direction,
-}));
+const voiceCallData = computed(() => {
+  const last = lastMessageInChat.value;
+  if (last?.content_type !== 'voice_call')
+    return { status: null, direction: null };
+  const data = last.content_attributes?.data ?? {};
+  return { status: data.status, direction: data.call_direction };
+});
 
 const inboxId = computed(() => props.chat.inbox_id);
 

@@ -1,5 +1,5 @@
 module Voice::Conference::Name
-  def self.for(conversation)
-    "conf_account_#{conversation.account_id}_conv_#{conversation.display_id}"
+  def self.for(call)
+    "conf_account_#{call.account_id}_call_#{call.id}"
   end
 end

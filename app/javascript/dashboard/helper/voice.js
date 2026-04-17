@@ -60,9 +60,10 @@ export function handleVoiceCallUpdated(commit, message, currentUserId) {
 
   callsStore.handleCallStatusChanged({ callSid, status, conversationId });
 
-  const callInfo = { conversationId, callStatus: status };
-  commit(types.UPDATE_CONVERSATION_CALL_STATUS, callInfo);
-  commit(types.UPDATE_MESSAGE_CALL_STATUS, callInfo);
+  commit(types.UPDATE_MESSAGE_CALL_STATUS, {
+    conversationId,
+    callStatus: status,
+  });
 
   const isNewCall =
     status === 'ringing' &&
