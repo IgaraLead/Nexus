@@ -17,7 +17,10 @@ class Voice::CallStatus::Manager
     ts = timestamp || now_seconds
 
     if status == 'in_progress'
-      attrs[:started_at] = Time.zone.at(ts)
+      # Twilio can emit multiple in-progress updates (answered + in-progress, retries).
+      # Keep the earliest timestamp so duration_seconds doesn't shift forward.
+      started_at = Time.zone.at(ts)
+      attrs[:started_at] = started_at if call.started_at.nil? || started_at < call.started_at
     elsif Call::TERMINAL_STATUSES.include?(status)
       call.ended_at = ts
       attrs[:meta] = call.meta

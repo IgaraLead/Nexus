@@ -35,6 +35,17 @@ class Voice::Conference::Manager
     status_manager.process_status_update('in_progress', timestamp: now)
   end
 
+  # Parses agent user_id from participant_label. Only returns an id when the
+  # label's embedded account id matches the call's account — protects against
+  # a spoofed/cross-account label attaching a foreign user to the call.
+  def extract_user_id
+    match = participant_label.to_s.match(AGENT_LABEL_PATTERN)
+    return unless match
+    return unless match[2].to_i == call.account_id
+
+    match[1].to_i
+  end
+
   def handle_leave!
     case call.status
     when 'ringing'
@@ -52,11 +63,6 @@ class Voice::Conference::Manager
 
   def agent_participant?
     participant_label.to_s.start_with?('agent-')
-  end
-
-  def extract_user_id
-    match = participant_label.to_s.match(AGENT_LABEL_PATTERN)
-    match && match[1].to_i
   end
 
   def now
