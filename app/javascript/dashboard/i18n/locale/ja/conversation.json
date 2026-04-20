@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "メッセージは利用できません",
     "CARD": {
       "SHOW_LABELS": "ラベルを表示",
-      "HIDE_LABELS": "ラベルを隠す"
+      "HIDE_LABELS": "ラベルを隠す",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Incoming call",
