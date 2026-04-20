@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Sõnum pole saadaval",
     "CARD": {
       "SHOW_LABELS": "Näita silte",
-      "HIDE_LABELS": "Peida sildid"
+      "HIDE_LABELS": "Peida sildid",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Sissetulev kõne",
