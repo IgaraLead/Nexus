@@ -257,20 +257,15 @@ export default {
             />
             {{ $t('ATTRIBUTES_MGMT.ADD.FORM.ENABLE_REGEX.LABEL') }}
           </div>
-          <div v-if="isAttributeTypeText && isRegexEnabled" class="mt-1 mb-4">
-            <woot-input
-              v-model="regexPattern"
-              :label="$t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.LABEL')"
-              type="text"
-              :placeholder="
-                $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.PLACEHOLDER')
-              "
-              class="[&>input]:!mb-px"
-            />
-            <span class="text-xs text-n-slate-10">
-              {{ $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.HELP') }}
-            </span>
-          </div>
+          <woot-input
+            v-if="isAttributeTypeText && isRegexEnabled"
+            v-model="regexPattern"
+            :label="$t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.LABEL')"
+            type="text"
+            :placeholder="
+              $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.PLACEHOLDER')
+            "
+          />
           <woot-input
             v-if="isAttributeTypeText && isRegexEnabled"
             v-model="regexCue"

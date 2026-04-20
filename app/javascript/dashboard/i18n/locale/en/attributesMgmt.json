@@ -58,8 +58,7 @@
         },
         "REGEX_PATTERN": {
           "LABEL": "Regex Pattern",
-          "PLACEHOLDER": "Please enter custom attribute regex pattern. (Optional)",
-          "HELP": "Enter a pattern without slashes. e.g. ^[0-9]+$ for numbers only."
+          "PLACEHOLDER": "Please enter custom attribute regex pattern. (Optional)"
         },
         "REGEX_CUE": {
           "LABEL": "Regex Cue",

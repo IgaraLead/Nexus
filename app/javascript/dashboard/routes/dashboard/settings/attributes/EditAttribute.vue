@@ -111,7 +111,7 @@ export default {
     },
     setFormValues() {
       const regexPattern = this.selectedAttribute.regex_pattern
-        ? getRegexp(this.selectedAttribute.regex_pattern).source
+        ? getRegexp(this.selectedAttribute.regex_pattern).toString()
         : null;
       this.displayName = this.selectedAttribute.attribute_display_name;
       this.description = this.selectedAttribute.attribute_description;
@@ -241,20 +241,15 @@ export default {
           />
           {{ $t('ATTRIBUTES_MGMT.ADD.FORM.ENABLE_REGEX.LABEL') }}
         </div>
-        <div v-if="isAttributeTypeText && isRegexEnabled" class="mt-1 mb-4">
-          <woot-input
-            v-model="regexPattern"
-            :label="$t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.LABEL')"
-            type="text"
-            :placeholder="
-              $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.PLACEHOLDER')
-            "
-            class="[&>input]:!mb-px"
-          />
-          <span class="text-xs text-n-slate-10">
-            {{ $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.HELP') }}
-          </span>
-        </div>
+        <woot-input
+          v-if="isAttributeTypeText && isRegexEnabled"
+          v-model="regexPattern"
+          :label="$t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.LABEL')"
+          type="text"
+          :placeholder="
+            $t('ATTRIBUTES_MGMT.ADD.FORM.REGEX_PATTERN.PLACEHOLDER')
+          "
+        />
         <woot-input
           v-if="isAttributeTypeText && isRegexEnabled"
           v-model="regexCue"

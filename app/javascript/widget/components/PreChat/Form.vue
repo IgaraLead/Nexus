@@ -193,11 +193,11 @@ export default {
       }
 
       const validationType =
-        validations[field_type] || validations[type] || validations[name];
+        validations[type] || validations[name] || validations[field_type];
       if (!validationType) return baseRules;
 
-      // Normalise rules into array-of-arrays so RegExp objects inside
-      // `['matches', regex]` survive without being stringified.
+      // Normalise into array-of-arrays so RegExp objects in `['matches', regex]`
+      // survive without being stringified by FormKit.
       const extraRules = Array.isArray(validationType)
         ? validationType.map(rule => (Array.isArray(rule) ? rule : [rule]))
         : [[validationType]];
