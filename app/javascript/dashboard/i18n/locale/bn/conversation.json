@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "বার্তাটি পাওয়া যায়নি",
     "CARD": {
       "SHOW_LABELS": "লেবেল দেখান",
-      "HIDE_LABELS": "লেবেল লুকান"
+      "HIDE_LABELS": "লেবেল লুকান",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "ইনকামিং কল",
