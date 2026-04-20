@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Mesej tidak tersedia",
     "CARD": {
       "SHOW_LABELS": "Tunjukkan label",
-      "HIDE_LABELS": "Sembunyikan label"
+      "HIDE_LABELS": "Sembunyikan label",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Panggilan masuk",
