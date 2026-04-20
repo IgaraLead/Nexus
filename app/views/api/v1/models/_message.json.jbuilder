@@ -14,21 +14,5 @@ json.sender message.sender.push_event_data if message.sender
 json.attachments message.attachments.map(&:push_event_data) if message.attachments.present?
 
 if message.content_type == 'voice_call' && message.respond_to?(:call) && message.call.present?
-  call = message.call
-  json.call do
-    json.id call.id
-    json.provider_call_id call.provider_call_id
-    json.provider call.provider
-    json.direction call.direction
-    json.status call.display_status
-    json.duration_seconds call.duration_seconds
-    json.conference_sid call.conference_sid
-    json.accepted_by_agent_id call.accepted_by_agent_id
-    json.started_at call.started_at&.to_i
-    json.ended_at call.ended_at
-    json.from_number call.from_number
-    json.to_number call.to_number
-    json.recording_url call.recording_url
-    json.transcript call.transcript
-  end
+  json.set! :call, message.call.push_event_data
 end
