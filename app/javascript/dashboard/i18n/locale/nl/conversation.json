@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Bericht niet beschikbaar",
     "CARD": {
       "SHOW_LABELS": "Labels weergeven",
-      "HIDE_LABELS": "Labels verbergen"
+      "HIDE_LABELS": "Labels verbergen",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Incoming call",
