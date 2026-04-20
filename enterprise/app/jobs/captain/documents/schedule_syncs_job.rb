@@ -15,7 +15,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
   def enqueue_due_documents(account, interval)
     account.captain_documents
            .where(status: :available)
-           .where.not(sync_status: :syncing)
+           .where('sync_status IS NULL OR sync_status != ?', Captain::Document.sync_statuses[:syncing])
            .where('last_sync_attempted_at IS NULL OR last_sync_attempted_at < ?', interval.ago)
            .find_each do |document|
       next if document.pdf_document?
