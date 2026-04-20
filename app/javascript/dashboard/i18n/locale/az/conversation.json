@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Mesaj mövcud deyil",
     "CARD": {
       "SHOW_LABELS": "Etiketləri göstər",
-      "HIDE_LABELS": "Etiketləri gizlədin"
+      "HIDE_LABELS": "Etiketləri gizlədin",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Gələn zəng",
