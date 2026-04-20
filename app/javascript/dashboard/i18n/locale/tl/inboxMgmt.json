@@ -745,6 +745,7 @@
       "SENDER_NAME_SECTION_TEXT": "I-enable/Disable ang pagpapakita ng pangalan ng Ahente sa email, kung naka-disable ipapakita ang pangalan ng negosyo",
       "ENABLE_CONTINUITY_VIA_EMAIL": "Paganahin ang pagpapatuloy ng pag-uusap sa pamamagitan ng email",
       "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "Magpapatuloy ang mga pag-uusap sa email kung available ang email address ng contact.",
+      "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "This feature is available on a paid plan. Upgrade to enable conversation continuity via email.",
       "LOCK_TO_SINGLE_CONVERSATION": "Pag-ruta ng Pag-uusap",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "I-configure ang paggawa ng pag-uusap para sa mga umiiral na contact",
       "INBOX_UPDATE_TITLE": "Mga Setting ng Inbox",
