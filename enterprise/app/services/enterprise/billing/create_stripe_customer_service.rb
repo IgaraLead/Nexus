@@ -20,10 +20,12 @@ class Enterprise::Billing::CreateStripeCustomerService
   private
 
   def prepare_customer_id
-    existing_id = account.custom_attributes['stripe_customer_id']
-    return existing_id if existing_id.present?
-
-    Stripe::Customer.create(name: account.name, email: billing_email).id
+    customer_id = account.custom_attributes['stripe_customer_id']
+    if customer_id.blank?
+      customer = Stripe::Customer.create({ name: account.name, email: billing_email })
+      customer_id = customer.id
+    end
+    customer_id
   end
 
   def default_quantity
@@ -35,18 +37,26 @@ class Enterprise::Billing::CreateStripeCustomerService
   end
 
   def default_plan
-    @default_plan ||= InstallationConfig.find_by(name: 'CHATWOOT_CLOUD_PLANS').value.first
+    installation_config = InstallationConfig.find_by(name: 'CHATWOOT_CLOUD_PLANS')
+    @default_plan ||= installation_config.value.first
   end
 
   def price_id
-    default_plan['price_ids'].first
+    price_ids = default_plan['price_ids']
+    price_ids.first
   end
 
   def active_subscription
     stripe_customer_id = account.custom_attributes['stripe_customer_id']
     return nil if stripe_customer_id.blank?
 
-    Stripe::Subscription.list(customer: stripe_customer_id, status: 'active', limit: 1).data.first
+    Stripe::Subscription.list(
+      {
+        customer: stripe_customer_id,
+        status: 'active',
+        limit: 1
+      }
+    ).data.first
   end
 
   def default_plan_subscription?(subscription)
