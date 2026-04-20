@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Сообщение недоступно",
     "CARD": {
       "SHOW_LABELS": "Показать метки",
-      "HIDE_LABELS": "Скрыть метки"
+      "HIDE_LABELS": "Скрыть метки",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Входящий звонок",
