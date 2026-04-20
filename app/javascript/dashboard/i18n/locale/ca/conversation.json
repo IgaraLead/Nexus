@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Missatge no disponible",
     "CARD": {
       "SHOW_LABELS": "Mostra etiquetes",
-      "HIDE_LABELS": "Amaga etiquetes"
+      "HIDE_LABELS": "Amaga etiquetes",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Incoming call",
