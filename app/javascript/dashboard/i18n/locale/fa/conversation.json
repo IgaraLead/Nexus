@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "پیام در دسترس نیست",
     "CARD": {
       "SHOW_LABELS": "مشاهده کردن برچسب‌ها",
-      "HIDE_LABELS": "پنهان کردن برچسب‌ها"
+      "HIDE_LABELS": "پنهان کردن برچسب‌ها",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Incoming call",
