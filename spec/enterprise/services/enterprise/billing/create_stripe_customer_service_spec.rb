@@ -160,7 +160,7 @@ describe Enterprise::Billing::CreateStripeCustomerService do
             {
               customer: stripe_customer_id,
               status: 'active',
-              limit: 100
+              limit: 1
             }
           )
         end

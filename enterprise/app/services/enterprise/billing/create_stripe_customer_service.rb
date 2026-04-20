@@ -4,11 +4,11 @@ class Enterprise::Billing::CreateStripeCustomerService
   DEFAULT_QUANTITY = 2
 
   def perform
-    active_subs = active_subscriptions
-    return false if active_subs.any? { |sub| !default_plan_subscription?(sub) }
+    active_sub = active_subscription
+    return false if active_sub && !default_plan_subscription?(active_sub)
 
     customer_id = prepare_customer_id
-    subscription = active_subs.first || Stripe::Subscription.create(customer: customer_id, items: [{ price: price_id, quantity: default_quantity }])
+    subscription = active_sub || Stripe::Subscription.create(customer: customer_id, items: [{ price: price_id, quantity: default_quantity }])
     custom_attributes = build_custom_attributes(customer_id, subscription)
     custom_attributes.except!('is_creating_customer')
 
@@ -46,17 +46,17 @@ class Enterprise::Billing::CreateStripeCustomerService
     price_ids.first
   end
 
-  def active_subscriptions
+  def active_subscription
     stripe_customer_id = account.custom_attributes['stripe_customer_id']
-    return [] if stripe_customer_id.blank?
+    return nil if stripe_customer_id.blank?
 
     Stripe::Subscription.list(
       {
         customer: stripe_customer_id,
         status: 'active',
-        limit: 100
+        limit: 1
       }
-    ).data
+    ).data.first
   end
 
   def default_plan_subscription?(subscription)
