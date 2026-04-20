@@ -71,7 +71,8 @@
     "REPLY_MESSAGE_NOT_FOUND": "Ziņa nav pieejama",
     "CARD": {
       "SHOW_LABELS": "Rādīt etiķetes",
-      "HIDE_LABELS": "Slēpt etiķetes"
+      "HIDE_LABELS": "Slēpt etiķetes",
+      "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Incoming call",
