@@ -58,18 +58,6 @@ class AdministratorNotifications::AccountNotificationMailer < AdministratorNotif
     send_notification(subject, action_url: action_url, meta: meta)
   end
 
-  def captain_document_sync_content_changed(document)
-    subject = 'Captain document content updated during auto-sync'
-    action_url = "#{ENV.fetch('FRONTEND_URL', nil)}/app/accounts/#{Current.account.id}/captain/documents"
-    meta = {
-      'document_name' => document.name,
-      'document_url' => document.external_link,
-      'synced_at' => document.last_synced_at&.iso8601
-    }
-
-    send_notification(subject, action_url: action_url, meta: meta)
-  end
-
   private
 
   def format_deletion_date(deletion_date_str)

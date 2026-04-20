@@ -94,8 +94,8 @@ class Captain::Document < ApplicationRecord
     metadata&.dig('sync_step')
   end
 
-  def store_sync_step(step)
-    update!(metadata: (metadata || {}).merge('sync_step' => step))
+  def sync_step=(value)
+    self.metadata = (metadata || {}).merge('sync_step' => value)
   end
 
   def openai_file_id

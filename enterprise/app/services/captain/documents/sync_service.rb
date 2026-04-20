@@ -12,7 +12,7 @@ class Captain::Documents::SyncService
   end
 
   def perform
-    @document.store_sync_step('fetching')
+    @document.update!(sync_step: 'fetching')
     result = Captain::Documents::SinglePageFetcher.new(@document.external_link).fetch
 
     unless result.success
@@ -20,17 +20,21 @@ class Captain::Documents::SyncService
       raise_for_error_code(result.error_code)
     end
 
-    @document.store_sync_step('comparing')
+    @document.update!(sync_step: 'comparing')
     fingerprint = compute_fingerprint(result.content)
 
-    if fingerprint == @document.content_fingerprint
+    # Baseline: with no prior fingerprint there is nothing to compare against,
+    # so record the current fetch silently rather than reporting a content change.
+    baselining = @document.content_fingerprint.blank?
+
+    if !baselining && fingerprint == @document.content_fingerprint
       mark_synced
       return :unchanged
     end
 
-    @document.store_sync_step('updating')
+    @document.update!(sync_step: 'updating')
     update_content(result, fingerprint)
-    :updated
+    baselining ? :unchanged : :updated
   end
 
   private
@@ -50,6 +54,7 @@ class Captain::Documents::SyncService
   def mark_synced
     @document.update!(
       sync_status: :synced,
+      sync_step: nil,
       last_synced_at: Time.current,
       last_sync_attempted_at: Time.current,
       last_sync_error_code: nil
@@ -62,6 +67,7 @@ class Captain::Documents::SyncService
       name: result.title.presence || @document.name,
       content_fingerprint: fingerprint,
       sync_status: :synced,
+      sync_step: nil,
       last_synced_at: Time.current,
       last_sync_attempted_at: Time.current,
       last_sync_error_code: nil

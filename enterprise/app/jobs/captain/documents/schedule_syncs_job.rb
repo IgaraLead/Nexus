@@ -20,7 +20,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
            .find_each do |document|
       next if document.pdf_document?
 
-      Captain::Documents::PerformSyncJob.perform_later(document, triggered_by: 'scheduler')
+      Captain::Documents::PerformSyncJob.perform_later(document)
     end
   end
 end

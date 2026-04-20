@@ -3,7 +3,6 @@ module Enterprise::Concerns::Account
 
   included do
     store_accessor :settings, :conversation_required_attributes
-    store_accessor :settings, :captain_document_sync_notifications
 
     has_many :sla_policies, dependent: :destroy_async
     has_many :applied_slas, dependent: :destroy_async
