@@ -42,7 +42,10 @@ RSpec.describe Voice::StatusUpdateService do
       .and_return(instance_double(Twilio::VoiceWebhookSetupService, perform: "AP#{SecureRandom.hex(16)}"))
   end
 
-  it 'updates the Call and the matching voice_call message with the normalized status' do
+  it 'updates the Call and touches the linked message on status transition' do
+    previous_updated_at = message.updated_at
+    travel 1.second
+
     described_class.new(
       account: account,
       call_sid: call_sid,
@@ -53,21 +56,17 @@ RSpec.describe Voice::StatusUpdateService do
     message.reload
 
     expect(call.status).to eq('completed')
-    expect(message.content_attributes.dig('data', 'status')).to eq('completed')
+    expect(message.updated_at).to be > previous_updated_at
   end
 
-  it 'normalizes busy to no_answer on the Call and no-answer on the message payload' do
+  it 'normalizes busy to no_answer on the Call' do
     described_class.new(
       account: account,
       call_sid: call_sid,
       call_status: 'busy'
     ).perform
 
-    call.reload
-    message.reload
-
-    expect(call.status).to eq('no_answer')
-    expect(message.content_attributes.dig('data', 'status')).to eq('no-answer')
+    expect(call.reload.status).to eq('no_answer')
   end
 
   it 'no-ops when no Call matches the provided call_sid' do

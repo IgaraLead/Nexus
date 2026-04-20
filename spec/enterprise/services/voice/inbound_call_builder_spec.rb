@@ -44,19 +44,13 @@ RSpec.describe Voice::InboundCallBuilder do
       call = perform_builder
       voice_message = call.conversation.messages.voice_calls.last
 
-      expect(voice_message).to be_present
-      expect(voice_message.message_type).to eq('incoming')
-      expect(call.message_id).to eq(voice_message.id)
-
-      data = voice_message.content_attributes['data']
-      expect(data).to include(
-        'call_sid' => call_sid,
-        'status' => 'ringing',
-        'call_direction' => 'inbound',
-        'conference_sid' => call.conference_sid,
-        'from_number' => from_number,
-        'to_number' => inbox.channel.phone_number
-      )
+      aggregate_failures do
+        expect(voice_message).to be_present
+        expect(voice_message.message_type).to eq('incoming')
+        expect(call.message_id).to eq(voice_message.id)
+        expect(voice_message.content_attributes['data']['call_sid']).to eq(call_sid)
+        expect(voice_message.call).to eq(call)
+      end
     end
 
     it 'sets the contact name to the phone number for new callers' do

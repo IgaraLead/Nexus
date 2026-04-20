@@ -7,7 +7,9 @@ class Voice::CallStatus::Manager
 
     apply_call_updates!(status, duration: duration, timestamp: timestamp)
     call.conversation.update!(last_activity_at: Time.zone.now)
-    Voice::CallMessageBuilder.perform!(call: call)
+    # Touch the linked message so the normal message.updated dispatcher
+    # re-broadcasts it with the fresh Call embedded via push_event_data.
+    call.message&.touch
   end
 
   private
