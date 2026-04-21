@@ -1,61 +1,73 @@
-<script>
-import { mapGetters } from 'vuex';
+<script setup>
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import { parseBoolean } from '@chatwoot/utils';
 import Banner from 'dashboard/components/ui/Banner.vue';
 import mfaAPI from 'dashboard/api/mfa';
+import { emitter } from 'shared/helpers/mitt';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
 
 const LOW_BACKUP_CODES_THRESHOLD = 3;
 
-export default {
-  components: { Banner },
-  data() {
-    return {
-      mfaEnabled: false,
-      remainingBackupCodes: null,
-    };
-  },
-  computed: {
-    ...mapGetters({ currentAccountId: 'getCurrentAccountId' }),
-    shouldShowBanner() {
-      if (!this.mfaEnabled) return false;
-      if (this.remainingBackupCodes === null) return false;
-      return this.remainingBackupCodes <= LOW_BACKUP_CODES_THRESHOLD;
-    },
-    bannerColorScheme() {
-      return this.remainingBackupCodes === 0 ? 'alert' : 'warning';
-    },
-    bannerMessage() {
-      if (this.remainingBackupCodes === 0) {
-        return this.$t('MFA_SETTINGS.LOW_BACKUP_CODES.NONE_LEFT');
-      }
-      return this.$t('MFA_SETTINGS.LOW_BACKUP_CODES.MESSAGE', {
-        count: this.remainingBackupCodes,
-      });
-    },
-  },
-  mounted() {
-    this.fetchMfaStatus();
-  },
-  methods: {
-    async fetchMfaStatus() {
-      if (!parseBoolean(window.chatwootConfig?.isMfaEnabled)) return;
+const { t } = useI18n();
+const store = useStore();
+const router = useRouter();
 
-      try {
-        const { data } = await mfaAPI.get();
-        this.mfaEnabled = data.enabled;
-        this.remainingBackupCodes = data.remaining_backup_codes ?? null;
-      } catch {
-        // ignore; banner stays hidden
-      }
-    },
-    goToMfaSettings() {
-      this.$router.push({
-        name: 'profile_settings_mfa',
-        params: { accountId: this.currentAccountId },
-      });
-    },
-  },
+const mfaEnabled = ref(false);
+const remainingBackupCodes = ref(null);
+
+const currentAccountId = computed(() => store.getters.getCurrentAccountId);
+
+const shouldShowBanner = computed(() => {
+  if (!mfaEnabled.value) return false;
+  if (remainingBackupCodes.value === null) return false;
+  return remainingBackupCodes.value <= LOW_BACKUP_CODES_THRESHOLD;
+});
+
+const bannerColorScheme = computed(() =>
+  remainingBackupCodes.value === 0 ? 'alert' : 'warning'
+);
+
+const bannerMessage = computed(() => {
+  if (remainingBackupCodes.value === 0) {
+    return t('MFA_SETTINGS.LOW_BACKUP_CODES.NONE_LEFT');
+  }
+  return t(
+    'MFA_SETTINGS.LOW_BACKUP_CODES.MESSAGE',
+    { count: remainingBackupCodes.value },
+    remainingBackupCodes.value
+  );
+});
+
+const fetchMfaStatus = async () => {
+  if (!parseBoolean(window.chatwootConfig?.isMfaEnabled)) return;
+
+  try {
+    const { data } = await mfaAPI.get();
+    mfaEnabled.value = data.enabled;
+    remainingBackupCodes.value = data.remaining_backup_codes ?? null;
+  } catch {
+    // ignore; banner stays hidden
+  }
 };
+
+const goToMfaSettings = () => {
+  router.push({
+    name: 'profile_settings_mfa',
+    params: { accountId: currentAccountId.value },
+  });
+};
+
+onMounted(() => {
+  fetchMfaStatus();
+  emitter.on(BUS_EVENTS.MFA_STATE_CHANGED, fetchMfaStatus);
+});
+
+onBeforeUnmount(() => {
+  emitter.off(BUS_EVENTS.MFA_STATE_CHANGED, fetchMfaStatus);
+});
 </script>
 
 <!-- eslint-disable-next-line vue/no-root-v-if -->

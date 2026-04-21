@@ -50,7 +50,7 @@
       "DISABLE_BUTTON": "Disable Two-Factor Authentication"
     },
     "LOW_BACKUP_CODES": {
-      "MESSAGE": "You have {count} backup codes remaining. Generate new codes to avoid getting locked out if you lose access to your authenticator.",
+      "MESSAGE": "You have {count} backup code remaining. Generate new codes to avoid getting locked out if you lose access to your authenticator. | You have {count} backup codes remaining. Generate new codes to avoid getting locked out if you lose access to your authenticator.",
       "NONE_LEFT": "You have no backup codes remaining. Generate new codes now to avoid getting locked out if you lose access to your authenticator.",
       "ACTION": "Generate codes"
     },
