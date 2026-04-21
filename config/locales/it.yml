@@ -484,7 +484,7 @@ it:
       custom_domain_not_configured: 'Il dominio personalizzato non è configurato'
   super_admin:
     push_diagnostics:
-      user_not_found: 'User not found.'
-      no_subscriptions_to_test: 'Select at least one subscription to test.'
-      no_subscriptions_to_delete: 'Select at least one subscription to delete.'
-      subscriptions_deleted: "Deleted %{count} subscription(s). The user's device(s) will re-register on next app launch."
+      user_not_found: 'Utente non trovato.'
+      no_subscriptions_to_test: 'Seleziona almeno una subscription da testare.'
+      no_subscriptions_to_delete: 'Seleziona almeno una subscription da eliminare.'
+      subscriptions_deleted: "Eliminate %{count} subscription. I dispositivi dell'utente dovranno essere ri-registrati al prossimo avvio dell'app."
