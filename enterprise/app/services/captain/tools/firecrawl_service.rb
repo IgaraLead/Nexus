@@ -1,5 +1,5 @@
 class Captain::Tools::FirecrawlService
-  FIRECRAWL_EXCLUDE_TAGS = %w[iframe nav footer header .sidebar .cookie-banner [role=navigation] [role=banner] [role=contentinfo]].freeze
+  FIRECRAWL_EXCLUDE_TAGS = %w[iframe .sidebar .cookie-banner [role=navigation] [role=banner] [role=contentinfo]].freeze
 
   def initialize
     @api_key = InstallationConfig.find_by!(name: 'CAPTAIN_FIRECRAWL_API_KEY').value
