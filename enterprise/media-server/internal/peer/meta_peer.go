@@ -48,12 +48,17 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 		return nil, "", fmt.Errorf("set UDP port range: %w", err)
 	}
 
-	// Meta's side finishes setting up our DTLS credentials only *after* Rails
-	// calls pre_accept_call / accept_call on the Graph API. For inbound calls
-	// that happens ~1 second after we've already begun the DTLS handshake, so
-	// our first ClientHello is dropped. Extend the handshake window to 30s and
-	// tighten the retransmission interval so a later retry lands once Meta is
-	// ready.
+	// For inbound WhatsApp calls we answer Meta's offer. Meta doesn't know our
+	// DTLS fingerprint until Rails delivers the answer via pre_accept_call /
+	// accept_call, which happens ~1 second *after* pion is ready to handshake.
+	// If we're the DTLS client (pion default when remote is actpass) we blast
+	// ClientHello at Meta before Meta is listening for us; Meta responds with a
+	// fatal alert and pion closes the PC. Flip the roles so *we* are the DTLS
+	// server: Meta becomes the client and only starts ClientHello after it has
+	// our fingerprint, so the handshake happens in the right order.
+	if err := se.SetAnsweringDTLSRole(webrtc.DTLSRoleServer); err != nil {
+		return nil, "", fmt.Errorf("set answering DTLS role: %w", err)
+	}
 	se.SetDTLSConnectContextMaker(func() (context.Context, func()) {
 		return context.WithTimeout(context.Background(), 30*time.Second)
 	})
