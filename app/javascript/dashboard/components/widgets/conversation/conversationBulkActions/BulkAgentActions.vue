@@ -143,7 +143,7 @@ const handleToggleDropdown = () => {
             <div class="flex flex-col gap-2">
               <I18nT
                 v-if="selectedAgent.id"
-                keypath="BULK_ACTION.ASSIGN_CONFIRMATION_LABEL"
+                keypath="BULK_ACTION.ASSIGN_AGENT_CONFIRMATION_LABEL"
                 tag="p"
                 class="text-xs text-n-slate-11 px-1 mb-0"
                 :plural="props.conversationCount"
@@ -161,7 +161,7 @@ const handleToggleDropdown = () => {
               </I18nT>
               <I18nT
                 v-else
-                keypath="BULK_ACTION.UNASSIGN_CONFIRMATION_LABEL"
+                keypath="BULK_ACTION.UNASSIGN_AGENT_CONFIRMATION_LABEL"
                 tag="p"
                 class="text-xs text-n-slate-11 px-1 mb-0"
                 :plural="props.conversationCount"

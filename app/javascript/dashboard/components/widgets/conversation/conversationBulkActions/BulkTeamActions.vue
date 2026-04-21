@@ -115,7 +115,7 @@ onMounted(() => {
             <div class="flex flex-col gap-2">
               <I18nT
                 v-if="selectedTeam.id"
-                keypath="BULK_ACTION.TEAMS.ASSIGN_CONFIRMATION_LABEL"
+                keypath="BULK_ACTION.TEAMS.ASSIGN_TEAM_CONFIRMATION_LABEL"
                 tag="p"
                 class="text-xs text-n-slate-11 px-1 mb-0"
                 :plural="props.conversationCount"
@@ -133,7 +133,7 @@ onMounted(() => {
               </I18nT>
               <I18nT
                 v-else
-                keypath="BULK_ACTION.TEAMS.UNASSIGN_CONFIRMATION_LABEL"
+                keypath="BULK_ACTION.TEAMS.UNASSIGN_TEAM_CONFIRMATION_LABEL"
                 tag="p"
                 class="text-xs text-n-slate-11 px-1 mb-0"
                 :plural="props.conversationCount"
