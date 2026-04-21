@@ -183,17 +183,17 @@ defineExpose({
           :label="$t('MFA_SETTINGS.DISABLE.BACKUP_CODE')"
           :placeholder="$t('MFA_SETTINGS.DISABLE.BACKUP_CODE_PLACEHOLDER')"
         />
-        <button
+        <Button
+          link
+          sm
           type="button"
-          class="text-sm text-n-brand hover:underline"
-          @click="toggleDisableMethod"
-        >
-          {{
+          :label="
             useBackupCodeToDisable
               ? $t('MFA_SETTINGS.DISABLE.USE_OTP_CODE')
               : $t('MFA_SETTINGS.DISABLE.USE_BACKUP_CODE')
-          }}
-        </button>
+          "
+          @click="toggleDisableMethod"
+        />
       </div>
     </Dialog>
 
