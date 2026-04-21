@@ -135,6 +135,7 @@ interface ChatwootProviderProps {
   disableUpload?: boolean; // Disable file attachments
   disableEditor?: boolean; // Disable reply editor
   disableSignature?: boolean; // Disable signature controls and insertion
+  disableContextMenu?: boolean; // Disable right-click message context menu (copy, translate, delete, copy link, reply, canned response)
   signature?: string;      // Custom message signature (overrides user profile signature)
 }
 ```
@@ -150,6 +151,7 @@ window.__WOOT_CONVERSATION_ID__ // Active conversation
 window.__EDITOR_DISABLE_UPLOAD__ // Upload flag
 window.__DISABLE_EDITOR__     // Editor flag
 window.__WOOT_DISABLE_SIGNATURE__ // Disable signature controls and insertion
+window.__WOOT_DISABLE_CONTEXT_MENU__ // Disable message right-click context menu
 window.__WOOT_CUSTOM_SIGNATURE__ // Custom signature (overrides profile)
 window.__WOOT_ISOLATED_SHELL__ // Disables audio notifications
 window.__CHATWOOT_STORE__     // Vuex store reference

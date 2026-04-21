@@ -373,6 +373,8 @@ const componentToRender = computed(() => {
 });
 
 const shouldShowContextMenu = computed(() => {
+  // eslint-disable-next-line no-underscore-dangle
+  if (window.__WOOT_DISABLE_CONTEXT_MENU__) return false;
   return !props.contentAttributes?.isUnsupported;
 });
 
@@ -439,6 +441,12 @@ const shouldRenderMessage = computed(() => {
 });
 
 function openContextMenu(e) {
+  // eslint-disable-next-line no-underscore-dangle
+  if (window.__WOOT_DISABLE_CONTEXT_MENU__) {
+    e.preventDefault();
+    return;
+  }
+
   const shouldSkipContextMenu =
     e.target?.classList.contains('skip-context-menu') ||
     ['a', 'img'].includes(e.target?.tagName.toLowerCase());

@@ -19,6 +19,7 @@ export const ChatwootProvider = ({
   disableUpload,
   disableEditor,
   disableSignature,
+  disableContextMenu,
   signature,
   signatureReadOnly,
   children,
@@ -43,6 +44,7 @@ export const ChatwootProvider = ({
     disableEditor: disableEditor || false,
     disableUpload: disableUpload || false,
     disableSignature: disableSignature || false,
+    disableContextMenu: disableContextMenu || false,
     websocketURL: websocketURL,
     pubsubToken: pubsubToken,
     signature: signature || '',
@@ -64,6 +66,7 @@ export const ChatwootProvider = ({
     window.__EDITOR_DISABLE_UPLOAD__ = config.disableUpload;
     window.__DISABLE_EDITOR__ = config.disableEditor;
     window.__WOOT_DISABLE_SIGNATURE__ = config.disableSignature;
+    window.__WOOT_DISABLE_CONTEXT_MENU__ = config.disableContextMenu;
     window.__WOOT_CUSTOM_SIGNATURE__ = config.signature || undefined;
     window.__WOOT_SIGNATURE_READ_ONLY__ = config.signatureReadOnly;
     window.__WOOT_ISOLATED_SHELL__ = true;
@@ -132,6 +135,13 @@ export const ChatwootProvider = ({
       new CustomEvent('chatwoot:disable-signature-change', { detail: value })
     );
   }, [disableSignature]);
+
+  // Keep context-menu toggle global in sync when the prop changes after init
+  useEffect(() => {
+    const value = disableContextMenu === true;
+    // eslint-disable-next-line no-underscore-dangle
+    window.__WOOT_DISABLE_CONTEXT_MENU__ = value;
+  }, [disableContextMenu]);
 
   if (!initializationComplete) {
     return null;
