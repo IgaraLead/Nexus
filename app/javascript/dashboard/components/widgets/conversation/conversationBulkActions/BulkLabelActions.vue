@@ -93,7 +93,7 @@ const handleDismiss = () => {
         '[&>span:nth-child(2)]:hidden md:[&>span:nth-child(2)]:inline w-fit !text-n-blue-11 [&>span]:!text-n-blue-11 !px-2':
           isTypeContact,
       }"
-      :disabled="disabled"
+      :disabled="disabled || isLoading"
       :is-loading="isLoading"
       @click="toggleDropdown()"
     />
