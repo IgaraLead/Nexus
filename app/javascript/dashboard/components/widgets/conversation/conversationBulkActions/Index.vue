@@ -125,7 +125,7 @@ onUnmounted(() => {
     <div
       v-show="conversations.length > 0"
       v-bind="attrs"
-      class="px-2 absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-full origin-bottom"
+      class="px-2 absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-full origin-bottom"
     >
       <div
         v-if="allConversationsSelected"
