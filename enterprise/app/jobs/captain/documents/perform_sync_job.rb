@@ -5,14 +5,19 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   # Document is already marked failed by SyncService before the exception reaches here.
   discard_on(Captain::Documents::SyncService::PermanentSyncError)
 
-  # Transient errors (timeouts, 5xx) — retry with backoff (4 total attempts = initial + 3 retries).
-  # Wait times stay well under the 10-minute stale lock threshold to avoid conflicts.
-  # On exhaustion, document is already marked failed by SyncService. Also excluded from Sentry
-  # in config/initializers/sentry.rb — third-party-site flakiness isn't an application bug.
+  # TransientSyncError comes from two sources:
+  #   - SyncService: customer site unreachable (timeouts, TLS errors, 5xx, connection drops)
+  #   - perform: lock contention when another worker is already (or was) syncing this document
+  #
+  # Wait schedule sums to ~12.5 min — deliberately longer than the 10-min stale lock threshold
+  # so a dead worker's lock reliably becomes re-acquirable by the final attempt.
+  #
+  # The exhaustion block absorbs the exception so it doesn't propagate to Sentry — site
+  # flakiness and lock contention aren't application bugs.
   retry_on(
     Captain::Documents::SyncService::TransientSyncError,
-    wait: ->(executions) { [30.seconds, 2.minutes, 5.minutes][executions - 1] || 5.minutes },
-    attempts: 4
+    wait: ->(executions) { [30.seconds, 2.minutes, 5.minutes, 5.minutes][executions - 1] || 5.minutes },
+    attempts: 5
   ) do |job, error|
     document = job.arguments.first
     job.send(:log_sync_outcome, document, result: :transient_retry_exhausted, error_code: error.message)
@@ -21,7 +26,7 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   def perform(document)
     start_time = Time.current
     return if document.pdf_document?
-    return unless acquire_sync_lock(document)
+    raise Captain::Documents::SyncService::TransientSyncError, 'lock_contended' unless acquire_sync_lock(document)
 
     Captain::Documents::SyncService.new(document.reload).perform
   rescue Captain::Documents::SyncService::PermanentSyncError => e

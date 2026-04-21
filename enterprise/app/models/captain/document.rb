@@ -90,14 +90,6 @@ class Captain::Document < ApplicationRecord
     self.metadata = (metadata || {}).merge('last_sync_error_code' => value)
   end
 
-  def last_sync_exception_class
-    metadata&.dig('last_sync_exception_class')
-  end
-
-  def last_sync_exception_class=(value)
-    self.metadata = (metadata || {}).merge('last_sync_exception_class' => value)
-  end
-
   def sync_step
     metadata&.dig('sync_step')
   end
