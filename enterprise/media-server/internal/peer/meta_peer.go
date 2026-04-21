@@ -3,9 +3,12 @@
 package peer
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/pion/interceptor"
 	"github.com/pion/webrtc/v4"
@@ -44,6 +47,17 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 	if err := se.SetEphemeralUDPPortRange(cfg.UDPPortMin, cfg.UDPPortMax); err != nil {
 		return nil, "", fmt.Errorf("set UDP port range: %w", err)
 	}
+
+	// Meta's side finishes setting up our DTLS credentials only *after* Rails
+	// calls pre_accept_call / accept_call on the Graph API. For inbound calls
+	// that happens ~1 second after we've already begun the DTLS handshake, so
+	// our first ClientHello is dropped. Extend the handshake window to 30s and
+	// tighten the retransmission interval so a later retry lands once Meta is
+	// ready.
+	se.SetDTLSConnectContextMaker(func() (context.Context, func()) {
+		return context.WithTimeout(context.Background(), 30*time.Second)
+	})
+	se.SetDTLSRetransmissionInterval(200 * time.Millisecond)
 
 	// If a public IP is configured, use NAT1To1 so ICE candidates advertise
 	// the correct address instead of a private Docker/container IP.
@@ -154,6 +168,14 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 		slog.Debug("meta peer: signaling state changed", "state", state.String())
 	})
 
+	// Also log DTLS transport state — failure here is the likely cause of the
+	// inbound "closed immediately after ICE connected" symptom.
+	if t := pc.SCTP().Transport(); t != nil {
+		t.OnStateChange(func(state webrtc.DTLSTransportState) {
+			slog.Info("meta peer: DTLS state changed", "state", state.String())
+		})
+	}
+
 	// Perform SDP negotiation based on call direction.
 	var sdpResult string
 	if sdpOffer != "" {
@@ -261,6 +283,6 @@ func (mp *MetaPeer) Close() error {
 	}
 	mp.closed = true
 
-	slog.Info("meta peer: closing peer connection")
+	slog.Info("meta peer: closing peer connection (explicit)", "stack", string(debug.Stack()))
 	return mp.pc.Close()
 }
