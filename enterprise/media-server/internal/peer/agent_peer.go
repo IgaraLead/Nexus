@@ -162,6 +162,10 @@ func NewAgentPeer(cfg *config.Config, id string, role PeerRole, iceServers []web
 		}
 	})
 
+	pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		slog.Info("agent peer: connection state changed", "peer_id", id, "state", state.String())
+	})
+
 	// Create an SDP offer for the agent's browser.
 	offer, err := pc.CreateOffer(nil)
 	if err != nil {

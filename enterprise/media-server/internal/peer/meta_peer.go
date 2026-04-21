@@ -144,6 +144,16 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 		}
 	})
 
+	// Log overall peer connection state (covers DTLS + ICE + signaling).
+	// This catches failures that don't surface via ICEConnectionState alone,
+	// such as DTLS handshake errors.
+	pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		slog.Info("meta peer: connection state changed", "state", state.String())
+	})
+	pc.OnSignalingStateChange(func(state webrtc.SignalingState) {
+		slog.Debug("meta peer: signaling state changed", "state", state.String())
+	})
+
 	// Perform SDP negotiation based on call direction.
 	var sdpResult string
 	if sdpOffer != "" {
