@@ -72,7 +72,7 @@
     "CARD": {
       "SHOW_LABELS": "Mostrar etiquetas",
       "HIDE_LABELS": "Ocultar as etiquetas",
-      "LABELS_COUNT": "{count} labels"
+      "LABELS_COUNT": "{count} etiquetas"
     },
     "VOICE_CALL": {
       "INCOMING_CALL": "Chamada recebida",
