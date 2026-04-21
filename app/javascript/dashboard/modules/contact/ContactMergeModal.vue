@@ -5,8 +5,8 @@ import { useStore } from 'vuex';
 import { useAlert, useTrack } from 'dashboard/composables';
 import { useMapGetter } from 'dashboard/composables/store';
 
-import Popover from 'dashboard/components-next/popover/Popover.vue';
 import MergeContact from 'dashboard/modules/contact/components/MergeContact.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ContactAPI from 'dashboard/api/contacts';
 import { CONTACTS_EVENTS } from '../../helper/AnalyticsHelper/events';
 
@@ -23,6 +23,7 @@ const { t } = useI18n();
 const store = useStore();
 const uiFlags = useMapGetter('contacts/getUIFlags');
 
+const dialogRef = ref(null);
 const isSearching = ref(false);
 const searchResults = ref([]);
 
@@ -33,6 +34,21 @@ watch(
     searchResults.value = [];
   }
 );
+
+const open = () => {
+  dialogRef.value?.open();
+};
+
+const close = () => {
+  dialogRef.value?.close();
+};
+
+defineExpose({ open, close });
+
+const onClose = () => {
+  close();
+  emit('close');
+};
 
 const onContactSearch = async query => {
   isSearching.value = true;
@@ -52,7 +68,7 @@ const onContactSearch = async query => {
   }
 };
 
-const onMergeContacts = async (parentContactId, hide) => {
+const onMergeContacts = async parentContactId => {
   useTrack(CONTACTS_EVENTS.MERGED_CONTACTS);
   try {
     await store.dispatch('contacts/merge', {
@@ -60,7 +76,7 @@ const onMergeContacts = async (parentContactId, hide) => {
       parentId: parentContactId,
     });
     useAlert(t('MERGE_CONTACTS.FORM.SUCCESS_MESSAGE'));
-    hide();
+    close();
     emit('close');
   } catch (error) {
     useAlert(t('MERGE_CONTACTS.FORM.ERROR_MESSAGE'));
@@ -69,31 +85,24 @@ const onMergeContacts = async (parentContactId, hide) => {
 </script>
 
 <template>
-  <Popover @hide="$emit('close')">
-    <slot name="trigger" />
-    <template #content="{ hide }">
-      <div
-        class="w-full md:w-96 p-6 flex flex-col gap-4 border-0 md:border rounded-xl md:border-n-strong"
-      >
-        <div class="flex flex-col gap-2">
-          <h3 class="text-base font-medium leading-6 text-n-slate-12">
-            {{ $t('MERGE_CONTACTS.TITLE') }}
-          </h3>
-          <p class="mb-0 text-sm text-n-slate-11">
-            {{ $t('MERGE_CONTACTS.DESCRIPTION') }}
-          </p>
-        </div>
-        <MergeContact
-          :key="primaryContact.id"
-          :primary-contact="primaryContact"
-          :is-searching="isSearching"
-          :is-merging="uiFlags.isMerging"
-          :search-results="searchResults"
-          @search="onContactSearch"
-          @cancel="hide"
-          @submit="id => onMergeContacts(id, hide)"
-        />
-      </div>
-    </template>
-  </Popover>
+  <Dialog
+    ref="dialogRef"
+    type="edit"
+    width="2xl"
+    :title="$t('MERGE_CONTACTS.TITLE')"
+    :description="$t('MERGE_CONTACTS.DESCRIPTION')"
+    :show-cancel-button="false"
+    :show-confirm-button="false"
+  >
+    <MergeContact
+      :key="primaryContact.id"
+      :primary-contact="primaryContact"
+      :is-searching="isSearching"
+      :is-merging="uiFlags.isMerging"
+      :search-results="searchResults"
+      @search="onContactSearch"
+      @cancel="onClose"
+      @submit="onMergeContacts"
+    />
+  </Dialog>
 </template>
