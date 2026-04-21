@@ -1,5 +1,22 @@
 import CaptainDocumentAPI from 'dashboard/api/captain/document';
+import { throwErrorMessage } from 'dashboard/store/utils/api';
 import { createStore } from '../storeFactory';
+
+const SYNCING_STATE = 'syncing';
+
+const markRecordsSyncing = (records, ids) => {
+  const idSet = new Set(ids);
+  return records.map(record =>
+    idSet.has(record.id)
+      ? {
+          ...record,
+          sync_status: SYNCING_STATE,
+          last_sync_attempted_at: Math.floor(Date.now() / 1000),
+          last_sync_error_code: null,
+        }
+      : record
+  );
+};
 
 export default createStore({
   name: 'CaptainDocument',
@@ -10,6 +27,18 @@ export default createStore({
         record => !ids.includes(record.id)
       );
       commit(mutations.SET, records);
+    },
+    markSyncing({ commit, getters }, ids) {
+      commit(mutations.SET, markRecordsSyncing(getters.getRecords, ids));
+    },
+    async sync({ dispatch }, id) {
+      try {
+        await CaptainDocumentAPI.sync(id);
+        dispatch('markSyncing', [id]);
+        return id;
+      } catch (error) {
+        return throwErrorMessage(error);
+      }
     },
   }),
 });

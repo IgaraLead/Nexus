@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted, ref, nextTick } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, nextTick } from 'vue';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useRoute } from 'vue-router';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useAlert } from 'dashboard/composables';
 import { usePolicy } from 'dashboard/composables/usePolicy';
 
 import DeleteDialog from 'dashboard/components-next/captain/pageComponents/DeleteDialog.vue';
@@ -11,6 +12,7 @@ import DocumentCard from 'dashboard/components-next/captain/assistant/DocumentCa
 import BulkSelectBar from 'dashboard/components-next/captain/assistant/BulkSelectBar.vue';
 import BulkDeleteDialog from 'dashboard/components-next/captain/pageComponents/BulkDeleteDialog.vue';
 import Policy from 'dashboard/components/policy.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import PageLayout from 'dashboard/components-next/captain/PageLayout.vue';
 import CaptainPaywall from 'dashboard/components-next/captain/pageComponents/Paywall.vue';
 import RelatedResponses from 'dashboard/components-next/captain/pageComponents/document/RelatedResponses.vue';
@@ -18,12 +20,16 @@ import CreateDocumentDialog from 'dashboard/components-next/captain/pageComponen
 import DocumentPageEmptyState from 'dashboard/components-next/captain/pageComponents/emptyStates/DocumentPageEmptyState.vue';
 import FeatureSpotlightPopover from 'dashboard/components-next/feature-spotlight/FeatureSpotlightPopover.vue';
 import LimitBanner from 'dashboard/components-next/captain/pageComponents/document/LimitBanner.vue';
+import { isPdfDocument } from 'shared/helpers/documentHelper';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
 const store = useStore();
 const { t } = useI18n();
 const { checkPermissions } = usePolicy();
+
+const SYNC_POLL_INTERVAL_MS = 5000;
+const SYNC_POLL_MAX_ATTEMPTS = 24;
 
 const { isOnChatwootCloud } = useAccount();
 const uiFlags = useMapGetter('captainDocuments/getUIFlags');
@@ -66,6 +72,58 @@ const handleCreateDialogClose = () => {
   showCreateDialog.value = false;
 };
 
+const fetchDocuments = (page = 1) => {
+  const filterParams = { page };
+
+  if (selectedAssistantId.value) {
+    filterParams.assistantId = selectedAssistantId.value;
+  }
+  return store.dispatch('captainDocuments/get', filterParams);
+};
+
+const syncPollTimer = ref(null);
+const syncPollAttempts = ref(0);
+
+const stopSyncPolling = () => {
+  if (syncPollTimer.value) {
+    clearTimeout(syncPollTimer.value);
+    syncPollTimer.value = null;
+  }
+  syncPollAttempts.value = 0;
+};
+
+const hasDocumentsSyncing = computed(() =>
+  (documents.value || []).some(doc => doc.sync_status === 'syncing')
+);
+
+const scheduleSyncPoll = () => {
+  if (syncPollTimer.value) return;
+
+  syncPollTimer.value = setTimeout(async () => {
+    syncPollTimer.value = null;
+    syncPollAttempts.value += 1;
+    await fetchDocuments(documentsMeta.value?.page || 1);
+    if (
+      hasDocumentsSyncing.value &&
+      syncPollAttempts.value < SYNC_POLL_MAX_ATTEMPTS
+    ) {
+      scheduleSyncPoll();
+    } else {
+      stopSyncPolling();
+    }
+  }, SYNC_POLL_INTERVAL_MS);
+};
+
+const handleSync = async id => {
+  try {
+    await store.dispatch('captainDocuments/sync', id);
+    useAlert(t('CAPTAIN.DOCUMENTS.SYNC.QUEUED_MESSAGE'));
+    scheduleSyncPoll();
+  } catch (error) {
+    useAlert(t('CAPTAIN.DOCUMENTS.SYNC.ERROR_MESSAGE'));
+  }
+};
+
 const handleAction = ({ action, id }) => {
   selectedDocument.value = documents.value.find(
     captainDocument => id === captainDocument.id
@@ -76,17 +134,10 @@ const handleAction = ({ action, id }) => {
       handleDelete();
     } else if (action === 'viewRelatedQuestions') {
       handleShowRelatedDocument();
+    } else if (action === 'sync') {
+      handleSync(id);
     }
   });
-};
-
-const fetchDocuments = (page = 1) => {
-  const filterParams = { page };
-
-  if (selectedAssistantId.value) {
-    filterParams.assistantId = selectedAssistantId.value;
-  }
-  store.dispatch('captainDocuments/get', filterParams);
 };
 
 const onPageChange = page => {
@@ -156,8 +207,34 @@ const onBulkDeleteSuccess = () => {
   fetchDocumentsAfterBulkAction();
 };
 
+const handleBulkSync = async () => {
+  const ids = Array.from(bulkSelectedIds.value);
+  if (!ids.length) return;
+
+  try {
+    await store.dispatch('captainBulkActions/handleBulkSync', { ids });
+    useAlert(t('CAPTAIN.DOCUMENTS.BULK_SYNC.SUCCESS_MESSAGE'));
+    bulkSelectedIds.value = new Set();
+    scheduleSyncPoll();
+  } catch (error) {
+    useAlert(t('CAPTAIN.DOCUMENTS.BULK_SYNC.ERROR_MESSAGE'));
+  }
+};
+
+const hasNonPdfSelection = computed(() => {
+  if (!bulkSelectedIds.value.size) return false;
+  return (documents.value || []).some(
+    doc =>
+      bulkSelectedIds.value.has(doc.id) && !isPdfDocument(doc.external_link)
+  );
+});
+
 onMounted(() => {
   fetchDocuments();
+});
+
+onBeforeUnmount(() => {
+  stopSyncPolling();
 });
 </script>
 
@@ -187,7 +264,19 @@ onMounted(() => {
           class="w-fit"
           :class="{ 'mb-2': bulkSelectedIds.size > 0 }"
           @bulk-delete="bulkDeleteDialog.dialogRef.open()"
-        />
+        >
+          <template v-if="hasNonPdfSelection" #secondary-actions>
+            <Button
+              :label="$t('CAPTAIN.DOCUMENTS.BULK_SYNC_BUTTON')"
+              sm
+              slate
+              ghost
+              icon="i-lucide-refresh-cw"
+              class="!px-1.5"
+              @click="handleBulkSync"
+            />
+          </template>
+        </BulkSelectBar>
       </Policy>
     </template>
 
@@ -223,6 +312,9 @@ onMounted(() => {
           :external-link="doc.external_link"
           :assistant="doc.assistant"
           :created-at="doc.created_at"
+          :sync-status="doc.sync_status"
+          :last-synced-at="doc.last_synced_at"
+          :last-sync-error-code="doc.last_sync_error_code"
           :is-selected="canManageDocuments && bulkSelectedIds.has(doc.id)"
           :selectable="canManageDocuments"
           :show-selection-control="shouldShowSelectionControl(doc.id)"

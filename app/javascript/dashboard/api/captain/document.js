@@ -15,6 +15,10 @@ class CaptainDocument extends ApiClient {
       },
     });
   }
+
+  sync(id) {
+    return axios.post(`${this.url}/${id}/sync`);
+  }
 }
 
 export default new CaptainDocument();

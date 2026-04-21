@@ -13,6 +13,7 @@ import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import DocumentSyncStatus from 'dashboard/components-next/captain/assistant/DocumentSyncStatus.vue';
 
 const props = defineProps({
   id: {
@@ -34,6 +35,18 @@ const props = defineProps({
   createdAt: {
     type: Number,
     required: true,
+  },
+  syncStatus: {
+    type: String,
+    default: null,
+  },
+  lastSyncedAt: {
+    type: Number,
+    default: null,
+  },
+  lastSyncErrorCode: {
+    type: String,
+    default: null,
   },
   isSelected: {
     type: Boolean,
@@ -64,6 +77,12 @@ const modelValue = computed({
   set: () => emit('select', props.id),
 });
 
+const isPdf = computed(() => isPdfDocument(props.externalLink));
+const canManage = computed(() => checkPermissions(['administrator']));
+const isSyncing = computed(() => props.syncStatus === 'syncing');
+const isFailed = computed(() => props.syncStatus === 'failed');
+const showSyncStatus = computed(() => !isPdf.value);
+
 const menuItems = computed(() => {
   const allOptions = [
     {
@@ -74,7 +93,19 @@ const menuItems = computed(() => {
     },
   ];
 
-  if (checkPermissions(['administrator'])) {
+  if (canManage.value && !isPdf.value) {
+    allOptions.push({
+      label: isFailed.value
+        ? t('CAPTAIN.DOCUMENTS.OPTIONS.RETRY_SYNC')
+        : t('CAPTAIN.DOCUMENTS.OPTIONS.SYNC_NOW'),
+      value: 'sync',
+      action: 'sync',
+      icon: 'i-lucide-refresh-cw',
+      disabled: isSyncing.value,
+    });
+  }
+
+  if (canManage.value) {
     allOptions.push({
       label: t('CAPTAIN.DOCUMENTS.OPTIONS.DELETE_DOCUMENT'),
       value: 'delete',
@@ -86,11 +117,11 @@ const menuItems = computed(() => {
   return allOptions;
 });
 
-const createdAt = computed(() => dynamicTime(props.createdAt));
+const createdAtLabel = computed(() => dynamicTime(props.createdAt));
 
 const displayLink = computed(() => formatDocumentLink(props.externalLink));
 const linkIcon = computed(() =>
-  isPdfDocument(props.externalLink) ? 'i-ph-file-pdf' : 'i-ph-link-simple'
+  isPdf.value ? 'i-ph-file-pdf' : 'i-ph-link-simple'
 );
 
 const handleAction = ({ action, value }) => {
@@ -150,8 +181,14 @@ const handleAction = ({ action, value }) => {
         <i :class="linkIcon" class="shrink-0" />
         <span class="truncate">{{ displayLink }}</span>
       </span>
-      <div class="text-sm shrink-0 text-n-slate-11 line-clamp-1">
-        {{ createdAt }}
+      <DocumentSyncStatus
+        v-if="showSyncStatus"
+        :status="syncStatus"
+        :last-synced-at="lastSyncedAt"
+        :error-code="lastSyncErrorCode"
+      />
+      <div v-else class="text-sm shrink-0 text-n-slate-11 line-clamp-1">
+        {{ createdAtLabel }}
       </div>
     </div>
   </CardLayout>

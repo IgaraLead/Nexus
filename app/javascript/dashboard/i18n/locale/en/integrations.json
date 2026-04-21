@@ -742,12 +742,36 @@
       "SELECT_ALL": "Select all ({count})",
       "UNSELECT_ALL": "Unselect all ({count})",
       "BULK_DELETE_BUTTON": "Delete",
+      "BULK_SYNC_BUTTON": "Sync",
       "BULK_DELETE": {
         "TITLE": "Delete documents?",
         "DESCRIPTION": "Are you sure you want to delete the selected documents? This action cannot be undone.",
         "CONFIRM": "Yes, delete all",
         "SUCCESS_MESSAGE": "Documents deleted successfully",
         "ERROR_MESSAGE": "There was an error deleting the documents, please try again."
+      },
+      "BULK_SYNC": {
+        "SUCCESS_MESSAGE": "Sync queued for the selected documents",
+        "ERROR_MESSAGE": "There was an error queuing the sync, please try again."
+      },
+      "SYNC": {
+        "QUEUED_MESSAGE": "Sync queued",
+        "ERROR_MESSAGE": "Could not queue sync, please try again."
+      },
+      "SYNC_STATUS": {
+        "SYNCED": "Synced {time}",
+        "SYNCING": "Syncing…",
+        "FAILED": "Failed — {error}",
+        "NEVER_SYNCED": "Not yet synced"
+      },
+      "SYNC_ERRORS": {
+        "NOT_FOUND": "Page not found",
+        "ACCESS_DENIED": "Access denied",
+        "TIMEOUT": "Page took too long to respond",
+        "CONTENT_EMPTY": "Page returned empty content",
+        "FETCH_FAILED": "Could not fetch page",
+        "SYNC_ERROR": "Unexpected error",
+        "DEFAULT": "Sync error"
       },
       "RELATED_RESPONSES": {
         "TITLE": "Related FAQs",
@@ -793,6 +817,8 @@
 
       "OPTIONS": {
         "VIEW_RELATED_RESPONSES": "View Related Responses",
+        "SYNC_NOW": "Sync now",
+        "RETRY_SYNC": "Retry sync",
         "DELETE_DOCUMENT": "Delete Document"
       },
       "EMPTY_STATE": {
