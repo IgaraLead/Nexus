@@ -11,7 +11,7 @@ class Captain::Documents::SinglePageFetcher
   def fetch
     result = firecrawl_configured? ? fetch_with_firecrawl : fetch_with_fallback
     validate_content(result)
-  rescue Net::ReadTimeout, Net::OpenTimeout
+  rescue Net::ReadTimeout, Net::OpenTimeout, Errno::ETIMEDOUT
     Result.new(success: false, error_code: 'timeout')
   rescue SocketError, Errno::ECONNREFUSED, Errno::ECONNRESET, OpenSSL::SSL::SSLError
     Result.new(success: false, error_code: 'fetch_failed')
