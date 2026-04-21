@@ -88,11 +88,17 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 		return nil, "", fmt.Errorf("create local track: %w", err)
 	}
 
-	sender, err := pc.AddTrack(localTrack)
+	// Bind the local track to a single sendrecv transceiver. Using AddTrack +
+	// a separate recvonly transceiver yields two m=audio sections, which Meta
+	// rejects with error 100 "Invalid parameter".
+	transceiver, err := pc.AddTransceiverFromTrack(localTrack, webrtc.RTPTransceiverInit{
+		Direction: webrtc.RTPTransceiverDirectionSendrecv,
+	})
 	if err != nil {
 		pc.Close()
-		return nil, "", fmt.Errorf("add local track: %w", err)
+		return nil, "", fmt.Errorf("add audio transceiver: %w", err)
 	}
+	sender := transceiver.Sender()
 
 	// Consume RTCP packets from the sender to avoid blocking.
 	go func() {
@@ -167,15 +173,8 @@ func NewMetaPeer(cfg *config.Config, sdpOffer string, iceServers []webrtc.ICESer
 
 		sdpResult = pc.LocalDescription().SDP
 	} else {
-		// Outgoing call: we generate an offer to send to Meta.
-		// Add a recvonly transceiver so Meta knows we expect audio.
-		if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio, webrtc.RTPTransceiverInit{
-			Direction: webrtc.RTPTransceiverDirectionRecvonly,
-		}); err != nil {
-			pc.Close()
-			return nil, "", fmt.Errorf("add audio transceiver: %w", err)
-		}
-
+		// Outgoing call: we generate an offer to send to Meta. The sendrecv
+		// transceiver registered above already advertises both directions.
 		offer, err := pc.CreateOffer(nil)
 		if err != nil {
 			pc.Close()
