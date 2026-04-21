@@ -398,6 +398,22 @@ func (s *Session) RecordingFilePath() string {
 	return s.Recorder.CombinedFilePath()
 }
 
+// RecorderCustomerPath returns the path to the customer-only recording.
+func (s *Session) RecorderCustomerPath() string {
+	if s.Recorder == nil {
+		return ""
+	}
+	return s.Recorder.CustomerFilePath()
+}
+
+// RecorderAgentPath returns the path to the agent-only recording.
+func (s *Session) RecorderAgentPath() string {
+	if s.Recorder == nil {
+		return ""
+	}
+	return s.Recorder.AgentFilePath()
+}
+
 // GetInjectorTarget returns the appropriate write target for audio injection
 // based on the target parameter. Returns nil if the target is unavailable.
 func (s *Session) GetInjectorTarget(target string) media.InjectorTarget {

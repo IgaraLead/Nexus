@@ -445,7 +445,9 @@ func (h *Handlers) TerminateSession(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRecording handles GET /sessions/{id}/recording. It serves the combined
-// recording file as a binary OGG download.
+// recording file as a binary OGG download. An optional ?side=customer|agent
+// query parameter returns the per-direction recording instead, which Rails
+// uses to produce speaker-separated transcripts.
 func (h *Handlers) GetRecording(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 	sess := h.manager.GetSession(sessionID)
@@ -454,7 +456,19 @@ func (h *Handlers) GetRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := sess.RecordingFilePath()
+	var filePath, filename string
+	switch r.URL.Query().Get("side") {
+	case "customer":
+		filePath = sess.RecorderCustomerPath()
+		filename = sessionID + "_customer.ogg"
+	case "agent":
+		filePath = sess.RecorderAgentPath()
+		filename = sessionID + "_agent.ogg"
+	default:
+		filePath = sess.RecordingFilePath()
+		filename = sessionID + ".ogg"
+	}
+
 	if filePath == "" {
 		writeError(w, http.StatusNotFound, "no recording available")
 		return
@@ -474,7 +488,7 @@ func (h *Handlers) GetRecording(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "audio/ogg")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.ogg"`, sessionID))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 	http.ServeContent(w, r, filePath, stat.ModTime(), f)
 }
 

@@ -30,10 +30,12 @@ class Whatsapp::MediaServerClient
     post("/sessions/#{session_id}/terminate")
   end
 
-  def download_recording(session_id)
-    response = execute_request(:get, "/sessions/#{session_id}/recording")
+  def download_recording(session_id, side: nil)
+    path = "/sessions/#{session_id}/recording"
+    path = "#{path}?side=#{side}" if side
+    response = execute_request(:get, path)
     unless response.success?
-      Rails.logger.error "[MEDIA SERVER] Recording download failed: status=#{response.code}"
+      Rails.logger.error "[MEDIA SERVER] Recording download failed: side=#{side.inspect} status=#{response.code}"
       raise SessionError, "Recording download failed (#{response.code})"
     end
     response.body
