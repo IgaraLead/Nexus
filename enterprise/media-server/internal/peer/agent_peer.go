@@ -99,11 +99,18 @@ func NewAgentPeer(cfg *config.Config, id string, role PeerRole, iceServers []web
 		return nil, "", fmt.Errorf("create local track: %w", err)
 	}
 
-	sender, err := pc.AddTrack(localTrack)
+	// Bind the local track to a sendrecv transceiver so the offer advertises
+	// both directions: we send customer audio to the browser, and we expect
+	// the browser's microphone audio back. AddTrack alone yields a sendonly
+	// m=audio, leaving the browser with nowhere to send mic audio.
+	transceiver, err := pc.AddTransceiverFromTrack(localTrack, webrtc.RTPTransceiverInit{
+		Direction: webrtc.RTPTransceiverDirectionSendrecv,
+	})
 	if err != nil {
 		pc.Close()
-		return nil, "", fmt.Errorf("add local track: %w", err)
+		return nil, "", fmt.Errorf("add audio transceiver: %w", err)
 	}
+	sender := transceiver.Sender()
 
 	// Consume RTCP packets from the sender to avoid blocking.
 	go func() {
