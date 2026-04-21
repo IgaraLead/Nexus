@@ -121,7 +121,7 @@ RSpec.describe 'Twilio::CallbacksController', type: :request do
       end
     end
 
-    context 'when MessagingServiceSid is present but does not match a channel' do
+    context 'when MessagingServiceSid is present but does not match any channel' do
       let(:params) do
         {
           'From' => '+1234567890',
@@ -133,10 +133,14 @@ RSpec.describe 'Twilio::CallbacksController', type: :request do
         }
       end
 
-      it 'returns forbidden without falling back to phone number lookup' do
+      it 'falls back to phone number lookup and enqueues the job' do
         url = twilio_callback_index_url
-        post_with_signature(url, params: params)
-        expect(response).to have_http_status(:forbidden)
+
+        expect do
+          post_with_signature(url, params: params)
+        end.to have_enqueued_job(Webhooks::TwilioEventsJob)
+
+        expect(response).to have_http_status(:no_content)
       end
     end
 
