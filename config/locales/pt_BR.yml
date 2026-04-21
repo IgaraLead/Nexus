@@ -38,7 +38,7 @@ pt_BR:
       reporting_timezone:
         invalid: não é um fuso horário válido
       support_email:
-        invalid: is not a valid email address
+        invalid: endereço de e-mail inválido
     validations:
       presence: não pode ficar em branco
     webhook:
@@ -484,7 +484,7 @@ pt_BR:
       custom_domain_not_configured: 'Domínio personalizado não está configurado'
   super_admin:
     push_diagnostics:
-      user_not_found: 'User not found.'
-      no_subscriptions_to_test: 'Select at least one subscription to test.'
-      no_subscriptions_to_delete: 'Select at least one subscription to delete.'
-      subscriptions_deleted: "Deleted %{count} subscription(s). The user's device(s) will re-register on next app launch."
+      user_not_found: 'Usuário não encontrado.'
+      no_subscriptions_to_test: 'Selecione pelo menos uma assinatura para teste.'
+      no_subscriptions_to_delete: 'Selecione pelo menos uma assinatura para excluir.'
+      subscriptions_deleted: "Excluída(s) %{count} inscrição(ões). O(s) dispositivo(s) do usuário será(ão) registrado(s) novamente na próxima inicialização do aplicativo."
