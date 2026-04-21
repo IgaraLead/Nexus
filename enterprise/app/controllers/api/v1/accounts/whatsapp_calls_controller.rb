@@ -187,7 +187,7 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
 
     current_account.calls.create!(
       provider: :whatsapp,
-      inbox: conversation.inbox, conversation: conversation,
+      inbox: conversation.inbox, conversation: conversation, contact: conversation.contact,
       provider_call_id: provider_call_id, direction: :outgoing, status: 'ringing',
       meta: { sdp_offer: params[:sdp_offer] }
     )
@@ -211,7 +211,7 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
 
     current_account.calls.create!(
       provider: :whatsapp,
-      inbox: conversation.inbox, conversation: conversation,
+      inbox: conversation.inbox, conversation: conversation, contact: conversation.contact,
       provider_call_id: provider_call_id, direction: :outgoing, status: 'ringing',
       media_session_id: session_response['session_id'],
       meta: { sdp_offer: sdp_offer }

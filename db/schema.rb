@@ -269,6 +269,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_21_042235) do
     t.bigint "account_id", null: false
     t.bigint "inbox_id", null: false
     t.bigint "conversation_id", null: false
+    t.bigint "contact_id", null: false
     t.bigint "message_id"
     t.bigint "accepted_by_agent_id"
     t.string "provider_call_id", null: false
@@ -284,6 +285,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_21_042235) do
     t.datetime "updated_at", null: false
     t.string "media_session_id"
     t.index ["accepted_by_agent_id", "status"], name: "index_calls_on_accepted_by_agent_id_and_status"
+    t.index ["account_id", "contact_id"], name: "index_calls_on_account_id_and_contact_id"
     t.index ["account_id", "conversation_id"], name: "index_calls_on_account_id_and_conversation_id"
     t.index ["media_session_id"], name: "index_calls_on_media_session_id", unique: true
     t.index ["message_id"], name: "index_calls_on_message_id"
@@ -334,6 +336,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_21_042235) do
     t.datetime "updated_at", null: false
     t.integer "status", default: 1, null: false
     t.string "documentable_type"
+    t.boolean "edited", default: false, null: false
     t.index ["account_id"], name: "index_captain_assistant_responses_on_account_id"
     t.index ["assistant_id"], name: "index_captain_assistant_responses_on_assistant_id"
     t.index ["documentable_id", "documentable_type"], name: "idx_cap_asst_resp_on_documentable"
@@ -382,10 +385,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_21_042235) do
     t.datetime "updated_at", null: false
     t.integer "status", default: 0, null: false
     t.jsonb "metadata", default: {}
+    t.integer "sync_status"
+    t.datetime "last_synced_at"
+    t.datetime "last_sync_attempted_at"
     t.index ["account_id"], name: "index_captain_documents_on_account_id"
     t.index ["assistant_id", "external_link"], name: "index_captain_documents_on_assistant_id_and_external_link", unique: true
     t.index ["assistant_id"], name: "index_captain_documents_on_assistant_id"
     t.index ["status"], name: "index_captain_documents_on_status"
+    t.index ["account_id", "sync_status"], name: "index_captain_documents_on_account_id_and_sync_status"
   end
 
   create_table "captain_inboxes", force: :cascade do |t|

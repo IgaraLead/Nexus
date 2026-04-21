@@ -48,7 +48,7 @@ class Whatsapp::IncomingCallService
     conversation = find_or_create_conversation(contact)
     return unless conversation
 
-    call = create_call_record(call_payload, conversation, direction)
+    call = create_call_record(call_payload, conversation, contact, direction)
     create_voice_call_message(conversation, call)
     update_conversation_call_status(conversation, 'ringing', call.direction_label)
     broadcast_incoming_call(call, contact, call_payload.dig(:session, :sdp))
@@ -63,12 +63,13 @@ class Whatsapp::IncomingCallService
     Rails.logger.error "[WHATSAPP CALL] Failed to create voice_call message: #{e.message}"
   end
 
-  def create_call_record(call_payload, conversation, direction)
+  def create_call_record(call_payload, conversation, contact, direction)
     Call.create!(
       provider: :whatsapp,
       account: inbox.account,
       inbox: inbox,
       conversation: conversation,
+      contact: contact,
       provider_call_id: call_payload[:id],
       direction: direction,
       status: 'ringing',
