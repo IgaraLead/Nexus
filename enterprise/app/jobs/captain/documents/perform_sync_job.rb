@@ -11,19 +11,17 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   # Document is already marked failed by SyncService before the exception reaches here.
   discard_on(Captain::Documents::SyncService::PermanentSyncError)
 
-  # TransientSyncError comes from two sources:
-  #   - SyncService: customer site unreachable (timeouts, TLS errors, 5xx, connection drops)
-  #   - perform: lock contention when another worker is already (or was) syncing this document
+  # TransientSyncError is raised by SyncService when the customer's site is unreachable —
+  # timeouts, TLS errors, 5xx, connection drops. Four attempts with backoff gives the site
+  # a chance to recover before we give up.
+  # Lock contention is handled locally in acquire_sync_lock, not via this retry path.
   #
-  # Wait schedule sums to ~12.5 min — deliberately longer than the 10-min stale lock threshold
-  # so a dead worker's lock reliably becomes re-acquirable by the final attempt.
-  #
-  # The exhaustion block absorbs the exception so it doesn't propagate to Sentry — site
-  # flakiness and lock contention aren't application bugs.
+  # The exhaustion block absorbs the exception so it doesn't propagate to Sentry —
+  # site flakiness isn't an application bug.
   retry_on(
     Captain::Documents::SyncService::TransientSyncError,
-    wait: ->(executions) { [30.seconds, 2.minutes, 5.minutes, 5.minutes][executions - 1] || 5.minutes },
-    attempts: 5
+    wait: ->(executions) { [30.seconds, 2.minutes, 5.minutes][executions - 1] || 5.minutes },
+    attempts: 4
   ) do |job, error|
     document = job.arguments.first
     job.send(:log_sync_outcome, document, result: :transient_retry_exhausted, error_code: error.message)
@@ -32,9 +30,17 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   def perform(document)
     start_time = Time.current
     return if document.pdf_document?
-    raise Captain::Documents::SyncService::TransientSyncError, 'lock_contended' unless acquire_sync_lock(document)
 
-    Captain::Documents::SyncService.new(document.reload).perform
+    lock_status = acquire_sync_lock(document)
+
+    case lock_status
+    when :already_syncing
+      log_sync_outcome(document, result: :already_syncing)
+      return
+    when :acquired, :recovered_stale_lock
+      result = Captain::Documents::SyncService.new(document.reload).perform
+      log_sync_outcome(document, result: result, lock_status: lock_status, duration_ms: duration_ms_since(start_time))
+    end
   rescue Captain::Documents::SyncService::PermanentSyncError => e
     log_failure_and_raise(document, :permanent_failure, e, start_time)
   rescue Captain::Documents::SyncService::TransientSyncError => e
@@ -74,17 +80,25 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   end
 
   def acquire_sync_lock(document)
-    acquired = false
+    status = :already_syncing
+
     document.with_lock do
-      next if document.sync_syncing? && !sync_stale?(document)
+      if document.sync_syncing?
+        next unless sync_stale?(document)
+
+        status = :recovered_stale_lock
+
+      else
+        status = :acquired
+      end
 
       document.update!(
         sync_status: :syncing,
         last_sync_attempted_at: Time.current
       )
-      acquired = true
     end
-    acquired
+
+    status
   end
 
   # A single page fetch + fingerprint compare should complete in seconds.
