@@ -66,6 +66,8 @@ const showCustomTimeSnoozeModal = ref(false);
 function onCmdSnoozeConversation(snoozeType) {
   if (snoozeType === wootConstants.SNOOZE_OPTIONS.UNTIL_CUSTOM_TIME) {
     showCustomTimeSnoozeModal.value = true;
+  } else if (typeof snoozeType === 'number') {
+    onUpdateConversations('snoozed', snoozeType);
   } else {
     onUpdateConversations('snoozed', findSnoozeTime(snoozeType) || null);
   }
