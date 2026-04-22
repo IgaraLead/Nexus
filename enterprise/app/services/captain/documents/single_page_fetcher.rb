@@ -32,11 +32,23 @@ class Captain::Documents::SinglePageFetcher
     return Result.new(success: false, error_code: http_error_code(response.code)) unless response.success?
 
     data = response.parsed_response&.dig('data')
+    target_error = firecrawl_target_error_code(data)
+    return Result.new(success: false, error_code: target_error) if target_error
+
     Result.new(
       success: true,
       title: data&.dig('metadata', 'title')&.truncate(TITLE_MAX_LENGTH, omission: ''),
       content: data&.dig('markdown')&.truncate(CONTENT_MAX_LENGTH, omission: '')
     )
+  end
+
+  # Firecrawl returns API 200 even when the scraped page itself failed —
+  # the target page's real status lives in data.metadata.statusCode.
+  def firecrawl_target_error_code(data)
+    status = data&.dig('metadata', 'statusCode')
+    return nil if status.blank? || (200..299).cover?(status)
+
+    http_error_code(status)
   end
 
   def fetch_with_fallback
