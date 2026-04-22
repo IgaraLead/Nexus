@@ -47,13 +47,7 @@ class Captain::Llm::FaqGeneratorService < Llm::BaseAiService
   end
 
   def document_metadata
-    return {} if @document.nil?
-
-    {
-      document_id: @document.id,
-      assistant_id: @document.assistant_id,
-      external_link: @document.external_link
-    }
+    @document&.to_llm_metadata || {}
   end
 
   def parse_response(content)
