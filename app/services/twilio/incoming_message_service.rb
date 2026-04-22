@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength
 class Twilio::IncomingMessageService
   include ::FileTypeHelper
 
@@ -218,3 +219,4 @@ class Twilio::IncomingMessageService
     @contact.name == phone_number || @contact.name == formatted_phone_number
   end
 end
+# rubocop:enable Metrics/ClassLength

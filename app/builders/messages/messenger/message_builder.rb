@@ -1,6 +1,7 @@
 class Messages::Messenger::MessageBuilder
   include ::FileTypeHelper
 
+  # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
   def process_attachment(attachment)
     # This check handles very rare case if there are multiple files to attach with only one unsupported file
     return if unsupported_file_type?(attachment['type'])
@@ -22,6 +23,7 @@ class Messages::Messenger::MessageBuilder
     fetch_ig_post_link(attachment_obj) if attachment_obj.file_type == 'ig_post'
     update_attachment_file_type(attachment_obj)
   end
+  # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
   def attach_file(attachment, file_url)
     SafeFetch.fetch(

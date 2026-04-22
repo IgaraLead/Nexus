@@ -1,6 +1,7 @@
 # Find the various telegram payload samples here: https://core.telegram.org/bots/webhooks#testing-your-bot-with-updates
 # https://core.telegram.org/bots/api#available-types
 
+# rubocop:disable Metrics/ClassLength
 class Telegram::IncomingMessageService
   include ::FileTypeHelper
   include ::Telegram::ParamHelpers
@@ -144,29 +145,38 @@ class Telegram::IncomingMessageService
   def attach_files
     return unless file
 
-    file_download_path = inbox.channel.get_telegram_file_path(file[:file_id])
-    if file_download_path.blank?
-      Rails.logger.info "Telegram file download path is blank for #{file[:file_id]} : inbox_id: #{inbox.id}"
-      return
-    end
+    file_download_path = telegram_file_download_path
+    return unless file_download_path
 
     SafeFetch.fetch(
       file_download_path,
       allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES
     ) do |attachment_file|
-      @message.attachments.new(
-        account_id: @message.account_id,
-        file_type: file_content_type,
-        file: {
-          io: attachment_file.tempfile,
-          filename: attachment_file.original_filename,
-          content_type: attachment_file.content_type
-        }
-      )
+      build_file_attachment(attachment_file)
     end
   rescue SafeFetch::Error => e
     Rails.logger.info "Error downloading Telegram attachment from #{file_download_path}: #{e.message}: Skipping"
+  end
+
+  def telegram_file_download_path
+    file_download_path = inbox.channel.get_telegram_file_path(file[:file_id])
+    return file_download_path if file_download_path.present?
+
+    Rails.logger.info "Telegram file download path is blank for #{file[:file_id]} : inbox_id: #{inbox.id}"
+    nil
+  end
+
+  def build_file_attachment(attachment_file)
+    @message.attachments.new(
+      account_id: @message.account_id,
+      file_type: file_content_type,
+      file: {
+        io: attachment_file.tempfile,
+        filename: attachment_file.original_filename,
+        content_type: attachment_file.content_type
+      }
+    )
   end
 
   def attach_location
@@ -228,3 +238,4 @@ class Telegram::IncomingMessageService
     params[:message] = params[:business_message] if params[:business_message] && !params[:message]
   end
 end
+# rubocop:enable Metrics/ClassLength

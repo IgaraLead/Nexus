@@ -1,5 +1,6 @@
 require 'ssrf_filter'
 
+# rubocop:disable Metrics/ModuleLength
 module SafeFetch
   DEFAULT_ALLOWED_CONTENT_TYPE_PREFIXES = %w[image/ video/].freeze
   DEFAULT_ALLOWED_CONTENT_TYPES = [].freeze
@@ -27,6 +28,7 @@ module SafeFetch
   class UnsupportedContentTypeError < Error; end
   class UnsupportedMethodError < Error; end
 
+  # rubocop:disable Metrics/MethodLength, Metrics/ParameterLists
   def self.fetch(url,
                  method: :get,
                  body: nil,
@@ -72,10 +74,12 @@ module SafeFetch
   ensure
     tempfile&.close!
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/ParameterLists
 
   class << self
     private
 
+    # rubocop:disable Metrics/MethodLength, Metrics/ParameterLists
     def stream_to_tempfile(url, method, body, tempfile, max_bytes, headers, http_basic_authentication,
                            allowed_content_type_prefixes, allowed_content_types, validate_content_type)
       response = nil
@@ -109,6 +113,7 @@ module SafeFetch
 
       response
     end
+    # rubocop:enable Metrics/MethodLength, Metrics/ParameterLists
 
     def filename_for(uri)
       File.basename(uri.path).presence || "download-#{Time.current.to_i}-#{SecureRandom.hex(4)}"
@@ -127,7 +132,7 @@ module SafeFetch
     end
 
     def request_proc(http_basic_authentication)
-      return unless http_basic_authentication.present?
+      return if http_basic_authentication.blank?
 
       proc { |request| request.basic_auth(*http_basic_authentication) }
     end
@@ -163,3 +168,4 @@ module SafeFetch
     end
   end
 end
+# rubocop:enable Metrics/ModuleLength

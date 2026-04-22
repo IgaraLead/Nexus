@@ -13,31 +13,11 @@ class Avatar::AvatarFromUrlJob < ApplicationJob
   RATE_LIMIT_WINDOW = 1.minute
 
   def perform(avatarable, avatar_url)
-    return unless avatarable.respond_to?(:avatar)
-    return unless url_valid?(avatar_url)
+    return unless syncable_avatar?(avatarable, avatar_url)
 
-    return unless should_sync_avatar?(avatarable, avatar_url)
-
-    SafeFetch.fetch(
-      avatar_url,
-      max_bytes: MAX_DOWNLOAD_SIZE,
-      allowed_content_type_prefixes: [],
-      allowed_content_types: %w[image/jpeg image/png image/gif]
-    ) do |avatar_file|
-      raise SafeFetch::FetchError, 'Invalid file' unless valid_file?(avatar_file)
-
-      avatarable.avatar.attach(
-        io: avatar_file.tempfile,
-        filename: avatar_file.original_filename,
-        content_type: avatar_file.content_type
-      )
-    end
+    fetch_avatar(avatarable, avatar_url)
   rescue SafeFetch::HttpError => e
-    if e.message.start_with?('404')
-      Rails.logger.info "AvatarFromUrlJob: avatar not found at #{avatar_url}"
-    else
-      Rails.logger.error "AvatarFromUrlJob error for #{avatar_url}: #{e.class} - #{e.message}"
-    end
+    log_http_error(avatar_url, e)
   rescue SafeFetch::Error => e
     Rails.logger.error "AvatarFromUrlJob error for #{avatar_url}: #{e.class} - #{e.message}"
   ensure
@@ -45,6 +25,41 @@ class Avatar::AvatarFromUrlJob < ApplicationJob
   end
 
   private
+
+  def syncable_avatar?(avatarable, avatar_url)
+    avatarable.respond_to?(:avatar) &&
+      url_valid?(avatar_url) &&
+      should_sync_avatar?(avatarable, avatar_url)
+  end
+
+  def fetch_avatar(avatarable, avatar_url)
+    SafeFetch.fetch(
+      avatar_url,
+      max_bytes: MAX_DOWNLOAD_SIZE,
+      allowed_content_type_prefixes: [],
+      allowed_content_types: %w[image/jpeg image/png image/gif]
+    ) do |avatar_file|
+      attach_avatar(avatarable, avatar_file)
+    end
+  end
+
+  def attach_avatar(avatarable, avatar_file)
+    raise SafeFetch::FetchError, 'Invalid file' unless valid_file?(avatar_file)
+
+    avatarable.avatar.attach(
+      io: avatar_file.tempfile,
+      filename: avatar_file.original_filename,
+      content_type: avatar_file.content_type
+    )
+  end
+
+  def log_http_error(avatar_url, error)
+    if error.message.start_with?('404')
+      Rails.logger.info "AvatarFromUrlJob: avatar not found at #{avatar_url}"
+    else
+      Rails.logger.error "AvatarFromUrlJob error for #{avatar_url}: #{error.class} - #{error.message}"
+    end
+  end
 
   def should_sync_avatar?(avatarable, avatar_url)
     # Only Contacts are rate-limited and hash-gated.
