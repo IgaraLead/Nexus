@@ -1,13 +1,13 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onUnmounted, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { parseBoolean } from '@chatwoot/utils';
-import Banner from 'dashboard/components/ui/Banner.vue';
-import mfaAPI from 'dashboard/api/mfa';
 import { useMapGetter } from 'dashboard/composables/store';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
+import mfaAPI from 'dashboard/api/mfa';
+import Banner from 'dashboard/components/ui/Banner.vue';
 
 const LOW_BACKUP_CODES_THRESHOLD = 3;
 
@@ -58,6 +58,10 @@ const goToMfaSettings = () => {
 onMounted(() => {
   fetchMfaStatus();
   emitter.on(BUS_EVENTS.MFA_STATE_CHANGED, fetchMfaStatus);
+});
+
+onUnmounted(() => {
+  emitter.off(BUS_EVENTS.MFA_STATE_CHANGED, fetchMfaStatus);
 });
 </script>
 
