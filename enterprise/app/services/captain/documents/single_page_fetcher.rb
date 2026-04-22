@@ -24,13 +24,7 @@ class Captain::Documents::SinglePageFetcher
   end
 
   def fetch_with_firecrawl
-    api_key = InstallationConfig.find_by!(name: 'CAPTAIN_FIRECRAWL_API_KEY').value
-    response = HTTParty.post(
-      'https://api.firecrawl.dev/v1/scrape',
-      body: { url: @url, formats: ['markdown'], excludeTags: ['iframe'] }.to_json,
-      headers: { 'Authorization' => "Bearer #{api_key}", 'Content-Type' => 'application/json' }
-    )
-
+    response = Captain::Tools::FirecrawlService.new.scrape(@url)
     handle_firecrawl_response(response)
   end
 
@@ -49,14 +43,11 @@ class Captain::Documents::SinglePageFetcher
     response = HTTParty.get(@url)
     return Result.new(success: false, error_code: http_error_code(response.code)) unless response.success?
 
-    doc = Nokogiri::HTML(response.body)
-    title = doc.at_xpath('//title')&.text&.strip
-    content = ReverseMarkdown.convert(doc.at_xpath('//body'), unknown_tags: :bypass, github_flavored: true)
-
+    parser = Captain::Tools::HtmlPageParser.new(response.body)
     Result.new(
       success: true,
-      title: title&.truncate(TITLE_MAX_LENGTH, omission: ''),
-      content: content&.truncate(CONTENT_MAX_LENGTH, omission: '')
+      title: parser.title&.truncate(TITLE_MAX_LENGTH, omission: ''),
+      content: parser.body_markdown&.truncate(CONTENT_MAX_LENGTH, omission: '')
     )
   end
 
