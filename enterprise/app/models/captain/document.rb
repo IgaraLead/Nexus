@@ -62,6 +62,7 @@ class Captain::Document < ApplicationRecord
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'
+    return true if external_link&.start_with?('PDF:')
 
     external_link&.ends_with?('.pdf')
   end
