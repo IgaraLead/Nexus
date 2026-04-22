@@ -32,8 +32,10 @@ const selectedAgent = ref(null);
 const assignableAgentsUiFlags = useMapGetter(
   'inboxAssignableAgents/getUIFlags'
 );
+const bulkActionsUiFlags = useMapGetter('bulkActions/getUIFlags');
 
 const isLoading = computed(() => assignableAgentsUiFlags.value.isFetching);
+const isUpdating = computed(() => bulkActionsUiFlags.value.isUpdating);
 
 const assignableAgentsList = useMapGetter(
   'inboxAssignableAgents/getAssignableAgents'
@@ -82,6 +84,7 @@ const handleSelectAgent = item => {
 };
 
 const handleAssign = () => {
+  if (isUpdating.value) return;
   emit('select', selectedAgent.value);
   selectedAgent.value = null;
   toggleDropdown(false);
@@ -185,6 +188,8 @@ const handleToggleDropdown = () => {
                   sm
                   class="flex-1"
                   :label="t('BULK_ACTION.YES')"
+                  :disabled="isUpdating"
+                  :is-loading="isUpdating"
                   @click="handleAssign"
                 />
               </div>

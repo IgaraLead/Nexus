@@ -25,6 +25,8 @@ const [showDropdown, toggleDropdown] = useToggle(false);
 const selectedTeam = ref(null);
 
 const teams = useMapGetter('teams/getTeams');
+const bulkActionsUiFlags = useMapGetter('bulkActions/getUIFlags');
+const isUpdating = computed(() => bulkActionsUiFlags.value.isUpdating);
 
 const teamMenuItems = computed(() => {
   const items = [
@@ -61,6 +63,7 @@ const handleSelectTeam = item => {
 };
 
 const handleAssign = () => {
+  if (isUpdating.value) return;
   emit('select', selectedTeam.value);
   selectedTeam.value = null;
   toggleDropdown(false);
@@ -157,6 +160,8 @@ onMounted(() => {
                   sm
                   class="flex-1"
                   :label="t('BULK_ACTION.YES')"
+                  :disabled="isUpdating"
+                  :is-loading="isUpdating"
                   @click="handleAssign"
                 />
               </div>

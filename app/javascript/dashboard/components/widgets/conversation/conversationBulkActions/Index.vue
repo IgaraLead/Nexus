@@ -123,7 +123,7 @@ onUnmounted(() => {
     leave-to-class="opacity-0 scale-95 translate-y-2"
   >
     <div
-      v-show="conversations.length > 0"
+      v-if="conversations.length > 0"
       v-bind="attrs"
       class="px-2 absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-full origin-bottom"
     >
