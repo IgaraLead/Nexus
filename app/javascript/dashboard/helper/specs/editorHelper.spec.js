@@ -356,7 +356,9 @@ describe('removeSignature', () => {
   });
   it('preserves user text ending with "\\" after closeBlock ("C:\\\\n\\n") when appending signature', () => {
     const body = 'C:\\\n\n';
+    const body1 = 'C:\\\n';
     expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
+    expect(appendSignature(body1, 'Best\nAgent')).toContain('C:\\');
   });
 });
 
