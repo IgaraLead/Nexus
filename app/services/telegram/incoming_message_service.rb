@@ -8,6 +8,7 @@ class Telegram::IncomingMessageService
   pattr_initialize [:inbox!, :params!]
 
   def perform
+    @downloaded_files = []
     # chatwoot doesn't support group conversations at the moment
     transform_business_message!
     return unless private_message?
@@ -34,6 +35,8 @@ class Telegram::IncomingMessageService
 
     process_message_attachments if message_params?
     @message.save!
+  ensure
+    close_downloaded_files
   end
 
   private
@@ -167,6 +170,7 @@ class Telegram::IncomingMessageService
   end
 
   def build_file_attachment(attachment_file)
+    track_downloaded_file(attachment_file)
     @message.attachments.new(
       account_id: @message.account_id,
       file_type: file_content_type,
@@ -231,6 +235,14 @@ class Telegram::IncomingMessageService
       params.dig(:message, :sticker, :thumb).presence ||
       params[:message][:video].presence ||
       params[:message][:video_note].presence
+  end
+
+  def track_downloaded_file(attachment_file)
+    @downloaded_files << attachment_file
+  end
+
+  def close_downloaded_files
+    Array(@downloaded_files).each(&:close!)
   end
 
   def transform_business_message!

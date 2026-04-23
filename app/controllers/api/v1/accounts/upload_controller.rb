@@ -21,6 +21,8 @@ class Api::V1::Accounts::UploadController < Api::V1::Accounts::BaseController
   def create_from_url
     SafeFetch.fetch(params[:external_url].to_s) do |result|
       create_and_save_blob(result.tempfile, result.filename, result.content_type)
+    ensure
+      result.close!
     end
   rescue SafeFetch::HttpError => e
     render_error(I18n.t('errors.upload.fetch_failed_with_message', message: e.message), :unprocessable_entity)

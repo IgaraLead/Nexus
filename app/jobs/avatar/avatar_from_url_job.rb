@@ -40,6 +40,8 @@ class Avatar::AvatarFromUrlJob < ApplicationJob
       allowed_content_types: %w[image/jpeg image/png image/gif]
     ) do |avatar_file|
       attach_avatar(avatarable, avatar_file)
+    ensure
+      avatar_file.close!
     end
   end
 

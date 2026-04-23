@@ -43,6 +43,8 @@ class Captain::Tools::HttpTool < Agents::Tool
       validate_content_type: false
     ) do |response|
       response_body = response.tempfile.read
+    ensure
+      response.close!
     end
 
     response_body

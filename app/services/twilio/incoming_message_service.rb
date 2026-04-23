@@ -5,6 +5,7 @@ class Twilio::IncomingMessageService
   pattr_initialize [:params!]
 
   def perform
+    @downloaded_files = []
     return if twilio_channel.blank?
 
     set_contact
@@ -20,6 +21,8 @@ class Twilio::IncomingMessageService
     attach_files
     attach_location if location_message?
     @message.save!
+  ensure
+    close_downloaded_files
   end
 
   private
@@ -145,6 +148,7 @@ class Twilio::IncomingMessageService
 
   def attach_single_file(media_url)
     download_attachment_file(media_url) do |attachment_file|
+      track_downloaded_file(attachment_file)
       @message.attachments.new(
         account_id: @message.account_id,
         file_type: file_type(attachment_file.content_type),
@@ -217,6 +221,14 @@ class Twilio::IncomingMessageService
 
   def contact_name_matches_phone_number?
     @contact.name == phone_number || @contact.name == formatted_phone_number
+  end
+
+  def track_downloaded_file(attachment_file)
+    @downloaded_files << attachment_file
+  end
+
+  def close_downloaded_files
+    Array(@downloaded_files).each(&:close!)
   end
 end
 # rubocop:enable Metrics/ClassLength

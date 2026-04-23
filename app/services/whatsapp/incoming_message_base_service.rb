@@ -24,6 +24,8 @@ class Whatsapp::IncomingMessageBaseService
   private
 
   def process_messages
+    @downloaded_files = []
+
     # We don't support reactions & ephemeral message now, we need to skip processing the message
     # if the webhook event is a reaction or an ephermal message or an unsupported message.
     return if unprocessable_message_type?(message_type)
@@ -43,6 +45,8 @@ class Whatsapp::IncomingMessageBaseService
       set_conversation
       create_messages
     end
+  ensure
+    close_downloaded_files
   end
 
   def process_statuses
@@ -149,6 +153,7 @@ class Whatsapp::IncomingMessageBaseService
     @message.content ||= attachment_payload[:caption]
 
     download_attachment_file(attachment_payload) do |attachment_file|
+      track_downloaded_file(attachment_file)
       @message.attachments.new(
         account_id: @message.account_id,
         file_type: file_content_type(message_type),
@@ -228,5 +233,13 @@ class Whatsapp::IncomingMessageBaseService
     phone_number = "+#{messages_data.first[:from]}"
     formatted_phone_number = TelephoneNumber.parse(phone_number).international_number
     @contact.name == phone_number || @contact.name == formatted_phone_number
+  end
+
+  def track_downloaded_file(attachment_file)
+    @downloaded_files << attachment_file
+  end
+
+  def close_downloaded_files
+    Array(@downloaded_files).each(&:close!)
   end
 end

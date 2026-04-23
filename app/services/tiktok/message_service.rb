@@ -32,6 +32,7 @@ class Tiktok::MessageService
   end
 
   def create_message
+    @downloaded_files = []
     message = conversation.messages.build(
       content: message_content,
       account_id: channel.inbox.account_id,
@@ -48,6 +49,8 @@ class Tiktok::MessageService
 
     create_message_attachments(message)
     message.save!
+  ensure
+    close_downloaded_files
   end
 
   def message_content
@@ -65,6 +68,7 @@ class Tiktok::MessageService
     return unless image_message?
 
     fetch_attachment(channel, tt_conversation_id, tt_message_id, tt_image_media_id) do |attachment_file|
+      track_downloaded_file(attachment_file)
       message.attachments.new(
         account_id: message.account_id,
         file_type: :image,
@@ -175,5 +179,13 @@ class Tiktok::MessageService
 
   def outgoing_message?
     !incoming_message?
+  end
+
+  def track_downloaded_file(attachment_file)
+    @downloaded_files << attachment_file
+  end
+
+  def close_downloaded_files
+    Array(@downloaded_files).each(&:close!)
   end
 end

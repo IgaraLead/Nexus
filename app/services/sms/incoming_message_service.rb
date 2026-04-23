@@ -4,6 +4,7 @@ class Sms::IncomingMessageService
   pattr_initialize [:inbox!, :params!]
 
   def perform
+    @downloaded_files = []
     set_contact
     set_conversation
     @message = @conversation.messages.create!(
@@ -16,6 +17,8 @@ class Sms::IncomingMessageService
     )
     attach_files
     @message.save!
+  ensure
+    close_downloaded_files
   end
 
   private
@@ -84,6 +87,7 @@ class Sms::IncomingMessageService
       next if media_url.end_with?('.smil', '.xml')
 
       download_attachment_file(media_url) do |attachment_file|
+        track_downloaded_file(attachment_file)
         @message.attachments.new(
           account_id: @message.account_id,
           file_type: file_type(attachment_file.content_type),
@@ -106,5 +110,13 @@ class Sms::IncomingMessageService
     )
   rescue SafeFetch::Error => e
     Rails.logger.info "Error downloading SMS attachment from #{media_url}: #{e.message}: Skipping"
+  end
+
+  def track_downloaded_file(attachment_file)
+    @downloaded_files << attachment_file
+  end
+
+  def close_downloaded_files
+    Array(@downloaded_files).each(&:close!)
   end
 end
