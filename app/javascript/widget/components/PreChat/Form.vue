@@ -168,6 +168,11 @@ export default {
     },
     getValidation({ type, name, field_type, regex_pattern }) {
       const regex = regex_pattern ? getRegexp(regex_pattern) : null;
+      // FormKit caches the RegExp and calls .test() across keystrokes, so
+      // drop stateful g/y flags to stop lastIndex mutation flipping validity.
+      const matchRegex = regex
+        ? new RegExp(regex.source, regex.flags.replace(/[gy]/g, ''))
+        : null;
       const validations = {
         emailAddress: 'email',
         phoneNumber: ['startsWithPlus', 'isValidPhoneNumber'],
@@ -177,8 +182,8 @@ export default {
         select: null,
         number: null,
         checkbox: false,
-        contact_attribute: regex ? [['matches', regex]] : null,
-        conversation_attribute: regex ? [['matches', regex]] : null,
+        contact_attribute: matchRegex ? [['matches', matchRegex]] : null,
+        conversation_attribute: matchRegex ? [['matches', matchRegex]] : null,
       };
       const validationKeys = Object.keys(validations);
       const isRequired = this.isContactFieldRequired(name);

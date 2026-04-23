@@ -52,7 +52,7 @@ const rules = computed(() => ({
           try {
             return getRegexp(props.attribute.regexPattern).test(value);
           } catch {
-            return true;
+            return false;
           }
         },
       }),

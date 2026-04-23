@@ -139,7 +139,7 @@ export default {
           try {
             return getRegexp(this.attributeRegex).test(value);
           } catch {
-            return true;
+            return false;
           }
         },
       },
