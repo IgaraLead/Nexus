@@ -365,6 +365,7 @@ describe('removeSignature', () => {
     expect(removeSignature('C:\\\nBest\\\nAgent', 'Best\nAgent')).toContain(
       'C:\\'
     );
+    expect(removeSignature('notes\n\\\n--', 'no matching sig')).toContain('\\');
   });
 });
 

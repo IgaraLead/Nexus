@@ -242,8 +242,10 @@ export function removeSignature(body, signature, channelType) {
   if (newBody.endsWith(SIGNATURE_DELIMITER)) {
     // if the delimiter is at the end, remove it
     newBody = newBody.slice(0, -SIGNATURE_DELIMITER.length);
-    // and strip any trailing blank-line markers
-    newBody = stripTrailingBlankLine(newBody);
+    // strip any trailing blank-line markers
+    if (signatureIndex > -1) {
+      newBody = stripTrailingBlankLine(newBody);
+    }
   }
 
   return newBody;
