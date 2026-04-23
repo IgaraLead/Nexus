@@ -122,16 +122,11 @@ export function cleanSignature(signature) {
   }
 }
 
-// Strip a trailing hardbreak `\<newline>` left dangling when a signature slice
-// cuts inside a paragraph (signature shared a paragraph with `--` via
-// hardbreaks). Safe post-slice only — `appendSignature` always inserts
-// `\n\n--\n\n` between body and signature, so user text is never immediately
-// before the slice point.
-const stripTrailingHardbreak = body => body.replace(/(\\\n)+$/, '');
+// Strip `\<newline>` hardbreak markers trailing `--` after a signature slice
+const stripDelimiterHardbreaks = body =>
+  body.replace(/(--)\s*(?:\\\s*)+$/, '$1');
 
-// Strip a standalone blank-paragraph marker (`\` on its own line). Requires
-// a newline before the `\`, so user input ending with `\<Enter>` (e.g. `C:\`
-// typed in a plain textarea) is preserved.
+// Strip a standalone blank-paragraph marker (`\` on its own line).
 const stripTrailingBlankLine = body => body.replace(/(?:\n\s*\\\n)+$/, '');
 
 /**
@@ -238,7 +233,7 @@ export function removeSignature(body, signature, channelType) {
   // trimming will ensure any spaces or new lines before the signature are removed
   // This means we will have the delimiter at the end
   if (signatureIndex > -1) {
-    newBody = stripTrailingHardbreak(
+    newBody = stripDelimiterHardbreaks(
       newBody.substring(0, signatureIndex)
     ).trimEnd();
   }

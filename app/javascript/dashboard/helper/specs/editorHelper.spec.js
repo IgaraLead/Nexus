@@ -335,42 +335,31 @@ describe('removeSignature', () => {
       'This is a test\n\n'
     );
   });
-  it('strips blank-paragraph markers ("\\") left by the prosemirror serializer', () => {
-    // When the user has a blank paragraph before the signature, the serializer
-    // writes `\` on its own line to preserve it. Plain trimEnd doesn't strip
-    // those, so they used to survive removal and re-render as literal `\`.
-    const body = 'hey\n\n\\\n--\n\nHello there';
-    expect(removeSignature(body, 'Hello there')).toBe('hey');
+  it('strips blank-paragraph marker before the delimiter', () => {
+    expect(removeSignature('hey\n\n\\\n--\n\nHello there', 'Hello there')).toBe(
+      'hey'
+    );
   });
-  it('strips dangling hard-break marker when signature lived in the same paragraph as "--"', () => {
-    // When the signature is edited/reapplied, the delimiter and signature
-    // can end up in one paragraph with hardbreaks ("\<newline>") separating
-    // them. Slicing the signature out leaves the hardbreak dangling after
-    // "--"; without cleanup the bubble shows "-- \".
-    const body = 'hey\n\n--\\\nHello there';
-    expect(removeSignature(body, 'Hello there')).toBe('hey\n\n');
+  it('strips dangling hardbreak when signature shared a paragraph with "--"', () => {
+    expect(removeSignature('hey\n\n--\\\nHello there', 'Hello there')).toBe(
+      'hey\n\n'
+    );
   });
-  it('preserves user text ending with "\\" (e.g. "C:\\") when signature is appended', () => {
-    const body = 'The path is C:\\';
-    expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
+  it('preserves trailing backslash in user text when appending', () => {
+    expect(appendSignature('The path is C:\\', 'Best\nAgent')).toContain(
+      'C:\\'
+    );
+    expect(appendSignature('C:\\\n', 'Best\nAgent')).toContain('C:\\');
+    expect(appendSignature('C:\\\n\n', 'Best\nAgent')).toContain('C:\\');
   });
-  it('preserves user text ending with "\\" after closeBlock ("C:\\\\n\\n") when appending signature', () => {
-    const body = 'C:\\\n\n';
-    const body1 = 'C:\\\n';
-    expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
-    expect(appendSignature(body1, 'Best\nAgent')).toContain('C:\\');
-  });
-  it('preserves user text ending with "\\\\n" when REMOVING signature', () => {
-    // Reviewer case: body "C:\<Enter>--\n\nSignature" — after delimiter
-    // removal the post-slice body is "C:\<Enter>", whose trailing `\<newline>`
-    // looks identical to a serializer marker but is real user content.
-    const body = 'C:\\\n--\n\nBest\nAgent';
-    expect(removeSignature(body, 'Best\nAgent')).toContain('C:\\');
-  });
-  it('preserves user text ending with "\\\\n" when only the delimiter is removed', () => {
-    // "C:\<Enter>--" with no matching signature still runs the delimiter branch.
-    const body = 'C:\\\n--';
-    expect(removeSignature(body, 'no matching sig')).toContain('C:\\');
+  it('preserves trailing backslash in user text when removing', () => {
+    expect(removeSignature('C:\\\n--\n\nBest\nAgent', 'Best\nAgent')).toContain(
+      'C:\\'
+    );
+    expect(removeSignature('C:\\\n--', 'no matching sig')).toContain('C:\\');
+    expect(removeSignature('C:\\\nBest\\\nAgent', 'Best\nAgent')).toContain(
+      'C:\\'
+    );
   });
 });
 
