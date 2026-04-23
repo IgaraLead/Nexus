@@ -340,7 +340,7 @@ describe('removeSignature', () => {
     // writes `\` on its own line to preserve it. Plain trimEnd doesn't strip
     // those, so they used to survive removal and re-render as literal `\`.
     const body = 'hey\n\n\\\n--\n\nHello there';
-    expect(removeSignature(body, 'Hello there')).toBe('hey');
+    expect(removeSignature(body, 'Hello there')).toBe('hey\n\n');
   });
   it('strips dangling hard-break marker when signature lived in the same paragraph as "--"', () => {
     // When the signature is edited/reapplied, the delimiter and signature
@@ -349,6 +349,14 @@ describe('removeSignature', () => {
     // "--"; without cleanup the bubble shows "-- \".
     const body = 'hey\n\n--\\\nHello there';
     expect(removeSignature(body, 'Hello there')).toBe('hey\n\n');
+  });
+  it('preserves user text ending with "\\" (e.g. "C:\\") when signature is appended', () => {
+    const body = 'The path is C:\\';
+    expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
+  });
+  it('preserves user text ending with "\\" after closeBlock ("C:\\\\n\\n") when appending signature', () => {
+    const body = 'C:\\\n\n';
+    expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
   });
 });
 

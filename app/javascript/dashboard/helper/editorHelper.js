@@ -124,7 +124,7 @@ export function cleanSignature(signature) {
 
 // Strip trailing `\` artifacts the serializer emits for blank paragraphs
 // and hardbreaks — trimEnd can't remove them and they'd render as `\`.
-const TRAILING_BACKSLASH_MARKER = /(\s*\\)+\s*$/;
+const TRAILING_BACKSLASH_MARKER = /(\\\n)+$/;
 
 const stripTrailingBlankMarkers = body =>
   body.replace(TRAILING_BACKSLASH_MARKER, '');
