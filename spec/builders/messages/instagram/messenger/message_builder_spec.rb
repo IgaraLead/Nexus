@@ -162,6 +162,42 @@ describe Messages::Instagram::Messenger::MessageBuilder do
       expect(message.attachments).to be_empty
     end
 
+    it 'keeps the message when story reply attachment persistence raises a non-fetch error' do
+      messaging = instagram_story_reply_event[:entry][0]['messaging'][0]
+      sender_id = messaging['sender']['id']
+      story_url = messaging['message']['reply_to']['story']['url']
+      builder = described_class.new(messaging, instagram_messenger_inbox)
+      attachment_proxy = instance_double(Attachment)
+      file_proxy = instance_double(ActiveStorage::Attached::One)
+
+      allow(Koala::Facebook::API).to receive(:new).and_return(fb_object)
+      allow(fb_object).to receive(:get_object).and_return(
+        {
+          name: 'Jane',
+          id: sender_id,
+          account_id: instagram_messenger_inbox.account_id,
+          profile_pic: 'https://chatwoot-assets.local/sample.png'
+        }.with_indifferent_access
+      )
+      stub_request(:get, story_url)
+        .to_return(status: 200, body: 'image_data', headers: { 'Content-Type' => 'image/png' })
+      allow(builder).to receive(:build_story_reply_attachment).and_return(attachment_proxy)
+      allow(attachment_proxy).to receive(:persisted?).and_return(false)
+      allow(attachment_proxy).to receive(:file).and_return(file_proxy)
+      allow(file_proxy).to receive(:attach).and_raise(StandardError, 'boom')
+
+      create_instagram_contact_for_sender(sender_id, instagram_messenger_inbox)
+
+      expect do
+        builder.perform
+      end.not_to raise_error
+
+      message = instagram_messenger_channel.inbox.messages.first
+      expect(message.content).to eq('This is the story reply')
+      expect(message.content_attributes[:image_type]).to eq('ig_story_reply')
+      expect(message.attachments).to be_empty
+    end
+
     it 'creates message with for reply with mid' do
       # create first message to ensure reply to is valid
       first_message_data = dm_params[:entry][0]['messaging'][0]

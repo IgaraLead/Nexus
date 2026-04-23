@@ -137,6 +137,31 @@ describe Messages::Instagram::MessageBuilder do
       expect(message.attachments).to be_empty
     end
 
+    it 'keeps the message when story reply attachment persistence raises a non-fetch error' do
+      messaging = instagram_story_reply_event[:entry][0]['messaging'][0]
+      story_url = messaging['message']['reply_to']['story']['url']
+      builder = described_class.new(messaging, instagram_inbox)
+      attachment_proxy = instance_double(Attachment)
+      file_proxy = instance_double(ActiveStorage::Attached::One)
+
+      create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+      stub_request(:get, story_url)
+        .to_return(status: 200, body: 'image_data', headers: { 'Content-Type' => 'image/png' })
+      allow(builder).to receive(:build_story_reply_attachment).and_return(attachment_proxy)
+      allow(attachment_proxy).to receive(:persisted?).and_return(false)
+      allow(attachment_proxy).to receive(:file).and_return(file_proxy)
+      allow(file_proxy).to receive(:attach).and_raise(StandardError, 'boom')
+
+      expect do
+        builder.perform
+      end.not_to raise_error
+
+      message = instagram_inbox.messages.first
+      expect(message.content).to eq('This is the story reply')
+      expect(message.content_attributes[:image_type]).to eq('ig_story_reply')
+      expect(message.attachments).to be_empty
+    end
+
     it 'creates message with reply to mid' do
       # Create first message to ensure reply to is valid
       first_messaging = dm_params[:entry][0]['messaging'][0]
