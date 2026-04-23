@@ -335,6 +335,21 @@ describe('removeSignature', () => {
       'This is a test\n\n'
     );
   });
+  it('strips blank-paragraph markers ("\\") left by the prosemirror serializer', () => {
+    // When the user has a blank paragraph before the signature, the serializer
+    // writes `\` on its own line to preserve it. Plain trimEnd doesn't strip
+    // those, so they used to survive removal and re-render as literal `\`.
+    const body = 'hey\n\n\\\n--\n\nHello there';
+    expect(removeSignature(body, 'Hello there')).toBe('hey');
+  });
+  it('strips dangling hard-break marker when signature lived in the same paragraph as "--"', () => {
+    // When the signature is edited/reapplied, the delimiter and signature
+    // can end up in one paragraph with hardbreaks ("\<newline>") separating
+    // them. Slicing the signature out leaves the hardbreak dangling after
+    // "--"; without cleanup the bubble shows "-- \".
+    const body = 'hey\n\n--\\\nHello there';
+    expect(removeSignature(body, 'Hello there')).toBe('hey\n\n');
+  });
 });
 
 describe('removeSignature with stripped signature', () => {

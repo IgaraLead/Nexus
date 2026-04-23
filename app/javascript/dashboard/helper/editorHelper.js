@@ -122,6 +122,15 @@ export function cleanSignature(signature) {
   }
 }
 
+// Strip trailing `\` artifacts the serializer emits for blank paragraphs
+// and hardbreaks — trimEnd can't remove them and they'd render as `\`.
+const TRAILING_BACKSLASH_MARKER = /(\s*\\)+\s*$/;
+
+const stripTrailingBlankMarkers = body =>
+  body.replace(TRAILING_BACKSLASH_MARKER, '');
+
+const trimTrailingBlanks = body => stripTrailingBlankMarkers(body).trimEnd();
+
 /**
  * Adds the signature delimiter to the beginning of the signature.
  *
@@ -190,7 +199,7 @@ export function appendSignature(body, signature, channelType) {
     return body;
   }
 
-  return `${body.trimEnd()}\n\n${appendDelimiter(cleanedSignature)}`;
+  return `${trimTrailingBlanks(body)}\n\n${appendDelimiter(cleanedSignature)}`;
 }
 
 /**
@@ -226,13 +235,15 @@ export function removeSignature(body, signature, channelType) {
   // trimming will ensure any spaces or new lines before the signature are removed
   // This means we will have the delimiter at the end
   if (signatureIndex > -1) {
-    newBody = newBody.substring(0, signatureIndex).trimEnd();
+    newBody = trimTrailingBlanks(newBody.substring(0, signatureIndex));
   }
 
   // Remove delimiter if it's at the end
   if (newBody.endsWith(SIGNATURE_DELIMITER)) {
     // if the delimiter is at the end, remove it
-    newBody = newBody.slice(0, -SIGNATURE_DELIMITER.length);
+    newBody = stripTrailingBlankMarkers(
+      newBody.slice(0, -SIGNATURE_DELIMITER.length)
+    );
   }
 
   return newBody;
