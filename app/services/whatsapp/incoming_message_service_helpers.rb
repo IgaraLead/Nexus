@@ -3,7 +3,6 @@ module Whatsapp::IncomingMessageServiceHelpers
     SafeFetch.fetch(
       inbox.channel.media_url(attachment_payload[:id]),
       headers: inbox.channel.api_headers,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES,
       &
     )

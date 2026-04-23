@@ -28,7 +28,6 @@ class Messages::Messenger::MessageBuilder
   def attach_file(attachment, file_url)
     SafeFetch.fetch(
       file_url,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES
     ) do |attachment_file|
       attachment.file.attach(

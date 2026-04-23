@@ -101,7 +101,6 @@ class Sms::IncomingMessageService
     SafeFetch.fetch(
       media_url,
       http_basic_authentication: [channel.provider_config['api_key'], channel.provider_config['api_secret']],
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES,
       &
     )

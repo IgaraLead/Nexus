@@ -2,8 +2,26 @@ require 'ssrf_filter'
 
 # rubocop:disable Metrics/ModuleLength
 module SafeFetch
-  DEFAULT_ALLOWED_CONTENT_TYPE_PREFIXES = %w[image/ video/].freeze
-  DEFAULT_ALLOWED_CONTENT_TYPES = [].freeze
+  DEFAULT_ALLOWED_CONTENT_TYPE_PREFIXES = %w[image/ video/ audio/].freeze
+  DEFAULT_ALLOWED_CONTENT_TYPES = %w[
+    text/csv
+    text/plain
+    text/rtf
+    application/json
+    application/pdf
+    application/zip
+    application/x-7z-compressed
+    application/vnd.rar
+    application/x-tar
+    application/msword
+    application/vnd.ms-excel
+    application/vnd.ms-powerpoint
+    application/rtf
+    application/vnd.oasis.opendocument.text
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+  ].freeze
   DEFAULT_SENSITIVE_HEADERS = %w[authorization cookie].freeze
   DEFAULT_OPEN_TIMEOUT = 2
   DEFAULT_READ_TIMEOUT = 20

@@ -195,6 +195,46 @@ RSpec.describe SafeFetch do
         expect { described_class.fetch(url) { nil } }.not_to raise_error
       end
 
+      it 'allows audio/mpeg responses' do
+        stub_request(:get, url).to_return(
+          status: 200,
+          body: File.new(Rails.root.join('spec/assets/sample.mp3')),
+          headers: { 'Content-Type' => 'audio/mpeg' }
+        )
+
+        expect { described_class.fetch(url) { nil } }.not_to raise_error
+      end
+
+      it 'allows application/pdf responses' do
+        stub_request(:get, url).to_return(
+          status: 200,
+          body: File.new(Rails.root.join('spec/assets/sample.pdf')),
+          headers: { 'Content-Type' => 'application/pdf' }
+        )
+
+        expect { described_class.fetch(url) { nil } }.not_to raise_error
+      end
+
+      it 'allows text/plain responses' do
+        stub_request(:get, url).to_return(
+          status: 200,
+          body: 'plain-text',
+          headers: { 'Content-Type' => 'text/plain' }
+        )
+
+        expect { described_class.fetch(url) { nil } }.not_to raise_error
+      end
+
+      it 'allows text/csv responses' do
+        stub_request(:get, url).to_return(
+          status: 200,
+          body: "id,name\n1,Chatwoot\n",
+          headers: { 'Content-Type' => 'text/csv' }
+        )
+
+        expect { described_class.fetch(url) { nil } }.not_to raise_error
+      end
+
       it 'strips charset/boundary parameters before comparing' do
         stub_request(:get, url).to_return(
           status: 200,

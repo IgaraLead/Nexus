@@ -150,7 +150,6 @@ class Telegram::IncomingMessageService
 
     SafeFetch.fetch(
       file_download_path,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES
     ) do |attachment_file|
       build_file_attachment(attachment_file)

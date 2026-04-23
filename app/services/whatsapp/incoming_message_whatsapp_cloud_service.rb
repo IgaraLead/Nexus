@@ -20,7 +20,6 @@ class Whatsapp::IncomingMessageWhatsappCloudService < Whatsapp::IncomingMessageB
     SafeFetch.fetch(
       url_response.parsed_response['url'],
       headers: inbox.channel.api_headers,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES,
       &
     )

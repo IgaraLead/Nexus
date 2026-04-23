@@ -175,7 +175,6 @@ class Twilio::IncomingMessageService
     SafeFetch.fetch(
       media_url,
       http_basic_authentication: auth_credentials,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES,
       &
     )
@@ -185,7 +184,6 @@ class Twilio::IncomingMessageService
     Rails.logger.info "Error downloading attachment from Twilio: #{error.message}: Retrying without auth"
     SafeFetch.fetch(
       media_url,
-      allowed_content_type_prefixes: %w[image/ video/ audio/],
       allowed_content_types: Attachment::ACCEPTABLE_FILE_TYPES,
       &
     )
