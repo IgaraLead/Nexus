@@ -122,8 +122,17 @@ export function cleanSignature(signature) {
   }
 }
 
-// Strips dangling `\n` left by a signature slice (serializer
-const stripTrailingBlankMarkers = body => body.replace(/(\\\n)+$/, '');
+// Strip a trailing hardbreak `\<newline>` left dangling when a signature slice
+// cuts inside a paragraph (signature shared a paragraph with `--` via
+// hardbreaks). Safe post-slice only — `appendSignature` always inserts
+// `\n\n--\n\n` between body and signature, so user text is never immediately
+// before the slice point.
+const stripTrailingHardbreak = body => body.replace(/(\\\n)+$/, '');
+
+// Strip a standalone blank-paragraph marker (`\` on its own line). Requires
+// a newline before the `\`, so user input ending with `\<Enter>` (e.g. `C:\`
+// typed in a plain textarea) is preserved.
+const stripTrailingBlankLine = body => body.replace(/(?:\n\s*\\\n)+$/, '');
 
 /**
  * Adds the signature delimiter to the beginning of the signature.
@@ -229,7 +238,7 @@ export function removeSignature(body, signature, channelType) {
   // trimming will ensure any spaces or new lines before the signature are removed
   // This means we will have the delimiter at the end
   if (signatureIndex > -1) {
-    newBody = stripTrailingBlankMarkers(
+    newBody = stripTrailingHardbreak(
       newBody.substring(0, signatureIndex)
     ).trimEnd();
   }
@@ -237,7 +246,7 @@ export function removeSignature(body, signature, channelType) {
   // Remove delimiter if it's at the end
   if (newBody.endsWith(SIGNATURE_DELIMITER)) {
     // if the delimiter is at the end, remove it
-    newBody = stripTrailingBlankMarkers(
+    newBody = stripTrailingBlankLine(
       newBody.slice(0, -SIGNATURE_DELIMITER.length)
     );
   }

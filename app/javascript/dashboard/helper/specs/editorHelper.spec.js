@@ -340,7 +340,7 @@ describe('removeSignature', () => {
     // writes `\` on its own line to preserve it. Plain trimEnd doesn't strip
     // those, so they used to survive removal and re-render as literal `\`.
     const body = 'hey\n\n\\\n--\n\nHello there';
-    expect(removeSignature(body, 'Hello there')).toBe('hey\n\n');
+    expect(removeSignature(body, 'Hello there')).toBe('hey');
   });
   it('strips dangling hard-break marker when signature lived in the same paragraph as "--"', () => {
     // When the signature is edited/reapplied, the delimiter and signature
@@ -359,6 +359,18 @@ describe('removeSignature', () => {
     const body1 = 'C:\\\n';
     expect(appendSignature(body, 'Best\nAgent')).toContain('C:\\');
     expect(appendSignature(body1, 'Best\nAgent')).toContain('C:\\');
+  });
+  it('preserves user text ending with "\\\\n" when REMOVING signature', () => {
+    // Reviewer case: body "C:\<Enter>--\n\nSignature" — after delimiter
+    // removal the post-slice body is "C:\<Enter>", whose trailing `\<newline>`
+    // looks identical to a serializer marker but is real user content.
+    const body = 'C:\\\n--\n\nBest\nAgent';
+    expect(removeSignature(body, 'Best\nAgent')).toContain('C:\\');
+  });
+  it('preserves user text ending with "\\\\n" when only the delimiter is removed', () => {
+    // "C:\<Enter>--" with no matching signature still runs the delimiter branch.
+    const body = 'C:\\\n--';
+    expect(removeSignature(body, 'no matching sig')).toContain('C:\\');
   });
 });
 
