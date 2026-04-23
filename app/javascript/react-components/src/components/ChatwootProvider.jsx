@@ -4,7 +4,6 @@ import store from '../../../dashboard/store';
 import constants from '../../../dashboard/constants/globals';
 import axios from 'axios';
 import createAxios from '../../../ui/axios';
-import commonHelpers from '../../../dashboard/helper/commons';
 import vueActionCable from '../../../dashboard/helper/actionCable';
 
 const ChatwootContext = createContext();
@@ -71,9 +70,6 @@ export const ChatwootProvider = ({
     window.__WOOT_SIGNATURE_READ_ONLY__ = config.signatureReadOnly;
     window.__WOOT_ISOLATED_SHELL__ = true;
     /* eslint-enable no-underscore-dangle */
-
-    // Initialize common helpers
-    commonHelpers();
 
     // Set up global objects
     // eslint-disable-next-line no-underscore-dangle

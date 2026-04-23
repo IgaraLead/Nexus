@@ -13,7 +13,7 @@ import App from 'dashboard/App.vue';
 import i18nMessages from 'dashboard/i18n';
 import createAxios from 'dashboard/helper/APIHelper';
 
-import commonHelpers, { isJSONValid } from 'dashboard/helper/commons';
+import { isJSONValid } from 'dashboard/helper/commons';
 import { sync } from 'vuex-router-sync';
 import { createPinia } from 'pinia';
 import router, { initalizeRouter } from 'dashboard/routes';
@@ -97,8 +97,6 @@ app.component('fluent-icon', FluentIcon);
 app.directive('resize', vResizeObserver);
 app.directive('on-clickaway', onClickaway);
 
-// load common helpers into js
-commonHelpers();
 window.WootConstants = constants;
 window.axios = createAxios(axios);
 // [VITE] Disabled this we don't need it, we can use `useEmitter` directly

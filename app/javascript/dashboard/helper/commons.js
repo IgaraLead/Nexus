@@ -1,17 +1,5 @@
-/* eslint no-param-reassign: 0 */
-
 import getUuid from 'widget/helpers/uuid';
 import { MESSAGE_STATUS, MESSAGE_TYPE } from 'shared/constants/messages';
-
-export default () => {
-  if (!Array.prototype.last) {
-    Object.assign(Array.prototype, {
-      last() {
-        return this[this.length - 1];
-      },
-    });
-  }
-};
 
 export const isEmptyObject = obj =>
   Object.keys(obj).length === 0 && obj.constructor === Object;

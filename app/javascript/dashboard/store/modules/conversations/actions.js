@@ -181,7 +181,7 @@ const actions = {
     );
     if (!selectedChat) return;
     const { messages } = selectedChat;
-    const lastMessage = messages.last();
+    const lastMessage = messages[messages.length - 1];
     if (!lastMessage) return;
     commit(types.SET_LAST_MESSAGE_ID_IN_SYNC_CONVERSATION, {
       conversationId,

@@ -1,4 +1,3 @@
-import commonHelpers from '../../../../helper/commons';
 import getters from '../../conversations/getters';
 /*
   Order of conversations in the fixture is as follows:
@@ -8,9 +7,6 @@ import getters from '../../conversations/getters';
   - waitingSince: c1 > c3 > c0 < c2
 */
 import conversations from './conversations.fixtures';
-
-// loads .last() helper
-commonHelpers();
 
 describe('#getters', () => {
   describe('#getAllConversations', () => {

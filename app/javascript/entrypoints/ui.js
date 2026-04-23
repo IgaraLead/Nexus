@@ -13,7 +13,6 @@ import store from '../dashboard/store';
 import constants from '../dashboard/constants/globals';
 import axios from 'axios';
 import createAxios from '../ui/axios';
-import commonHelpers from '../dashboard/helper/commons';
 import vueActionCable from '../dashboard/helper/actionCable';
 
 import MessageList from '../ui/MessageList.vue';
@@ -29,7 +28,6 @@ const i18n = createI18n({
 });
 
 export const init = async () => {
-  commonHelpers();
   // eslint-disable-next-line no-underscore-dangle
   window.__CHATWOOT_STORE__ = store;
   window.WootConstants = constants;
