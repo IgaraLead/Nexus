@@ -340,6 +340,11 @@ describe('removeSignature', () => {
       'hey'
     );
   });
+  it('strips multiple consecutive blank-paragraph markers before the delimiter', () => {
+    expect(
+      removeSignature('wewe\n\n\\\n\\\n\\\n--\n\nHello there', 'Hello there')
+    ).toBe('wewe');
+  });
   it('strips dangling hardbreak when signature shared a paragraph with "--"', () => {
     expect(removeSignature('hey\n\n--\\\nHello there', 'Hello there')).toBe(
       'hey\n\n'
