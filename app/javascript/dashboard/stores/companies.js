@@ -265,13 +265,33 @@ export const useCompaniesStore = defineStore('companies', {
       }
     },
 
+    async create(companyAttrs) {
+      this.setUIFlag({ creatingItem: true });
+      try {
+        const payload = snakecaseKeys(companyAttrs, { deep: true });
+        const requestPayload = companyAttrs.avatar
+          ? buildFormData(payload, 'company')
+          : { company: payload };
+        const {
+          data: { payload: createdPayload },
+        } = await CompanyAPI.create(requestPayload);
+        const company = normalizeCompanyRecord(createdPayload);
+        this.upsertCompanyRecord(company);
+        return company;
+      } catch (error) {
+        return throwErrorMessage(error);
+      } finally {
+        this.setUIFlag({ creatingItem: false });
+      }
+    },
+
     async update({ id, ...companyAttrs }) {
       this.setUIFlag({ updatingItem: true });
       try {
         const payload = snakecaseKeys(companyAttrs, { deep: true });
         const requestPayload = companyAttrs.avatar
           ? buildFormData(payload, 'company')
-          : payload;
+          : { company: payload };
         const {
           data: { payload: updatedPayload },
         } = await CompanyAPI.update(id, requestPayload);

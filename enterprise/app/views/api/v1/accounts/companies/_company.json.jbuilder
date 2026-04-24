@@ -3,6 +3,10 @@ json.name company.name
 json.contacts_count company.contacts_count
 json.domain company.domain
 json.crm_url company.crm_url
+json.linkedin_url company.linkedin_url
+json.twitter_url company.twitter_url
+json.github_url company.github_url
+json.instagram_url company.instagram_url
 json.description company.description
 json.avatar_url company.avatar_url
 json.created_at company.created_at

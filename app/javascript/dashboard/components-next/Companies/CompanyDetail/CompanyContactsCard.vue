@@ -27,12 +27,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits([
-  'openAddContact',
-  'openCreateContact',
-  'removeContact',
-  'update:currentPage',
-]);
+const emit = defineEmits(['removeContact', 'update:currentPage']);
 
 const route = useRoute();
 const router = useRouter();
@@ -62,7 +57,7 @@ const contactMeta = contact => {
 
 <template>
   <CardLayout>
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-2">
       <div class="flex items-start justify-between gap-3">
         <div class="flex flex-col gap-1">
           <h2 class="text-lg font-medium text-n-slate-12">
@@ -72,49 +67,34 @@ const contactMeta = contact => {
             {{ t('COMPANIES.DETAIL.CONTACTS.SUBTITLE') }}
           </p>
         </div>
-        <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-          <span
-            class="inline-flex items-center justify-center min-w-8 h-8 px-2 text-sm font-medium rounded-full bg-n-alpha-2 text-n-slate-12"
-          >
-            {{ totalContacts }}
-          </span>
-          <Button
-            :label="t('COMPANIES.DETAIL.CONTACTS.ACTIONS.ADD')"
-            color="slate"
-            variant="faded"
-            size="sm"
-            :disabled="isBusy"
-            @click="emit('openAddContact')"
-          />
-          <Button
-            :label="t('COMPANIES.DETAIL.CONTACTS.ACTIONS.CREATE')"
-            color="blue"
-            size="sm"
-            :disabled="isBusy"
-            @click="emit('openCreateContact')"
-          />
-        </div>
+        <span
+          class="inline-flex items-center justify-center min-w-8 h-8 px-2 text-sm font-medium rounded-full bg-n-alpha-2 text-n-slate-12"
+        >
+          {{ totalContacts }}
+        </span>
       </div>
+    </div>
 
+    <template #after>
       <div
         v-if="isLoading && !hasContacts"
-        class="py-8 text-sm text-center text-n-slate-11"
+        class="px-6 py-8 text-sm text-center text-n-slate-11"
       >
         {{ t('COMPANIES.DETAIL.CONTACTS.LOADING') }}
       </div>
 
       <div
         v-else-if="!hasContacts"
-        class="px-4 py-8 text-sm text-center rounded-xl border border-dashed border-n-weak text-n-slate-11"
+        class="px-6 py-8 text-sm text-center text-n-slate-11"
       >
         {{ t('COMPANIES.DETAIL.CONTACTS.EMPTY') }}
       </div>
 
-      <div v-else class="flex flex-col gap-3">
+      <div v-else class="flex flex-col">
         <div
           v-for="contact in contacts"
           :key="contact.id"
-          class="flex flex-col gap-3 p-4 rounded-xl border border-n-weak bg-n-alpha-1 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-col gap-3 px-6 py-4 border-t border-n-weak sm:flex-row sm:items-center sm:justify-between"
         >
           <div class="flex items-center min-w-0 gap-3">
             <Avatar
@@ -161,13 +141,13 @@ const contactMeta = contact => {
 
       <PaginationFooter
         v-if="showPaginationFooter"
-        current-page-info="COMPANIES_LAYOUT.PAGINATION_FOOTER.SHOWING"
+        current-page-info="CONTACTS_LAYOUT.PAGINATION_FOOTER.SHOWING"
         :current-page="currentPage"
         :total-items="totalContacts"
         :items-per-page="15"
-        class="px-0 border-t-0 before:hidden"
+        class="px-6 border-t-0 before:hidden"
         @update:current-page="emit('update:currentPage', $event)"
       />
-    </div>
+    </template>
   </CardLayout>
 </template>

@@ -38,6 +38,10 @@ class CompanyAPI extends ApiClient {
     return axios.get(requestURL);
   }
 
+  create(payload) {
+    return axios.post(this.url, payload);
+  }
+
   listContacts(id, page = 1) {
     return axios.get(
       `${this.url}/${id}/contacts?${buildCompanyContactParams(page)}`

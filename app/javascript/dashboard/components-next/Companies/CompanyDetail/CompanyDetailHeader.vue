@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useSlots, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 
@@ -19,6 +19,7 @@ const emit = defineEmits(['back']);
 
 const { t } = useI18n();
 const companiesStore = useCompaniesStore();
+const slots = useSlots();
 
 const avatarPreviewUrl = ref('');
 const isUploadingAvatar = ref(false);
@@ -118,7 +119,7 @@ const handleAvatarDelete = async () => {
   <header
     class="sticky top-0 z-10 px-6 border-b border-n-weak bg-n-surface-1/95 backdrop-blur"
   >
-    <div class="w-full max-w-6xl py-6 mx-auto">
+    <div class="w-full max-w-5xl py-6 mx-auto">
       <Breadcrumb :items="breadcrumbItems" @click="emit('back')" />
       <div
         class="flex flex-col gap-4 pt-4 sm:flex-row sm:items-start sm:justify-between"
@@ -135,18 +136,12 @@ const handleAvatarDelete = async () => {
             @delete="handleAvatarDelete"
           />
           <div class="min-w-0">
-            <h1 class="text-2xl font-semibold text-n-slate-12">
+            <h1 class="text-xl font-semibold text-n-slate-12">
               {{ displayName }}
             </h1>
-            <p
-              v-if="company?.description"
-              class="pt-1 text-sm leading-6 text-n-slate-11"
-            >
-              {{ company.description }}
-            </p>
             <div
               v-if="summaryItems.length"
-              class="flex flex-wrap items-center gap-3 pt-3"
+              class="flex flex-wrap items-center gap-3 pt-2"
             >
               <span
                 v-for="item in summaryItems"
@@ -164,6 +159,13 @@ const handleAvatarDelete = async () => {
               {{ t('COMPANIES.DETAIL.AVATAR.UPDATING') }}
             </p>
           </div>
+        </div>
+
+        <div
+          v-if="slots.actions"
+          class="flex flex-wrap items-center gap-2 sm:justify-end"
+        >
+          <slot name="actions" />
         </div>
       </div>
     </div>

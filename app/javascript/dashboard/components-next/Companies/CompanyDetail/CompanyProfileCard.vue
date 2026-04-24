@@ -3,9 +3,11 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 
-import CardLayout from 'dashboard/components-next/CardLayout.vue';
+import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
-import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import { useCompaniesStore } from 'dashboard/stores/companies';
 
 const props = defineProps({
@@ -21,17 +23,80 @@ const props = defineProps({
 
 const { t } = useI18n();
 const companiesStore = useCompaniesStore();
+const SOCIAL_LINK_FIELDS = [
+  {
+    key: 'linkedin',
+    prop: 'linkedinUrl',
+    icon: 'i-ri-linkedin-box-fill',
+    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.LINKEDIN_URL'),
+    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.LINKEDIN_URL'),
+  },
+  {
+    key: 'twitter',
+    prop: 'twitterUrl',
+    icon: 'i-ri-twitter-x-fill',
+    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.TWITTER_URL'),
+    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.TWITTER_URL'),
+  },
+  {
+    key: 'github',
+    prop: 'githubUrl',
+    icon: 'i-ri-github-fill',
+    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.GITHUB_URL'),
+    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.GITHUB_URL'),
+  },
+  {
+    key: 'instagram',
+    prop: 'instagramUrl',
+    icon: 'i-ri-instagram-line',
+    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.INSTAGRAM_URL'),
+    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.INSTAGRAM_URL'),
+  },
+];
 
 const editableName = ref('');
 const editableDomain = ref('');
-const editableCrmUrl = ref('');
 const editableDescription = ref('');
-const isEditingDescription = ref(false);
-const savingField = ref('');
+const editableLinkedinUrl = ref('');
+const editableTwitterUrl = ref('');
+const editableGithubUrl = ref('');
+const editableInstagramUrl = ref('');
+const avatarPreviewUrl = ref('');
+const isUploadingAvatar = ref(false);
 
 const uiFlags = computed(() => companiesStore.getUIFlags);
 const isUpdating = computed(() => uiFlags.value.updatingItem);
+const isDeletingAvatar = computed(() => uiFlags.value.deletingAvatar);
+const isAvatarActionInFlight = computed(
+  () => isUploadingAvatar.value || isDeletingAvatar.value
+);
+const isAvatarBusy = computed(
+  () => isAvatarActionInFlight.value || isUpdating.value
+);
 const canRenderForm = computed(() => Boolean(props.company?.id));
+const displayName = computed(
+  () => props.company?.name || t('COMPANIES.UNNAMED')
+);
+const avatarSource = computed(
+  () => avatarPreviewUrl.value || props.company?.avatarUrl || ''
+);
+const isFormInvalid = computed(() => !editableName.value.trim());
+const hasChanges = computed(() => {
+  return (
+    editableName.value.trim() !== `${props.company?.name || ''}`.trim() ||
+    editableDomain.value.trim() !== `${props.company?.domain || ''}`.trim() ||
+    editableDescription.value.trim() !==
+      `${props.company?.description || ''}`.trim() ||
+    editableLinkedinUrl.value.trim() !==
+      `${props.company?.linkedinUrl || ''}`.trim() ||
+    editableTwitterUrl.value.trim() !==
+      `${props.company?.twitterUrl || ''}`.trim() ||
+    editableGithubUrl.value.trim() !==
+      `${props.company?.githubUrl || ''}`.trim() ||
+    editableInstagramUrl.value.trim() !==
+      `${props.company?.instagramUrl || ''}`.trim()
+  );
+});
 
 const formatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -50,8 +115,11 @@ const formatDate = value => {
 const syncEditableFields = company => {
   editableName.value = company?.name || '';
   editableDomain.value = company?.domain || '';
-  editableCrmUrl.value = company?.crmUrl || '';
   editableDescription.value = company?.description || '';
+  editableLinkedinUrl.value = company?.linkedinUrl || '';
+  editableTwitterUrl.value = company?.twitterUrl || '';
+  editableGithubUrl.value = company?.githubUrl || '';
+  editableInstagramUrl.value = company?.instagramUrl || '';
 };
 
 watch(
@@ -59,222 +127,239 @@ watch(
     props.company?.id,
     props.company?.name,
     props.company?.domain,
-    props.company?.crmUrl,
     props.company?.description,
+    props.company?.linkedinUrl,
+    props.company?.twitterUrl,
+    props.company?.githubUrl,
+    props.company?.instagramUrl,
+    props.company?.avatarUrl,
   ],
   () => {
+    avatarPreviewUrl.value = '';
     syncEditableFields(props.company);
   },
   { immediate: true }
 );
 
-const readonlyProfileItems = computed(() => [
-  {
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.CONTACTS_COUNT'),
-    value: t('COMPANIES.CONTACTS_COUNT', {
+const summaryItems = computed(() => {
+  const items = [
+    t('COMPANIES.CONTACTS_COUNT', {
       n: Number(props.company?.contactsCount || 0),
     }),
+    `${t('COMPANIES.DETAIL.PROFILE.FIELDS.CREATED_AT')} ${formatDate(
+      props.company?.createdAt
+    )}`,
+    `${t('COMPANIES.DETAIL.PROFILE.FIELDS.UPDATED_AT')} ${formatDate(
+      props.company?.updatedAt
+    )}`,
+  ];
+
+  if (props.company?.domain) {
+    items.unshift(props.company.domain);
+  }
+
+  return items;
+});
+
+const socialLinkInputs = computed(() => [
+  {
+    key: 'linkedin',
+    label: SOCIAL_LINK_FIELDS[0].label,
+    icon: SOCIAL_LINK_FIELDS[0].icon,
+    model: editableLinkedinUrl,
+    placeholder: SOCIAL_LINK_FIELDS[0].placeholder,
   },
   {
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.CREATED_AT'),
-    value: formatDate(props.company?.createdAt),
+    key: 'twitter',
+    label: SOCIAL_LINK_FIELDS[1].label,
+    icon: SOCIAL_LINK_FIELDS[1].icon,
+    model: editableTwitterUrl,
+    placeholder: SOCIAL_LINK_FIELDS[1].placeholder,
   },
   {
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.UPDATED_AT'),
-    value: formatDate(props.company?.updatedAt),
+    key: 'github',
+    label: SOCIAL_LINK_FIELDS[2].label,
+    icon: SOCIAL_LINK_FIELDS[2].icon,
+    model: editableGithubUrl,
+    placeholder: SOCIAL_LINK_FIELDS[2].placeholder,
+  },
+  {
+    key: 'instagram',
+    label: SOCIAL_LINK_FIELDS[3].label,
+    icon: SOCIAL_LINK_FIELDS[3].icon,
+    model: editableInstagramUrl,
+    placeholder: SOCIAL_LINK_FIELDS[3].placeholder,
   },
 ]);
 
-const saveField = async (field, rawValue) => {
-  if (!props.company?.id || savingField.value === field) {
-    return false;
+const handleAvatarUpload = async ({ file, url }) => {
+  if (!props.company?.id || isAvatarBusy.value) {
+    return;
   }
 
-  const nextValue = rawValue.trim();
-  const currentValue = `${props.company?.[field] || ''}`.trim();
+  avatarPreviewUrl.value = url;
+  isUploadingAvatar.value = true;
 
-  if (nextValue === currentValue) {
-    syncEditableFields(props.company);
-    return true;
+  try {
+    await companiesStore.update({
+      id: props.company.id,
+      avatar: file,
+    });
+    useAlert(t('COMPANIES.DETAIL.AVATAR.UPLOAD_SUCCESS'));
+  } catch {
+    avatarPreviewUrl.value = '';
+    useAlert(t('COMPANIES.DETAIL.AVATAR.UPLOAD_ERROR'));
+  } finally {
+    isUploadingAvatar.value = false;
+  }
+};
+
+const handleAvatarDelete = async () => {
+  if (!props.company?.id || isAvatarBusy.value) {
+    return;
   }
 
-  savingField.value = field;
+  try {
+    await companiesStore.deleteCompanyAvatar(props.company.id);
+    avatarPreviewUrl.value = '';
+    useAlert(t('COMPANIES.DETAIL.AVATAR.DELETE_SUCCESS'));
+  } catch {
+    useAlert(t('COMPANIES.DETAIL.AVATAR.DELETE_ERROR'));
+  }
+};
+
+const handleUpdateCompany = async () => {
+  if (!props.company?.id || isFormInvalid.value || !hasChanges.value) {
+    return;
+  }
 
   try {
     const updatedCompany = await companiesStore.update({
       id: props.company.id,
-      [field]: nextValue,
+      name: editableName.value.trim(),
+      domain: editableDomain.value.trim(),
+      description: editableDescription.value.trim(),
+      linkedinUrl: editableLinkedinUrl.value.trim(),
+      twitterUrl: editableTwitterUrl.value.trim(),
+      githubUrl: editableGithubUrl.value.trim(),
+      instagramUrl: editableInstagramUrl.value.trim(),
     });
     syncEditableFields(updatedCompany);
     useAlert(t('COMPANIES.DETAIL.PROFILE.MESSAGES.UPDATE_SUCCESS'));
-    return true;
   } catch {
     syncEditableFields(props.company);
     useAlert(t('COMPANIES.DETAIL.PROFILE.MESSAGES.UPDATE_ERROR'));
-    return false;
-  } finally {
-    savingField.value = '';
-  }
-};
-
-const startDescriptionEdit = () => {
-  if (isUpdating.value) {
-    return;
-  }
-
-  editableDescription.value = props.company?.description || '';
-  isEditingDescription.value = true;
-};
-
-const cancelDescriptionEdit = () => {
-  editableDescription.value = props.company?.description || '';
-  isEditingDescription.value = false;
-};
-
-const saveDescription = async () => {
-  const didSave = await saveField('description', editableDescription.value);
-
-  if (didSave) {
-    isEditingDescription.value = false;
   }
 };
 </script>
 
 <template>
-  <CardLayout>
-    <div class="flex flex-col gap-6">
+  <div v-if="isLoading && !company?.id" class="text-sm text-n-slate-11">
+    {{ t('COMPANIES.DETAIL.LOADING') }}
+  </div>
+
+  <div v-else-if="canRenderForm" class="flex flex-col items-start gap-8 pb-6">
+    <div class="flex flex-col items-start gap-3">
+      <Avatar
+        :name="displayName"
+        :src="avatarSource"
+        :size="72"
+        :allow-upload="Boolean(company?.id) && !isAvatarBusy"
+        rounded-full
+        hide-offline-status
+        @upload="handleAvatarUpload"
+        @delete="handleAvatarDelete"
+      />
+
       <div class="flex flex-col gap-1">
-        <h2 class="text-lg font-medium text-n-slate-12">
-          {{ t('COMPANIES.DETAIL.PROFILE.TITLE') }}
-        </h2>
-        <p class="text-sm text-n-slate-11">
-          {{ t('COMPANIES.DETAIL.PROFILE.SUBTITLE') }}
+        <div class="flex flex-col gap-1">
+          <h3 class="text-base font-medium text-n-slate-12">
+            {{ displayName }}
+          </h3>
+        </div>
+
+        <span class="text-sm leading-6 text-n-slate-11">
+          {{ summaryItems.join(' • ') }}
+        </span>
+
+        <p v-if="isAvatarActionInFlight" class="text-sm text-n-slate-11">
+          {{ t('COMPANIES.DETAIL.AVATAR.UPDATING') }}
         </p>
       </div>
+    </div>
 
-      <div v-if="isLoading && !company?.id" class="text-sm text-n-slate-11">
-        {{ t('COMPANIES.DETAIL.LOADING') }}
+    <div class="flex flex-col items-start w-full gap-6">
+      <div class="flex flex-col gap-1">
+        <h3 class="text-base font-medium text-n-slate-12">
+          {{ t('COMPANIES.DETAIL.PROFILE.TITLE') }}
+        </h3>
       </div>
 
-      <div v-else-if="canRenderForm" class="flex flex-col gap-6">
-        <div class="flex flex-col gap-1">
-          <span
-            class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-          >
-            {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME') }}
-          </span>
-          <InlineInput
-            v-model="editableName"
-            :disabled="isUpdating"
-            :placeholder="t('COMPANIES.UNNAMED')"
-            custom-input-class="min-h-8 px-0 py-1 text-sm leading-6 border-b border-n-weak focus:border-n-brand"
-            @blur="saveField('name', $event)"
-            @enter-press="saveField('name', editableName)"
-          />
-        </div>
+      <div class="grid w-full gap-6 sm:grid-cols-2">
+        <Input
+          v-model="editableName"
+          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME')"
+          :placeholder="t('COMPANIES.UNNAMED')"
+          :disabled="isUpdating"
+        />
 
-        <div class="flex flex-col gap-1">
-          <span
-            class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-          >
-            {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN') }}
-          </span>
-          <InlineInput
-            v-model="editableDomain"
-            :disabled="isUpdating"
-            :placeholder="t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED')"
-            custom-input-class="min-h-8 px-0 py-1 text-sm leading-6 border-b border-n-weak focus:border-n-brand"
-            @blur="saveField('domain', $event)"
-            @enter-press="saveField('domain', editableDomain)"
-          />
-        </div>
+        <Input
+          v-model="editableDomain"
+          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN')"
+          :placeholder="t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED')"
+          :disabled="isUpdating"
+        />
+      </div>
 
-        <div class="flex flex-col gap-1">
-          <span
-            class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-          >
-            {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.CRM') }}
-          </span>
-          <InlineInput
-            v-model="editableCrmUrl"
-            :disabled="isUpdating"
-            :placeholder="t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED')"
-            custom-input-class="min-h-8 px-0 py-1 text-sm leading-6 border-b border-n-weak focus:border-n-brand"
-            @blur="saveField('crmUrl', $event)"
-            @enter-press="saveField('crmUrl', editableCrmUrl)"
-          />
-        </div>
+      <div class="flex flex-col w-full gap-3">
+        <TextArea
+          v-model="editableDescription"
+          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.DESCRIPTION')"
+          :placeholder="t('COMPANIES.DETAIL.PROFILE.DESCRIPTION_PLACEHOLDER')"
+          :disabled="isUpdating"
+          :max-length="280"
+          show-character-count
+          auto-height
+        />
+      </div>
 
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-3">
-            <span
-              class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-            >
-              {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.DESCRIPTION') }}
-            </span>
-            <Button
-              v-if="!isEditingDescription"
-              :label="t('COMPANIES.DETAIL.PROFILE.ACTIONS.EDIT_DESCRIPTION')"
-              variant="link"
-              color="slate"
-              size="sm"
-              :disabled="isUpdating"
-              @click="startDescriptionEdit"
-            />
-          </div>
+      <div class="flex flex-col items-start gap-2">
+        <span class="py-1 text-sm font-medium text-n-slate-12">
+          {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.SOCIAL_LINKS') }}
+        </span>
 
-          <template v-if="isEditingDescription">
-            <textarea
-              v-model="editableDescription"
-              rows="5"
-              class="w-full px-3 py-2 text-sm leading-6 border rounded-xl border-n-weak bg-n-surface-1 text-n-slate-12 placeholder:text-n-slate-10 focus:outline-none focus:ring-1 focus:ring-n-brand focus:border-n-brand"
-              :placeholder="
-                t('COMPANIES.DETAIL.PROFILE.DESCRIPTION_PLACEHOLDER')
-              "
-            />
-            <div class="flex items-center justify-end gap-3">
-              <Button
-                :label="t('COMPANIES.DETAIL.PROFILE.ACTIONS.CANCEL')"
-                color="slate"
-                variant="faded"
-                size="sm"
-                @click="cancelDescriptionEdit"
-              />
-              <Button
-                :label="t('COMPANIES.DETAIL.PROFILE.ACTIONS.SAVE')"
-                color="blue"
-                size="sm"
-                :is-loading="savingField === 'description'"
-                :disabled="isUpdating"
-                @click="saveDescription"
-              />
-            </div>
-          </template>
-
-          <p v-else class="text-sm leading-6 break-words text-n-slate-12">
-            {{
-              company?.description || t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED')
-            }}
-          </p>
-        </div>
-
-        <dl class="grid gap-4 sm:grid-cols-2">
+        <div class="flex flex-wrap gap-2">
           <div
-            v-for="item in readonlyProfileItems"
-            :key="item.label"
-            class="flex flex-col gap-1"
+            v-for="field in socialLinkInputs"
+            :key="field.key"
+            class="flex items-center h-8 gap-2 px-2 rounded-lg bg-n-alpha-2 dark:bg-n-solid-2"
           >
-            <dt
-              class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-            >
-              {{ item.label }}
-            </dt>
-            <dd class="text-sm leading-6 break-words text-n-slate-12">
-              {{ item.value }}
-            </dd>
+            <Icon
+              :icon="field.icon"
+              class="flex-shrink-0 text-n-slate-11 size-4"
+            />
+            <input
+              v-model="field.model.value"
+              type="url"
+              :aria-label="field.label"
+              :disabled="isUpdating"
+              :placeholder="field.placeholder"
+              class="w-auto min-w-[100px] text-sm bg-transparent outline-none reset-base text-n-slate-12 dark:text-n-slate-12 placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:opacity-60"
+              :size="field.placeholder.length"
+            />
           </div>
-        </dl>
+        </div>
+      </div>
+
+      <div class="flex items-center">
+        <Button
+          :label="t('COMPANIES.DETAIL.PROFILE.ACTIONS.SAVE')"
+          size="sm"
+          :is-loading="isUpdating"
+          :disabled="isUpdating || isFormInvalid || !hasChanges"
+          @click="handleUpdateCompany"
+        />
       </div>
     </div>
-  </CardLayout>
+  </div>
 </template>

@@ -5,6 +5,7 @@
 #  id                :bigint           not null, primary key
 #  answer            :text             not null
 #  documentable_type :string
+#  edited            :boolean          default(FALSE), not null
 #  embedding         :vector(1536)
 #  question          :string           not null
 #  status            :integer          default("approved"), not null

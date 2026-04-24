@@ -84,7 +84,17 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   end
 
   def company_params
-    params.require(:company).permit(:name, :domain, :description, :crm_url, :avatar)
+    params.require(:company).permit(
+      :name,
+      :domain,
+      :description,
+      :crm_url,
+      :linkedin_url,
+      :twitter_url,
+      :github_url,
+      :instagram_url,
+      :avatar
+    )
   end
 
   def company_policy_action

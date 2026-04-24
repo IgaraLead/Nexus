@@ -1,5 +1,5 @@
 <script setup>
-import { useTemplateRef, onMounted, ref } from 'vue';
+import { computed, useTemplateRef, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 import { useToggle } from '@vueuse/core';
@@ -16,6 +16,34 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  avatarName: {
+    type: String,
+    default: '',
+  },
+  avatarSrc: {
+    type: String,
+    default: '',
+  },
+  metadataLabel: {
+    type: String,
+    default: '',
+  },
+  metadataPrefix: {
+    type: String,
+    default: '',
+  },
+  metadataValue: {
+    type: String,
+    default: '',
+  },
+  writtenByClickable: {
+    type: Boolean,
+    default: false,
+  },
+  metadataValueClickable: {
+    type: Boolean,
+    default: false,
+  },
   allowDelete: {
     type: Boolean,
     default: false,
@@ -26,15 +54,37 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['delete']);
+const emit = defineEmits(['delete', 'writtenByClick', 'metadataClick']);
 const noteContentRef = useTemplateRef('noteContentRef');
 const needsCollapse = ref(false);
 const [isExpanded, toggleExpanded] = useToggle();
 const { t } = useI18n();
 const { formatMessage } = useMessageFormatter();
+const noteMetaSeparator = '•';
+const displayAvatarName = computed(
+  () => props.avatarName || props.note?.user?.name || 'Bot'
+);
+const displayAvatarSrc = computed(() => {
+  if (props.avatarSrc) {
+    return props.avatarSrc;
+  }
+
+  return props.note?.user?.name
+    ? props.note?.user?.thumbnail
+    : '/assets/images/chatwoot_bot.png';
+});
+const hasMetadata = computed(() => props.metadataLabel || props.metadataValue);
 
 const handleDelete = () => {
   emit('delete', props.note.id);
+};
+
+const handleWrittenByClick = () => {
+  emit('writtenByClick');
+};
+
+const handleMetadataClick = () => {
+  emit('metadataClick');
 };
 
 onMounted(() => {
@@ -49,25 +99,53 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-2 border-b border-n-strong group/note">
-    <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-1.5 min-w-0">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex items-center min-w-0 gap-1.5">
         <Avatar
-          :name="note?.user?.name || 'Bot'"
-          :src="
-            note?.user?.name
-              ? note?.user?.thumbnail
-              : '/assets/images/chatwoot_bot.png'
-          "
+          :name="displayAvatarName"
+          :src="displayAvatarSrc"
           :size="16"
+          class="flex-shrink-0"
           rounded-full
         />
-        <div class="min-w-0 truncate">
-          <span class="inline-flex items-center gap-1 text-sm text-n-slate-11">
-            <span class="font-medium text-n-slate-12">{{ writtenBy }}</span>
-            {{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.WROTE') }}
-            <span class="font-medium text-n-slate-12">
-              {{ dynamicTime(note.createdAt) }}
+        <div class="min-w-0 text-sm leading-4 truncate text-n-slate-11">
+          <button
+            v-if="writtenByClickable"
+            type="button"
+            class="reset-base inline !p-0 !m-0 font-medium leading-4 align-baseline text-n-slate-12 hover:text-n-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-n-brand rounded-sm"
+            @click.stop="handleWrittenByClick"
+          >
+            {{ writtenBy }}
+          </button>
+          <span v-else class="font-medium leading-4 text-n-slate-12">
+            {{ writtenBy }}
+          </span>
+          <template v-if="hasMetadata">
+            <span class="text-n-slate-10">
+              {{ ` ${noteMetaSeparator} ` }}
             </span>
+            <template v-if="metadataValue">
+              <span v-if="metadataPrefix"> {{ metadataPrefix }}{{ ' ' }} </span>
+              <button
+                v-if="metadataValueClickable"
+                type="button"
+                class="reset-base inline !p-0 !m-0 leading-4 align-baseline hover:text-n-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-n-brand rounded-sm"
+                @click.stop="handleMetadataClick"
+              >
+                {{ metadataValue }}
+              </button>
+              <span v-else>{{ metadataValue }}</span>
+            </template>
+            <span v-else>{{ metadataLabel }}</span>
+            <span class="text-n-slate-10">
+              {{ ` ${noteMetaSeparator} ` }}
+            </span>
+          </template>
+          <template v-else>
+            {{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.WROTE') }}
+          </template>
+          <span class="font-medium leading-4 text-n-slate-12">
+            {{ dynamicTime(note.createdAt) }}
           </span>
         </div>
       </div>

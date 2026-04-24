@@ -31,7 +31,8 @@ const dialogRef = ref(null);
 
 const description = computed(() =>
   t('COMPANIES.DETAIL.CONTACTS.DIALOGS.REASSIGN.DESCRIPTION', {
-    contactName: props.contact?.name || t('CONTACTS_LAYOUT.FORM.NAME.LABEL'),
+    contactName:
+      props.contact?.name || t('COMPANIES.DETAIL.CONTACTS.UNNAMED_CONTACT'),
     fromCompany: props.fromCompany?.name || t('COMPANIES.UNNAMED'),
     toCompany: props.toCompany?.name || t('COMPANIES.UNNAMED'),
   })

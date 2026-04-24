@@ -2,20 +2,24 @@
 #
 # Table name: captain_documents
 #
-#  id            :bigint           not null, primary key
-#  content       :text
-#  external_link :string           not null
-#  metadata      :jsonb
-#  name          :string
-#  status        :integer          default("in_progress"), not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#  account_id    :bigint           not null
-#  assistant_id  :bigint           not null
+#  id                     :bigint           not null, primary key
+#  content                :text
+#  external_link          :string           not null
+#  last_sync_attempted_at :datetime
+#  last_synced_at         :datetime
+#  metadata               :jsonb
+#  name                   :string
+#  status                 :integer          default("in_progress"), not null
+#  sync_status            :integer
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  account_id             :bigint           not null
+#  assistant_id           :bigint           not null
 #
 # Indexes
 #
 #  index_captain_documents_on_account_id                      (account_id)
+#  index_captain_documents_on_account_id_and_sync_status      (account_id,sync_status)
 #  index_captain_documents_on_assistant_id                    (assistant_id)
 #  index_captain_documents_on_assistant_id_and_external_link  (assistant_id,external_link) UNIQUE
 #  index_captain_documents_on_status                          (status)
