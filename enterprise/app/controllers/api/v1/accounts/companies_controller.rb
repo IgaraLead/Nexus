@@ -88,11 +88,8 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
       :name,
       :domain,
       :description,
-      :linkedin_url,
-      :twitter_url,
-      :github_url,
-      :instagram_url,
-      :avatar
+      :avatar,
+      additional_attributes: {}
     )
   end
 

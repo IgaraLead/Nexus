@@ -2,15 +2,12 @@
 #
 # Table name: companies
 #
+#  additional_attributes :jsonb
 #  id             :bigint           not null, primary key
 #  contacts_count :integer
 #  description    :text
 #  domain         :string
-#  github_url     :string
-#  instagram_url  :string
-#  linkedin_url   :string
 #  name           :string           not null
-#  twitter_url    :string
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
 #  account_id     :bigint           not null
@@ -23,12 +20,6 @@
 #
 class Company < ApplicationRecord
   include Avatarable
-  SOCIAL_URL_ATTRIBUTES = %i[
-    linkedin_url
-    twitter_url
-    github_url
-    instagram_url
-  ].freeze
 
   validates :account_id, presence: true
   validates :name, presence: true, length: { maximum: Limits::COMPANY_NAME_LENGTH_LIMIT }
@@ -38,11 +29,6 @@ class Company < ApplicationRecord
   }
   validates :domain, uniqueness: { scope: :account_id }, if: -> { domain.present? }
   validates :description, length: { maximum: Limits::COMPANY_DESCRIPTION_LENGTH_LIMIT }
-  SOCIAL_URL_ATTRIBUTES.each do |attribute|
-    validates attribute, allow_blank: true,
-                         length: { maximum: Limits::URL_LENGTH_LIMIT },
-                         format: URI::DEFAULT_PARSER.make_regexp(%w[http https])
-  end
 
   belongs_to :account
   has_many :contacts, dependent: :nullify

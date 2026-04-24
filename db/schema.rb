@@ -621,10 +621,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_22_133000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "contacts_count"
-    t.string "linkedin_url"
-    t.string "twitter_url"
-    t.string "github_url"
-    t.string "instagram_url"
+    t.jsonb "additional_attributes", default: {}
     t.index ["account_id", "domain"], name: "index_companies_on_account_and_domain", unique: true, where: "(domain IS NOT NULL)"
     t.index ["account_id"], name: "index_companies_on_account_id"
     t.index ["name", "account_id"], name: "index_companies_on_name_and_account_id"

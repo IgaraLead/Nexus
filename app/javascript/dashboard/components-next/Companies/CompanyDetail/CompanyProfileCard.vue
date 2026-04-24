@@ -26,28 +26,24 @@ const companiesStore = useCompaniesStore();
 const SOCIAL_LINK_FIELDS = [
   {
     key: 'linkedin',
-    prop: 'linkedinUrl',
     icon: 'i-ri-linkedin-box-fill',
     label: t('COMPANIES.DETAIL.PROFILE.FIELDS.LINKEDIN_URL'),
     placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.LINKEDIN_URL'),
   },
   {
     key: 'twitter',
-    prop: 'twitterUrl',
     icon: 'i-ri-twitter-x-fill',
     label: t('COMPANIES.DETAIL.PROFILE.FIELDS.TWITTER_URL'),
     placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.TWITTER_URL'),
   },
   {
     key: 'github',
-    prop: 'githubUrl',
     icon: 'i-ri-github-fill',
     label: t('COMPANIES.DETAIL.PROFILE.FIELDS.GITHUB_URL'),
     placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.GITHUB_URL'),
   },
   {
     key: 'instagram',
-    prop: 'instagramUrl',
     icon: 'i-ri-instagram-line',
     label: t('COMPANIES.DETAIL.PROFILE.FIELDS.INSTAGRAM_URL'),
     placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.INSTAGRAM_URL'),
@@ -80,6 +76,9 @@ const displayName = computed(
 const avatarSource = computed(
   () => avatarPreviewUrl.value || props.company?.avatarUrl || ''
 );
+const socialProfiles = computed(
+  () => props.company?.additionalAttributes?.socialProfiles || {}
+);
 const isFormInvalid = computed(() => !editableName.value.trim());
 const hasChanges = computed(() => {
   return (
@@ -88,13 +87,13 @@ const hasChanges = computed(() => {
     editableDescription.value.trim() !==
       `${props.company?.description || ''}`.trim() ||
     editableLinkedinUrl.value.trim() !==
-      `${props.company?.linkedinUrl || ''}`.trim() ||
+      `${socialProfiles.value.linkedin || ''}`.trim() ||
     editableTwitterUrl.value.trim() !==
-      `${props.company?.twitterUrl || ''}`.trim() ||
+      `${socialProfiles.value.twitter || ''}`.trim() ||
     editableGithubUrl.value.trim() !==
-      `${props.company?.githubUrl || ''}`.trim() ||
+      `${socialProfiles.value.github || ''}`.trim() ||
     editableInstagramUrl.value.trim() !==
-      `${props.company?.instagramUrl || ''}`.trim()
+      `${socialProfiles.value.instagram || ''}`.trim()
   );
 });
 
@@ -113,13 +112,16 @@ const formatDate = value => {
 };
 
 const syncEditableFields = company => {
+  const companySocialProfiles =
+    company?.additionalAttributes?.socialProfiles || {};
+
   editableName.value = company?.name || '';
   editableDomain.value = company?.domain || '';
   editableDescription.value = company?.description || '';
-  editableLinkedinUrl.value = company?.linkedinUrl || '';
-  editableTwitterUrl.value = company?.twitterUrl || '';
-  editableGithubUrl.value = company?.githubUrl || '';
-  editableInstagramUrl.value = company?.instagramUrl || '';
+  editableLinkedinUrl.value = companySocialProfiles.linkedin || '';
+  editableTwitterUrl.value = companySocialProfiles.twitter || '';
+  editableGithubUrl.value = companySocialProfiles.github || '';
+  editableInstagramUrl.value = companySocialProfiles.instagram || '';
 };
 
 watch(
@@ -128,10 +130,7 @@ watch(
     props.company?.name,
     props.company?.domain,
     props.company?.description,
-    props.company?.linkedinUrl,
-    props.company?.twitterUrl,
-    props.company?.githubUrl,
-    props.company?.instagramUrl,
+    props.company?.additionalAttributes,
     props.company?.avatarUrl,
   ],
   () => {
@@ -239,10 +238,16 @@ const handleUpdateCompany = async () => {
       name: editableName.value.trim(),
       domain: editableDomain.value.trim(),
       description: editableDescription.value.trim(),
-      linkedinUrl: editableLinkedinUrl.value.trim(),
-      twitterUrl: editableTwitterUrl.value.trim(),
-      githubUrl: editableGithubUrl.value.trim(),
-      instagramUrl: editableInstagramUrl.value.trim(),
+      additionalAttributes: {
+        ...(props.company?.additionalAttributes || {}),
+        socialProfiles: {
+          ...socialProfiles.value,
+          linkedin: editableLinkedinUrl.value.trim(),
+          twitter: editableTwitterUrl.value.trim(),
+          github: editableGithubUrl.value.trim(),
+          instagram: editableInstagramUrl.value.trim(),
+        },
+      },
     });
     syncEditableFields(updatedCompany);
     useAlert(t('COMPANIES.DETAIL.PROFILE.MESSAGES.UPDATE_SUCCESS'));
