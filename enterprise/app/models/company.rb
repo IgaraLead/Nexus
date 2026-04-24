@@ -4,7 +4,6 @@
 #
 #  id             :bigint           not null, primary key
 #  contacts_count :integer
-#  crm_url        :string
 #  description    :text
 #  domain         :string
 #  github_url     :string
@@ -25,7 +24,6 @@
 class Company < ApplicationRecord
   include Avatarable
   SOCIAL_URL_ATTRIBUTES = %i[
-    crm_url
     linkedin_url
     twitter_url
     github_url

@@ -88,7 +88,6 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
       :name,
       :domain,
       :description,
-      :crm_url,
       :linkedin_url,
       :twitter_url,
       :github_url,

@@ -2,7 +2,6 @@ json.id company.id
 json.name company.name
 json.contacts_count company.contacts_count
 json.domain company.domain
-json.crm_url company.crm_url
 json.linkedin_url company.linkedin_url
 json.twitter_url company.twitter_url
 json.github_url company.github_url
