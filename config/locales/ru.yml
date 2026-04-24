@@ -482,6 +482,12 @@ ru:
   agent_capacity_policy:
     inbox_already_assigned: 'Входящие уже были назначены на эту политику'
   portals:
+    articles:
+      captain_not_available: 'Translation requires Captain to be enabled for this account'
+      locale_not_available: 'Locale not available in this portal'
+      category_not_found: 'Category not found in this portal'
+      no_articles_found: 'No articles found to process'
+      invalid_status: 'Invalid status value'
     send_instructions:
       email_required: 'Необходимо указать Email'
       invalid_email_format: 'Неправильный формат email'
