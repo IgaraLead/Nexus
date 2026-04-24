@@ -406,6 +406,28 @@ describe('hasContentBeforeSignature', () => {
     expect(hasContentBeforeSignature('\n\n--\n\nBest\n--\nDept')).toBe(false);
   });
 
+  it('tolerates horizontal whitespace around the delimiter line', () => {
+    expect(hasContentBeforeSignature('Hello\n\n  --  \n\nBest')).toBe(true);
+    expect(hasContentBeforeSignature('\n\n\t--\t\n\nBest')).toBe(false);
+  });
+
+  it('does not treat markdown horizontal rules as the delimiter', () => {
+    // Body starts with a horizontal rule; content follows
+    expect(hasContentBeforeSignature('---\nSome content')).toBe(true);
+    expect(hasContentBeforeSignature('----\nSome content')).toBe(true);
+    // Horizontal rule mid-body, content after
+    expect(hasContentBeforeSignature('Hello\n\n---\n\nWorld')).toBe(true);
+    // Horizontal rule only (no content) is still "no content"
+    expect(hasContentBeforeSignature('---')).toBe(true); // `---` is itself non-whitespace text before any delimiter line
+  });
+
+  it('does not treat inline "--" as the delimiter', () => {
+    expect(hasContentBeforeSignature('checkout -- quickly')).toBe(true);
+    expect(hasContentBeforeSignature('Hello -- world\n\n--\n\nSig')).toBe(true);
+    expect(hasContentBeforeSignature('foo--bar')).toBe(true);
+    expect(hasContentBeforeSignature('foo -- bar')).toBe(true);
+  });
+
   it('does not mutate the input', () => {
     const body = '  \n\nHello\n\n--\n\nBest  ';
     hasContentBeforeSignature(body);

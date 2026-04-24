@@ -1,13 +1,13 @@
 import {
-  messageSchema,
-  MessageMarkdownTransformer,
   MessageMarkdownSerializer,
+  MessageMarkdownTransformer,
+  messageSchema,
 } from '@chatwoot/prosemirror-schema';
 import { replaceVariablesInMessage } from '@chatwoot/utils';
 import * as Sentry from '@sentry/vue';
+import camelcaseKeys from 'camelcase-keys';
 import { FORMATTING, MARKDOWN_PATTERNS } from 'dashboard/constants/editor';
 import { INBOX_TYPES, TWILIO_CHANNEL_MEDIUM } from 'dashboard/helper/inbox';
-import camelcaseKeys from 'camelcase-keys';
 
 /**
  * Extract text from markdown, and remove all images, code blocks, links, headers, bold, italic, lists etc.
@@ -98,17 +98,26 @@ export function stripUnsupportedMarkdown(
 export const SIGNATURE_DELIMITER = '--';
 
 /**
+ * Matches the signature delimiter only when it sits on its own line
+ * (horizontal whitespace around it is allowed so user edits don't break it).
+ * This is the format produced by `appendDelimiter`, so plain markdown
+ * horizontal rules like `---` / `----` or an inline `--` inside a sentence
+ * are NOT treated as the delimiter.
+ */
+const SIGNATURE_DELIMITER_LINE_REGEX = /^[^\S\n]*--[^\S\n]*$/m;
+
+/**
  * Returns true if there is meaningful (non-whitespace) content before the
- * signature delimiter. Anything after the first `--` is treated as signature
- * and ignored, so stray newlines/spaces left behind by a signature toggle
- * don't count as content.
+ * signature delimiter line. Stray newlines/spaces left behind by a signature
+ * toggle don't count as content. Does not mutate the input.
  *
  * @param {string} body
  * @returns {boolean}
  */
 export function hasContentBeforeSignature(body) {
   if (!body) return false;
-  const [beforeDelimiter] = body.split(SIGNATURE_DELIMITER);
+  const match = body.match(SIGNATURE_DELIMITER_LINE_REGEX);
+  const beforeDelimiter = match ? body.slice(0, match.index) : body;
   return !!beforeDelimiter.trim();
 }
 
