@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import { dynamicTime } from 'shared/helpers/timeHelper';
+import { isPdfDocument } from 'shared/helpers/documentHelper';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
@@ -122,6 +123,12 @@ const handleDocumentableClick = () => {
     type: props.documentable.type,
   });
 };
+
+const isDocumentablePdf = computed(() =>
+  props.documentable?.type === 'Captain::Document'
+    ? isPdfDocument(props.documentable.external_link)
+    : false
+);
 </script>
 
 <template>
@@ -239,8 +246,21 @@ const handleDocumentableClick = () => {
               icon="i-ph-chat-circle-dots"
               class="size-3.5"
             />
+            <a
+              v-if="
+                documentable.type === 'Captain::Document' && !isDocumentablePdf
+              "
+              :href="documentable.external_link"
+              :title="documentable.external_link"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="truncate hover:text-n-slate-12 hover:underline"
+              @click.stop
+            >
+              {{ documentable.name }}
+            </a>
             <span
-              v-if="documentable.type === 'Captain::Document'"
+              v-else-if="documentable.type === 'Captain::Document'"
               class="truncate"
               :title="documentable.name"
             >

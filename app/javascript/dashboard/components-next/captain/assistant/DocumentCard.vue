@@ -7,6 +7,7 @@ import { usePolicy } from 'dashboard/composables/usePolicy';
 import {
   isPdfDocument,
   formatDocumentLink,
+  getDocumentHost,
 } from 'shared/helpers/documentHelper';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
@@ -119,7 +120,11 @@ const menuItems = computed(() => {
 
 const createdAtLabel = computed(() => dynamicTime(props.createdAt));
 
-const displayLink = computed(() => formatDocumentLink(props.externalLink));
+const displayLink = computed(() =>
+  isPdf.value
+    ? formatDocumentLink(props.externalLink)
+    : getDocumentHost(props.externalLink)
+);
 const linkIcon = computed(() =>
   isPdf.value ? 'i-ph-file-pdf' : 'i-ph-link-simple'
 );
@@ -175,7 +180,21 @@ const handleAction = ({ action, value }) => {
         <i class="i-woot-captain" />
         {{ assistant?.name || '' }}
       </span>
+      <a
+        v-if="!isPdf"
+        :href="externalLink"
+        :title="externalLink"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex flex-1 gap-1 justify-start items-center text-sm truncate text-n-slate-11 hover:text-n-slate-12 hover:underline"
+        @click.stop
+      >
+        <i :class="linkIcon" class="shrink-0" />
+        <span class="truncate">{{ displayLink }}</span>
+        <i class="i-lucide-external-link size-3 shrink-0 opacity-70" />
+      </a>
       <span
+        v-else
         class="flex flex-1 gap-1 justify-start items-center text-sm truncate text-n-slate-11"
       >
         <i :class="linkIcon" class="shrink-0" />

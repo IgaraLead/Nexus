@@ -4,8 +4,10 @@
 #
 #  id                     :bigint           not null, primary key
 #  content                :text
+#  content_fingerprint    :string
 #  external_link          :string           not null
 #  last_sync_attempted_at :datetime
+#  last_sync_error_code   :string
 #  last_synced_at         :datetime
 #  metadata               :jsonb
 #  name                   :string
@@ -19,10 +21,10 @@
 # Indexes
 #
 #  index_captain_documents_on_account_id                      (account_id)
-#  index_captain_documents_on_account_id_and_sync_status      (account_id,sync_status)
 #  index_captain_documents_on_assistant_id                    (assistant_id)
 #  index_captain_documents_on_assistant_id_and_external_link  (assistant_id,external_link) UNIQUE
 #  index_captain_documents_on_status                          (status)
+#  index_captain_documents_on_sync_status                     (sync_status)
 #
 class Captain::Document < ApplicationRecord
   class LimitExceededError < StandardError; end
@@ -51,6 +53,8 @@ class Captain::Document < ApplicationRecord
 
   enum :sync_status, { syncing: 0, synced: 1, failed: 2 }, prefix: :sync
 
+  STALE_THRESHOLD = 7.days
+
   before_create :ensure_within_plan_limit
   after_create_commit :enqueue_crawl_job
   after_create_commit :update_document_usage
@@ -60,6 +64,11 @@ class Captain::Document < ApplicationRecord
 
   scope :for_account, ->(account_id) { where(account_id: account_id) }
   scope :for_assistant, ->(assistant_id) { where(assistant_id: assistant_id) }
+  scope :syncable, -> { where("external_link NOT LIKE 'PDF:%' AND external_link NOT LIKE '%.pdf'") }
+  scope :stale, lambda {
+    sync_failed.or(sync_synced.where(arel_table[:last_synced_at].lt(STALE_THRESHOLD.ago)))
+  }
+  scope :synced_since, ->(time) { sync_synced.where(arel_table[:last_synced_at].gteq(time)) }
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'

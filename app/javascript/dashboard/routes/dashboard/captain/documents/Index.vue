@@ -9,6 +9,7 @@ import { usePolicy } from 'dashboard/composables/usePolicy';
 
 import DeleteDialog from 'dashboard/components-next/captain/pageComponents/DeleteDialog.vue';
 import DocumentCard from 'dashboard/components-next/captain/assistant/DocumentCard.vue';
+import DocumentSyncStatsBar from 'dashboard/components-next/captain/assistant/DocumentSyncStatsBar.vue';
 import BulkSelectBar from 'dashboard/components-next/captain/assistant/BulkSelectBar.vue';
 import BulkDeleteDialog from 'dashboard/components-next/captain/pageComponents/BulkDeleteDialog.vue';
 import Policy from 'dashboard/components/policy.vue';
@@ -21,6 +22,7 @@ import DocumentPageEmptyState from 'dashboard/components-next/captain/pageCompon
 import FeatureSpotlightPopover from 'dashboard/components-next/feature-spotlight/FeatureSpotlightPopover.vue';
 import LimitBanner from 'dashboard/components-next/captain/pageComponents/document/LimitBanner.vue';
 import { isPdfDocument } from 'shared/helpers/documentHelper';
+import CaptainDocumentAPI from 'dashboard/api/captain/document';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -72,13 +74,37 @@ const handleCreateDialogClose = () => {
   showCreateDialog.value = false;
 };
 
+const stats = ref(null);
+const activeFilter = ref(null);
+
+const fetchStats = async () => {
+  try {
+    const { data } = await CaptainDocumentAPI.getStats({
+      assistantId: selectedAssistantId.value,
+    });
+    stats.value = data;
+  } catch (error) {
+    // non-blocking: keep last known stats
+  }
+};
+
 const fetchDocuments = (page = 1) => {
   const filterParams = { page };
 
   if (selectedAssistantId.value) {
     filterParams.assistantId = selectedAssistantId.value;
   }
+  if (activeFilter.value) {
+    filterParams.filter = activeFilter.value;
+  }
+  fetchStats();
   return store.dispatch('captainDocuments/get', filterParams);
+};
+
+const handleFilterSelect = filterKey => {
+  activeFilter.value = filterKey;
+  bulkSelectedIds.value = new Set();
+  fetchDocuments(1);
 };
 
 const syncPollTimer = ref(null);
@@ -278,6 +304,15 @@ onBeforeUnmount(() => {
           </template>
         </BulkSelectBar>
       </Policy>
+    </template>
+
+    <template #controls>
+      <DocumentSyncStatsBar
+        :stats="stats"
+        :active-filter="activeFilter"
+        class="mb-5"
+        @select="handleFilterSelect"
+      />
     </template>
 
     <template #knowMore>

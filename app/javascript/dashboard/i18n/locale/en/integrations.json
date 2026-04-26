@@ -758,6 +758,13 @@
         "QUEUED_MESSAGE": "Sync queued",
         "ERROR_MESSAGE": "Could not queue sync, please try again."
       },
+      "STATS": {
+        "TOTAL": "Total",
+        "STALE": "Stale",
+        "SYNCING": "Syncing",
+        "SYNCED_RECENTLY": "Synced this week",
+        "CAPTION": "Web sources only. PDFs don't sync — they're processed once at upload."
+      },
       "SYNC_STATUS": {
         "SYNCED": "Synced {time}",
         "SYNCING": "Syncing…",

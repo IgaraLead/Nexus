@@ -79,6 +79,7 @@ Rails.application.routes.draw do
             end
             resources :documents, only: [:index, :show, :create, :destroy] do
               post :sync, on: :member
+              get :stats, on: :collection
             end
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite
