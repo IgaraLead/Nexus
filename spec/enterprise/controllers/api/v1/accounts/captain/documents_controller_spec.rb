@@ -235,6 +235,53 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/:account_id/captain/documents/:id/sync' do
+    include ActiveJob::TestHelper
+
+    before { clear_enqueued_jobs }
+
+    context 'when it is an un-authenticated user' do
+      it 'returns unauthorized status' do
+        post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when it is an agent' do
+      it 'denies the request' do
+        post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync",
+             headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when it is an admin' do
+      it 'queues a sync and returns accepted' do
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync",
+               headers: admin.create_new_auth_token, as: :json
+        end.to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+
+        expect(response).to have_http_status(:accepted)
+      end
+
+      it 'rejects PDF documents with an explanatory error' do
+        pdf_document = build(:captain_document, assistant: assistant, account: account)
+        pdf_document.pdf_file.attach(io: StringIO.new('PDF content'), filename: 'test.pdf',
+                                     content_type: 'application/pdf')
+        pdf_document.save!
+
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/documents/#{pdf_document.id}/sync",
+               headers: admin.create_new_auth_token, as: :json
+        end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+  end
+
   describe 'DELETE /api/v1/accounts/:account_id/captain/documents/:id' do
     context 'when it is an un-authenticated user' do
       before do
