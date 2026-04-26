@@ -11,43 +11,6 @@ RSpec.describe Account, type: :model do
     it { is_expected.to have_many(:custom_roles).dependent(:destroy_async) }
   end
 
-  describe 'captain document auto sync' do
-    let(:account) { create(:account) }
-    let(:assistant) { create(:captain_assistant, account: account) }
-
-    it 'seeds last sync attempts for existing available documents when auto sync is enabled' do
-      due_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :available,
-        last_sync_attempted_at: nil
-      )
-      already_seeded_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :available,
-        last_sync_attempted_at: 2.days.ago
-      )
-      in_progress_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :in_progress,
-        last_sync_attempted_at: nil
-      )
-
-      freeze_time do
-        account.update!(captain_document_auto_sync_enabled: true)
-
-        expect(due_document.reload.last_sync_attempted_at).to eq(Time.current)
-        expect(already_seeded_document.reload.last_sync_attempted_at).to be_within(1.second).of(2.days.ago)
-        expect(in_progress_document.reload.last_sync_attempted_at).to be_nil
-      end
-    end
-  end
-
   describe 'sla_policies' do
     let!(:account) { create(:account) }
     let!(:sla_policy) { create(:sla_policy, account: account) }

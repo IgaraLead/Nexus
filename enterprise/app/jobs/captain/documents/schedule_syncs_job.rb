@@ -6,7 +6,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
       next unless account.feature_enabled?('captain_document_auto_sync')
 
       interval = account.captain_document_sync_interval
-      next unless interval && account.captain_document_auto_sync_enabled?
+      next unless interval
 
       enqueue_due_documents(account, interval)
     end
