@@ -1,16 +1,24 @@
-class Captain::Documents::PerformSyncJob < ApplicationJob
+class Captain::Documents::PerformSyncJob < MutexApplicationJob
   queue_as :low
 
   # A single page fetch + fingerprint compare should complete in seconds.
   # 10 minutes is generous headroom — if still "syncing" after that, the worker likely died mid-run.
   # Shared with ScheduleSyncsJob so stale locks are re-enqueued at the same threshold.
-  STALE_LOCK_THRESHOLD = 10.minutes
+  LOCK_TIMEOUT = 10.minutes
 
   # Safety net for anything we didn't rescue by name — parser bugs, ActiveRecord blips,
-  # random infra issues. Three attempts lets a real hiccup recover without Sidekiq's
-  # default 25 retries piling up for what's actually a deterministic bug.
+  # random infra issues. Three attempts lets a real hiccup recover. The exhaustion block
+  # absorbs the final exception so Sidekiq doesn't layer its own retry policy on top, and
+  # is the single place we report to Sentry — handle_unexpected_failure logs but does not
+  # capture, so a deterministic bug emits one Sentry event instead of one per attempt.
   # Goes first because retry_on handlers dispatch bottom-to-top.
-  retry_on StandardError, wait: 5.seconds, attempts: 3
+  retry_on StandardError, wait: 5.seconds, attempts: 3 do |job, error|
+    document = job.arguments.first
+    ChatwootExceptionTracker.new(error, account: document.account).capture_exception
+    job.send(:log_sync_outcome, document, result: :unexpected_retry_exhausted,
+                                          error_code: 'sync_error',
+                                          exception_class: error.class.name)
+  end
 
   # Permanent errors (404, 403, empty content) — no point retrying, discard immediately.
   # Document is already marked failed by SyncService before the exception reaches here.
@@ -19,7 +27,6 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
   # TransientSyncError is raised by SyncService when the customer's site is unreachable —
   # timeouts, TLS errors, 5xx, connection drops. Four attempts with backoff gives the site
   # a chance to recover before we give up.
-  # Lock contention is handled locally in acquire_sync_lock, not via this retry path.
   #
   # The exhaustion block absorbs the exception so it doesn't propagate to Sentry —
   # site flakiness isn't an application bug.
@@ -32,20 +39,20 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
     job.send(:log_sync_outcome, document, result: :transient_retry_exhausted, error_code: error.message)
   end
 
+  discard_on ActiveJob::DeserializationError
+  discard_on ActiveRecord::RecordNotFound
+
   def perform(document)
     start_time = Time.current
     return if document.pdf_document?
 
-    lock_status = acquire_sync_lock(document)
-
-    case lock_status
-    when :already_syncing
-      log_sync_outcome(document, result: :already_syncing)
-      return
-    when :acquired, :recovered_stale_lock
+    with_lock(lock_key(document), LOCK_TIMEOUT) do
+      document.update!(sync_status: :syncing, last_sync_attempted_at: Time.current)
       result = Captain::Documents::SyncService.new(document.reload).perform
-      log_sync_outcome(document, result: result, lock_status: lock_status, duration_ms: duration_ms_since(start_time))
+      log_sync_outcome(document, result: result, duration_ms: duration_ms_since(start_time))
     end
+  rescue LockAcquisitionError
+    log_sync_outcome(document, result: :already_syncing)
   rescue Captain::Documents::SyncService::PermanentSyncError => e
     log_failure_and_raise(document, :permanent_failure, e, start_time)
   rescue Captain::Documents::SyncService::TransientSyncError => e
@@ -80,34 +87,11 @@ class Captain::Documents::PerformSyncJob < ApplicationJob
     log_sync_outcome(document, result: :unexpected_failure, error_code: 'sync_error',
                                exception_class: error.class.name,
                                duration_ms: duration_ms_since(start_time))
-    ChatwootExceptionTracker.new(error, account: document.account).capture_exception
     raise error
   end
 
-  def acquire_sync_lock(document)
-    status = :already_syncing
-
-    document.with_lock do
-      if document.sync_syncing?
-        next unless sync_stale?(document)
-
-        status = :recovered_stale_lock
-
-      else
-        status = :acquired
-      end
-
-      document.update!(
-        sync_status: :syncing,
-        last_sync_attempted_at: Time.current
-      )
-    end
-
-    status
-  end
-
-  def sync_stale?(document)
-    document.last_sync_attempted_at.present? && document.last_sync_attempted_at < STALE_LOCK_THRESHOLD.ago
+  def lock_key(document)
+    format(::Redis::Alfred::CAPTAIN_DOCUMENT_SYNC_MUTEX, document_id: document.id)
   end
 
   def duration_ms_since(start_time)

@@ -11,43 +11,6 @@ RSpec.describe Account, type: :model do
     it { is_expected.to have_many(:custom_roles).dependent(:destroy_async) }
   end
 
-  describe 'captain document auto sync' do
-    let(:account) { create(:account) }
-    let(:assistant) { create(:captain_assistant, account: account) }
-
-    it 'seeds last sync attempts for existing available documents when auto sync is enabled' do
-      due_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :available,
-        last_sync_attempted_at: nil
-      )
-      already_seeded_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :available,
-        last_sync_attempted_at: 2.days.ago
-      )
-      in_progress_document = create(
-        :captain_document,
-        account: account,
-        assistant: assistant,
-        status: :in_progress,
-        last_sync_attempted_at: nil
-      )
-
-      freeze_time do
-        account.update!(captain_document_auto_sync_enabled: true)
-
-        expect(due_document.reload.last_sync_attempted_at).to eq(Time.current)
-        expect(already_seeded_document.reload.last_sync_attempted_at).to be_within(1.second).of(2.days.ago)
-        expect(in_progress_document.reload.last_sync_attempted_at).to be_nil
-      end
-    end
-  end
-
   describe 'sla_policies' do
     let!(:account) { create(:account) }
     let!(:sla_policy) { create(:sla_policy, account: account) }
@@ -256,6 +219,45 @@ RSpec.describe Account, type: :model do
 
         expect(account.subscribed_features).to be_nil
       end
+    end
+  end
+
+  describe 'captain document sync cadence' do
+    let(:account) { create(:account) }
+
+    it 'has no cadence on the hacker plan' do
+      account.update!(custom_attributes: { plan_name: 'hacker' })
+      expect(account.captain_document_sync_interval).to be_nil
+    end
+
+    it 'syncs weekly on the startups plan' do
+      account.update!(custom_attributes: { plan_name: 'startups' })
+      expect(account.captain_document_sync_interval).to eq(7.days)
+    end
+
+    it 'syncs daily on the business plan' do
+      account.update!(custom_attributes: { plan_name: 'business' })
+      expect(account.captain_document_sync_interval).to eq(1.day)
+    end
+
+    it 'syncs every six hours on the enterprise plan' do
+      account.update!(custom_attributes: { plan_name: 'enterprise' })
+      expect(account.captain_document_sync_interval).to eq(6.hours)
+    end
+
+    it 'has no cadence when plan is missing' do
+      account.update!(custom_attributes: {})
+      expect(account.captain_document_sync_interval).to be_nil
+    end
+
+    it 'has no cadence for unknown plans' do
+      account.update!(custom_attributes: { plan_name: 'mystery' })
+      expect(account.captain_document_sync_interval).to be_nil
+    end
+
+    it 'normalizes plan name casing' do
+      account.update!(custom_attributes: { plan_name: 'Business' })
+      expect(account.captain_document_sync_interval).to eq(1.day)
     end
   end
 

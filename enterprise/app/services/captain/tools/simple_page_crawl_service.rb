@@ -1,9 +1,19 @@
 class Captain::Tools::SimplePageCrawlService
-  attr_reader :external_link
+  attr_reader :external_link, :response
 
   def initialize(external_link)
     @external_link = external_link
-    @doc = Nokogiri::HTML(HTTParty.get(external_link).body)
+    @response = HTTParty.get(external_link)
+    @parser = Captain::Tools::HtmlPageParser.new(response.body)
+    @doc = @parser.doc
+  end
+
+  def success?
+    response.success?
+  end
+
+  def status_code
+    response.code
   end
 
   def page_links
@@ -11,12 +21,11 @@ class Captain::Tools::SimplePageCrawlService
   end
 
   def page_title
-    title_element = @doc.at_xpath('//title')
-    title_element&.text&.strip
+    @parser.title
   end
 
   def body_text_content
-    ReverseMarkdown.convert @doc.at_xpath('//body'), unknown_tags: :bypass, github_flavored: true
+    @parser.body_markdown
   end
 
   def meta_description

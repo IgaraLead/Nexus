@@ -128,6 +128,57 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
       end
     end
 
+    context 'when syncing documents' do
+      include ActiveJob::TestHelper
+
+      let(:sync_params) do
+        {
+          type: 'AssistantDocument',
+          ids: documents.map(&:id),
+          fields: { status: 'sync' }
+        }
+      end
+
+      before { clear_enqueued_jobs }
+
+      it 'queues a sync for each web document and returns an empty array' do
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
+               params: sync_params,
+               headers: admin.create_new_auth_token,
+               as: :json
+        end.to have_enqueued_job(Captain::Documents::PerformSyncJob).exactly(documents.size).times
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response).to eq([])
+      end
+
+      it 'skips PDF documents because they are not syncable' do
+        pdf_document = build(:captain_document, assistant: assistant, account: account)
+        pdf_document.pdf_file.attach(io: StringIO.new('PDF content'), filename: 'test.pdf',
+                                     content_type: 'application/pdf')
+        pdf_document.save!
+
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
+               params: sync_params.merge(ids: [pdf_document.id]),
+               headers: admin.create_new_auth_token,
+               as: :json
+        end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'denies non-administrators' do
+        post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
+             params: sync_params,
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
     context 'with missing parameters' do
       let(:missing_params) do
         {

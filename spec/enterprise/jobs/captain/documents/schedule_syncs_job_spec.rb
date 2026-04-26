@@ -1,0 +1,112 @@
+require 'rails_helper'
+
+RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
+  include ActiveJob::TestHelper
+
+  let(:account) { create(:account, custom_attributes: { plan_name: 'business' }) }
+  let(:assistant) { create(:captain_assistant, account: account) }
+
+  before do
+    account.enable_features!('captain_document_auto_sync')
+    clear_enqueued_jobs
+  end
+
+  context 'when the account has not enabled auto-sync' do
+    before { account.disable_features!('captain_document_auto_sync') }
+
+    it 'leaves available documents alone' do
+      create(:captain_document, assistant: assistant, account: account, status: :available)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when the account plan has no sync cadence' do
+    let(:account) { create(:account, custom_attributes: { plan_name: 'hacker' }) }
+
+    it 'leaves available documents alone' do
+      create(:captain_document, assistant: assistant, account: account, status: :available)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when an available document has never been synced' do
+    it 'queues a sync for that document' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+    end
+  end
+
+  context 'when an available document was synced within the plan cadence' do
+    it 'leaves it alone' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(sync_status: :synced, last_sync_attempted_at: 1.hour.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when an available document was last synced before the plan cadence' do
+    it 'queues a sync for that document' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(sync_status: :synced, last_sync_attempted_at: 2.days.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+    end
+  end
+
+  context 'when a document is stuck in syncing past the lock timeout' do
+    it 'requeues a sync to recover the lock' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(
+        sync_status: :syncing,
+        last_sync_attempted_at: (Captain::Documents::PerformSyncJob::LOCK_TIMEOUT + 1.minute).ago
+      )
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+    end
+  end
+
+  context 'when a document is currently syncing within the lock timeout' do
+    it 'leaves it alone so the holder can finish' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(sync_status: :syncing, last_sync_attempted_at: 1.minute.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when the only eligible document is a PDF' do
+    it 'leaves it alone since PDFs are not syncable' do
+      pdf_document = build(:captain_document, assistant: assistant, account: account, status: :available)
+      pdf_document.pdf_file.attach(io: StringIO.new('PDF content'), filename: 'test.pdf',
+                                   content_type: 'application/pdf')
+      pdf_document.save!
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when an in-progress (still crawling) document is past the cadence' do
+    it 'leaves it alone since only available documents are eligible' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :in_progress)
+      document.update!(last_sync_attempted_at: 2.days.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+end

@@ -30,7 +30,7 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
   end
 
   def sync
-    return render_could_not_create_error(I18n.t('captain.documents.sync_not_supported_for_pdf')) if @document.pdf_document?
+    return render_could_not_create_error(I18n.t('captain.documents.sync_not_supported_for_pdf')) unless @document.syncable?
 
     Captain::Documents::PerformSyncJob.perform_later(@document)
     head :accepted

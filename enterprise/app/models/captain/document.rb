@@ -32,6 +32,7 @@ class Captain::Document < ApplicationRecord
   has_many :responses, class_name: 'Captain::AssistantResponse', dependent: :destroy, as: :documentable
   belongs_to :account
   has_one_attached :pdf_file
+  store_accessor :metadata, :content_fingerprint, :last_sync_error_code, :sync_step, :openai_file_id
 
   validates :external_link, presence: true, unless: -> { pdf_file.attached? }
   validates :external_link, uniqueness: { scope: :assistant_id }, allow_blank: true
@@ -62,6 +63,7 @@ class Captain::Document < ApplicationRecord
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'
+    return true if external_link&.start_with?('PDF:')
 
     external_link&.ends_with?('.pdf')
   end
@@ -74,36 +76,8 @@ class Captain::Document < ApplicationRecord
     pdf_file.blob.byte_size if pdf_file.attached?
   end
 
-  def content_fingerprint
-    metadata&.dig('content_fingerprint')
-  end
-
-  def content_fingerprint=(value)
-    self.metadata = (metadata || {}).merge('content_fingerprint' => value)
-  end
-
-  def last_sync_error_code
-    metadata&.dig('last_sync_error_code')
-  end
-
-  def last_sync_error_code=(value)
-    self.metadata = (metadata || {}).merge('last_sync_error_code' => value)
-  end
-
-  def sync_step
-    metadata&.dig('sync_step')
-  end
-
-  def sync_step=(value)
-    self.metadata = (metadata || {}).merge('sync_step' => value)
-  end
-
-  def openai_file_id
-    metadata&.dig('openai_file_id')
-  end
-
   def store_openai_file_id(file_id)
-    update!(metadata: (metadata || {}).merge('openai_file_id' => file_id))
+    update!(openai_file_id: file_id)
   end
 
   def display_url
@@ -114,6 +88,14 @@ class Captain::Document < ApplicationRecord
     else
       external_link
     end
+  end
+
+  def to_llm_metadata
+    { document_id: id, assistant_id: assistant_id, external_link: external_link }
+  end
+
+  def syncable?
+    !pdf_document?
   end
 
   private
