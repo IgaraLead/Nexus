@@ -69,6 +69,7 @@ class Api::V1::Accounts::Captain::BulkActionsController < Api::V1::Accounts::Bas
   def sync_documents
     Current.account.captain_documents.where(id: params[:ids]).find_each do |document|
       next unless document.syncable?
+      next unless document.available?
 
       Captain::Documents::PerformSyncJob.perform_later(document)
     end

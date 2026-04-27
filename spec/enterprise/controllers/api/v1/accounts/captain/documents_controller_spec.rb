@@ -6,7 +6,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
   let(:assistant) { create(:captain_assistant, account: account) }
   let(:assistant2) { create(:captain_assistant, account: account) }
-  let(:document) { create(:captain_document, assistant: assistant, account: account) }
+  let(:document) { create(:captain_document, assistant: assistant, account: account, status: :available) }
   let(:captain_limits) do
     {
       :startups => { :documents => 1, :responses => 100 }
@@ -274,6 +274,17 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
 
         expect do
           post "/api/v1/accounts/#{account.id}/captain/documents/#{pdf_document.id}/sync",
+               headers: admin.create_new_auth_token, as: :json
+        end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'rejects documents that are still being processed' do
+        in_progress_document = create(:captain_document, assistant: assistant, account: account, status: :in_progress)
+
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/documents/#{in_progress_document.id}/sync",
                headers: admin.create_new_auth_token, as: :json
         end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
 

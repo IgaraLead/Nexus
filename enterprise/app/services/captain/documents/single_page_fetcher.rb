@@ -58,7 +58,7 @@ class Captain::Documents::SinglePageFetcher
     Result.new(
       success: true,
       title: crawler.page_title&.truncate(TITLE_MAX_LENGTH, omission: ''),
-      content: crawler.body_text_content&.truncate(CONTENT_MAX_LENGTH, omission: '')
+      content: crawler.body_markdown&.truncate(CONTENT_MAX_LENGTH, omission: '')
     )
   end
 

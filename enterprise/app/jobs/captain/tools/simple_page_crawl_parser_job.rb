@@ -13,7 +13,7 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
     crawler = Captain::Tools::SimplePageCrawlService.new(page_link)
 
     page_title = crawler.page_title || ''
-    content = crawler.body_text_content || ''
+    content = crawler.body_markdown || ''
 
     normalized_link = normalize_link(page_link)
     document = assistant.documents.find_or_initialize_by(external_link: normalized_link)

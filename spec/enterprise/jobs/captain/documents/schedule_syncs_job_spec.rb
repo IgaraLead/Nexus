@@ -41,6 +41,32 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
       expect { described_class.new.perform }
         .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
     end
+
+    it 'marks the document as syncing before queueing' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      clear_enqueued_jobs
+
+      travel_to Time.zone.local(2026, 4, 27, 10, 0, 0) do
+        described_class.new.perform
+
+        expect(document.reload).to have_attributes(
+          sync_status: 'syncing',
+          last_sync_attempted_at: Time.current
+        )
+      end
+    end
+
+    it 'does not queue the same document again while the reserved sync is fresh' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
   end
 
   context 'when an available document was synced within the plan cadence' do

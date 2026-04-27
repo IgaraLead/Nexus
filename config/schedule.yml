@@ -68,10 +68,3 @@ remove_orphan_conversations_job:
   cron: '0 */12 * * *'
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
-
-# Captain document auto-sync scheduler
-# Runs hourly, finds due documents based on plan sync intervals
-captain_documents_schedule_syncs_job:
-  cron: '0 * * * *'
-  class: 'Captain::Documents::ScheduleSyncsJob'
-  queue: scheduled_jobs

@@ -95,7 +95,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlService do
     end
   end
 
-  describe '#body_text_content' do
+  describe '#body_markdown' do
     let(:html_content) do
       <<~HTML
         <html>
@@ -117,7 +117,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlService do
     end
 
     it 'converts body content to markdown' do
-      expect(service.body_text_content).to eq("# Main Title\n\nConverted markdown")
+      expect(service.body_markdown).to eq("# Main Title\n\nConverted markdown")
       expect(ReverseMarkdown).to have_received(:convert).with(
         kind_of(Nokogiri::XML::Element),
         unknown_tags: :bypass,

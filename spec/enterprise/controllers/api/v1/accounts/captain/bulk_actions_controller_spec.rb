@@ -19,7 +19,8 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
       :captain_document,
       2,
       assistant: assistant,
-      account: account
+      account: account,
+      status: :available
     )
   end
 
@@ -162,6 +163,19 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
         expect do
           post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
                params: sync_params.merge(ids: [pdf_document.id]),
+               headers: admin.create_new_auth_token,
+               as: :json
+        end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'skips documents that are still being processed' do
+        in_progress_document = create(:captain_document, assistant: assistant, account: account, status: :in_progress)
+
+        expect do
+          post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
+               params: sync_params.merge(ids: [in_progress_document.id]),
                headers: admin.create_new_auth_token,
                as: :json
         end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
