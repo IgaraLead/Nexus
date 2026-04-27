@@ -43,6 +43,7 @@ module Enterprise::Account
 
   def captain_document_sync_interval
     plan = custom_attributes['plan_name']
+    plan = 'enterprise' if plan.blank? && ChatwootApp.self_hosted_enterprise?
     return nil if plan.blank?
 
     CAPTAIN_SYNC_INTERVALS[plan.downcase]

@@ -259,6 +259,12 @@ RSpec.describe Account, type: :model do
       account.update!(custom_attributes: { plan_name: 'Business' })
       expect(account.captain_document_sync_interval).to eq(1.day)
     end
+
+    it 'syncs every six hours on self-hosted enterprise installs without a plan_name' do
+      allow(ChatwootApp).to receive(:self_hosted_enterprise?).and_return(true)
+      account.update!(custom_attributes: {})
+      expect(account.captain_document_sync_interval).to eq(6.hours)
+    end
   end
 
   describe 'account deletion' do
