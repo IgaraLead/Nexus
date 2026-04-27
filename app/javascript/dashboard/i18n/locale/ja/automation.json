@@ -182,6 +182,7 @@
       "BROWSER_LANGUAGE": "ブラウザの言語",
       "MAIL_SUBJECT": "Email Subject",
       "COUNTRY_NAME": "国",
+      "COMPANY_NAME": "企業名",
       "REFERER_LINK": "Referrer Link",
       "ASSIGNEE_NAME": "担当者",
       "TEAM_NAME": "チーム",
