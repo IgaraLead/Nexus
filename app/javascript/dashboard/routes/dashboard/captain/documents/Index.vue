@@ -1,5 +1,12 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref, nextTick } from 'vue';
+import {
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  nextTick,
+  watch,
+} from 'vue';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useRoute } from 'vue-router';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
@@ -253,6 +260,14 @@ const hasNonPdfSelection = computed(() => {
     doc =>
       bulkSelectedIds.value.has(doc.id) && !isPdfDocument(doc.external_link)
   );
+});
+
+watch(selectedAssistantId, () => {
+  activeFilter.value = null;
+  bulkSelectedIds.value = new Set();
+  stats.value = null;
+  stopSyncPolling();
+  fetchDocuments(1);
 });
 
 onMounted(() => {
