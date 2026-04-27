@@ -386,6 +386,7 @@
       "IDENTIFIER": "識別碼",
       "COUNTRY": "國家",
       "CITY": "城市",
+      "COMPANY": "公司",
       "CREATED_AT": "建立時間",
       "LAST_ACTIVITY": "最後活動",
       "REFERER_LINK": "來源連結",
