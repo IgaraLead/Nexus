@@ -24,7 +24,7 @@ class Captain::Tools::SimplePageCrawlService
     @parser.title
   end
 
-  def body_text_content
+  def body_markdown
     @parser.body_markdown
   end
 

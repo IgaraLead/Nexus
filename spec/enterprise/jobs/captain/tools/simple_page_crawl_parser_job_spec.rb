@@ -14,7 +14,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
         .and_return(crawler)
 
       allow(crawler).to receive(:page_title).and_return(page_title)
-      allow(crawler).to receive(:body_text_content).and_return(content)
+      allow(crawler).to receive(:body_markdown).and_return(content)
     end
 
     context 'when the page is successfully crawled' do
@@ -53,7 +53,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
 
         before do
           allow(crawler).to receive(:page_title).and_return(long_title)
-          allow(crawler).to receive(:body_text_content).and_return(long_content)
+          allow(crawler).to receive(:body_markdown).and_return(long_content)
         end
 
         it 'truncates the title and content' do
@@ -81,7 +81,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
     context 'when title and content are nil' do
       before do
         allow(crawler).to receive(:page_title).and_return(nil)
-        allow(crawler).to receive(:body_text_content).and_return(nil)
+        allow(crawler).to receive(:body_markdown).and_return(nil)
       end
 
       it 'creates document with empty strings and updates the status to available' do
