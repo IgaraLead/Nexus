@@ -182,6 +182,7 @@
       "BROWSER_LANGUAGE": "브라우저 언어",
       "MAIL_SUBJECT": "이메일 제목",
       "COUNTRY_NAME": "국가",
+      "COMPANY_NAME": "회사",
       "REFERER_LINK": "참조 링크",
       "ASSIGNEE_NAME": "담당자",
       "TEAM_NAME": "팀",
