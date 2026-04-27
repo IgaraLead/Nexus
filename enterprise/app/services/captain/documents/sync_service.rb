@@ -46,6 +46,7 @@ class Captain::Documents::SyncService
   def mark_failed(error_code)
     @document.update!(
       sync_status: :failed,
+      sync_step: nil,
       last_sync_error_code: error_code,
       last_sync_attempted_at: Time.current
     )

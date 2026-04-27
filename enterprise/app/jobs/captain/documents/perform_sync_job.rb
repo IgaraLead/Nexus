@@ -81,6 +81,7 @@ class Captain::Documents::PerformSyncJob < MutexApplicationJob
   def handle_unexpected_failure(document, error, start_time)
     document.update!(
       sync_status: :failed,
+      sync_step: nil,
       last_sync_error_code: 'sync_error',
       last_sync_attempted_at: Time.current
     )
