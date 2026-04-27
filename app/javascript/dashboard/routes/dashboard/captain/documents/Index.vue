@@ -249,7 +249,12 @@ const onBulkDeleteSuccess = () => {
 };
 
 const handleBulkSync = async () => {
-  const ids = Array.from(bulkSelectedIds.value);
+  const ids = (documents.value || [])
+    .filter(
+      doc =>
+        bulkSelectedIds.value.has(doc.id) && !isPdfDocument(doc.external_link)
+    )
+    .map(doc => doc.id);
   if (!ids.length) return;
 
   try {
