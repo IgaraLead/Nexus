@@ -182,6 +182,7 @@
       "BROWSER_LANGUAGE": "Язык браузера",
       "MAIL_SUBJECT": "Тема письма",
       "COUNTRY_NAME": "Страна",
+      "COMPANY_NAME": "Компания",
       "REFERER_LINK": "Источник перехода",
       "ASSIGNEE_NAME": "Назначенный агент",
       "TEAM_NAME": "Команда",
