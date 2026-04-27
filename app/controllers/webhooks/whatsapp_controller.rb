@@ -1,6 +1,8 @@
 class Webhooks::WhatsappController < ActionController::API
   include MetaTokenVerifyConcern
 
+  before_action :verify_meta_signature!, only: :process_payload
+
   def process_payload
     if inactive_whatsapp_number?
       Rails.logger.warn("Rejected webhook for inactive WhatsApp number: #{params[:phone_number]}")
@@ -18,6 +20,10 @@ class Webhooks::WhatsappController < ActionController::API
     channel = Channel::Whatsapp.find_by(phone_number: params[:phone_number])
     whatsapp_webhook_verify_token = channel.provider_config['webhook_verify_token'] if channel.present?
     token == whatsapp_webhook_verify_token if whatsapp_webhook_verify_token.present?
+  end
+
+  def meta_app_secrets
+    [GlobalConfigService.load('WHATSAPP_APP_SECRET', nil)]
   end
 
   def inactive_whatsapp_number?

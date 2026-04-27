@@ -1,6 +1,8 @@
 class Webhooks::InstagramController < ActionController::API
   include MetaTokenVerifyConcern
 
+  before_action :verify_meta_signature!, only: :events
+
   def events
     Rails.logger.info('Instagram webhook received events')
     if params['object'].casecmp('instagram').zero?
@@ -38,5 +40,12 @@ class Webhooks::InstagramController < ActionController::API
     # INSTAGRAM_VERIFY_TOKEN (Instagram channel via direct Instagram login)
     token == GlobalConfigService.load('IG_VERIFY_TOKEN', '') ||
       token == GlobalConfigService.load('INSTAGRAM_VERIFY_TOKEN', '')
+  end
+
+  def meta_app_secrets
+    [
+      GlobalConfigService.load('FB_APP_SECRET', nil),
+      GlobalConfigService.load('INSTAGRAM_APP_SECRET', nil)
+    ]
   end
 end
