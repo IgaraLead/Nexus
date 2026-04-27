@@ -182,6 +182,7 @@
       "BROWSER_LANGUAGE": "Idioma del navegador",
       "MAIL_SUBJECT": "Email Subject",
       "COUNTRY_NAME": "País",
+      "COMPANY_NAME": "Companyia",
       "REFERER_LINK": "Referrer Link",
       "ASSIGNEE_NAME": "Cessionari",
       "TEAM_NAME": "Equip",
