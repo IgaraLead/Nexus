@@ -745,7 +745,7 @@
       "SENDER_NAME_SECTION_TEXT": "تمكين/تعطيل إظهار اسم الوكيل في البريد الإلكتروني، إذا تم تعطيله فسيظهر اسم المنشأة",
       "ENABLE_CONTINUITY_VIA_EMAIL": "تمكين استمرارية المحادثة عبر البريد الإلكتروني",
       "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "المحادثات ستستمر عبر البريد الإلكتروني إذا كان عنوان البريد الإلكتروني لجهة الاتصال متاحاً.",
-      "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "This feature is available on a paid plan. Upgrade to enable conversation continuity via email.",
+      "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "هذه الميزة متوفرة في الخطة المدفوعة. قم بالترقية لتفعيل استمرارية المحادثة عبر البريد الإلكتروني.",
       "LOCK_TO_SINGLE_CONVERSATION": "Conversation Routing",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Configure conversation creation for existing contacts",
       "INBOX_UPDATE_TITLE": "إعدادات قناة التواصل",
