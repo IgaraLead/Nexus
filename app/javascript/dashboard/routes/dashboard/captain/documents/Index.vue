@@ -97,7 +97,7 @@ const fetchStats = async () => {
   }
 };
 
-const fetchDocuments = (page = 1) => {
+const fetchDocuments = async (page = 1) => {
   const filterParams = { page };
 
   if (selectedAssistantId.value) {
@@ -148,6 +148,12 @@ const scheduleSyncPoll = () => {
     }
   }, SYNC_POLL_INTERVAL_MS);
 };
+
+watch(hasDocumentsSyncing, isSyncing => {
+  if (isSyncing) {
+    scheduleSyncPoll();
+  }
+});
 
 const handleSync = async id => {
   try {
@@ -301,8 +307,11 @@ watch(selectedAssistantId, () => {
   fetchDocuments(1);
 });
 
-onMounted(() => {
-  fetchDocuments();
+onMounted(async () => {
+  await fetchDocuments();
+  if (hasDocumentsSyncing.value) {
+    scheduleSyncPoll();
+  }
 });
 
 onBeforeUnmount(() => {
