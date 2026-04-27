@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { dynamicTime, shortTimestamp } from 'shared/helpers/timeHelper';
+import { dynamicTime } from 'shared/helpers/timeHelper';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 const props = defineProps({
   status: {
@@ -16,18 +17,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  showRetry: {
+    type: Boolean,
+    default: false,
+  },
 });
 
+const emit = defineEmits(['retry']);
 const { t } = useI18n();
-
-const KNOWN_ERROR_CODES = [
-  'not_found',
-  'access_denied',
-  'timeout',
-  'content_empty',
-  'fetch_failed',
-  'sync_error',
-];
 
 const STALE_AFTER_DAYS = 7;
 const VERY_STALE_AFTER_DAYS = 30;
@@ -44,14 +41,28 @@ const ageInDays = computed(() => {
 });
 
 const errorLabel = computed(() => {
-  const code =
-    props.errorCode && KNOWN_ERROR_CODES.includes(props.errorCode)
-      ? props.errorCode.toUpperCase()
-      : 'DEFAULT';
-  return t(`CAPTAIN.DOCUMENTS.SYNC_ERRORS.${code}`);
+  if (props.errorCode === 'not_found') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.NOT_FOUND');
+  }
+  if (props.errorCode === 'access_denied') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.ACCESS_DENIED');
+  }
+  if (props.errorCode === 'timeout') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.TIMEOUT');
+  }
+  if (props.errorCode === 'content_empty') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.CONTENT_EMPTY');
+  }
+  if (props.errorCode === 'fetch_failed') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.FETCH_FAILED');
+  }
+  if (props.errorCode === 'sync_error') {
+    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.SYNC_ERROR');
+  }
+
+  return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.DEFAULT');
 });
 
-// Compact label shown in the row (drops the "Synced" word for the synced state — that word repeats on every card)
 const label = computed(() => {
   if (isSyncing.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCING');
   if (isFailed.value)
@@ -59,11 +70,12 @@ const label = computed(() => {
       error: errorLabel.value,
     });
   if (hasBeenSynced.value)
-    return shortTimestamp(dynamicTime(props.lastSyncedAt), true);
+    return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCED', {
+      time: dynamicTime(props.lastSyncedAt),
+    });
   return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.NEVER_SYNCED');
 });
 
-// Full label for hover tooltip — keeps the verbose form so the meaning stays explicit on demand
 const fullLabel = computed(() => {
   if (isSyncing.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCING');
   if (isFailed.value)
@@ -117,5 +129,15 @@ const textClass = computed(() => {
       :class="dotClass"
     />
     <span class="truncate">{{ label }}</span>
+    <Button
+      v-if="showRetry && isFailed"
+      :label="t('CAPTAIN.DOCUMENTS.OPTIONS.RETRY_SYNC')"
+      xs
+      ghost
+      ruby
+      icon="i-lucide-refresh-cw"
+      class="!px-1"
+      @click.stop="emit('retry')"
+    />
   </span>
 </template>

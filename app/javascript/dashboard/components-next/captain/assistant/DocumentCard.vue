@@ -133,6 +133,10 @@ const handleAction = ({ action, value }) => {
   toggleDropdown(false);
   emit('action', { action, value, id: props.id });
 };
+
+const handleRetry = () => {
+  emit('action', { action: 'sync', id: props.id });
+};
 </script>
 
 <template>
@@ -205,6 +209,8 @@ const handleAction = ({ action, value }) => {
         :status="syncStatus"
         :last-synced-at="lastSyncedAt"
         :error-code="lastSyncErrorCode"
+        :show-retry="canManage && isFailed"
+        @retry="handleRetry"
       />
       <div v-else class="text-sm shrink-0 text-n-slate-11 line-clamp-1">
         {{ createdAtLabel }}
