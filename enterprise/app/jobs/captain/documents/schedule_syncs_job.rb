@@ -29,6 +29,8 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
       'last_sync_attempted_at IS NULL OR last_sync_attempted_at < ? OR (sync_status = ? AND last_sync_attempted_at < ?)',
       interval.ago, syncing, stale_cutoff
     ).limit(per_account_limit).each do |document|
+      next unless document.syncable?
+
       Captain::Documents::PerformSyncJob.perform_later(document)
       @remaining_global_capacity -= 1
     end
