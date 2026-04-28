@@ -14,7 +14,7 @@ class RenameCompanyConditionKeyInAutomationRules < ActiveRecord::Migration[7.1]
 
       next if conditions == rule.conditions
 
-      rule.update_column(:conditions, conditions) # rubocop:disable Rails/SkipsModelValidations
+      rule.update!(conditions: conditions)
     end
   end
 
@@ -25,7 +25,7 @@ class RenameCompanyConditionKeyInAutomationRules < ActiveRecord::Migration[7.1]
       next if payload == query['payload']
 
       query['payload'] = payload
-      filter.update_column(:query, query) # rubocop:disable Rails/SkipsModelValidations
+      filter.update!(query: query)
     end
   end
 

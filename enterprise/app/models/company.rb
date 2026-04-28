@@ -18,7 +18,6 @@
 #
 #  index_companies_on_account_and_domain                (account_id,domain) UNIQUE WHERE (domain IS NOT NULL)
 #  index_companies_on_account_id                        (account_id)
-#  index_companies_on_account_id_and_last_activity_at   (account_id,last_activity_at DESC NULLS LAST)
 #  index_companies_on_name_and_account_id               (name,account_id)
 #
 class Company < ApplicationRecord

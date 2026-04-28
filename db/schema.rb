@@ -601,7 +601,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_27_094500) do
     t.datetime "last_activity_at", precision: nil
     t.index ["account_id", "domain"], name: "index_companies_on_account_and_domain", unique: true, where: "(domain IS NOT NULL)"
     t.index ["account_id"], name: "index_companies_on_account_id"
-    t.index ["account_id", "last_activity_at"], name: "index_companies_on_account_id_and_last_activity_at", order: { last_activity_at: "DESC NULLS LAST" }
     t.index ["name", "account_id"], name: "index_companies_on_name_and_account_id"
   end
 
