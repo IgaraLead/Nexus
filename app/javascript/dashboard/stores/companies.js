@@ -395,7 +395,7 @@ export const useCompaniesStore = defineStore('companies', {
       try {
         const {
           data: { payload },
-        } = await CompanyAPI.createContact(companyId, {
+        } = await CompanyAPI.linkContact(companyId, {
           contact_id: contactId,
         });
         const contact = normalizeContactRecord(payload);

@@ -21,14 +21,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
   end
 
   def create
-    ActiveRecord::Base.transaction do
-      @contact = if params[:contact_id].present?
-                   contact = fetch_existing_contact
-                   membership_service.assign(contact: contact)
-                 else
-                   create_contact
-                 end
-    end
+    @contact = membership_service.assign(contact: fetch_existing_contact)
   end
 
   def destroy
@@ -59,28 +52,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
   end
 
   def fetch_existing_contact
-    Current.account.contacts.find(params[:contact_id])
-  end
-
-  def create_contact
-    @contact = Current.account.contacts.new(contact_create_params)
-    @contact.save!
-    process_avatar_from_url
-    @contact
-  end
-
-  def permitted_contact_params
-    contact_params_source.permit(
-      :name,
-      :email,
-      :phone_number,
-      :identifier,
-      :avatar,
-      :blocked,
-      :avatar_url,
-      additional_attributes: {},
-      custom_attributes: {}
-    )
+    Current.account.contacts.find(params.require(:contact_id))
   end
 
   def membership_service
@@ -111,23 +83,5 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
       OR contacts.phone_number ILIKE :search
       OR contacts.identifier ILIKE :search
     SQL
-  end
-
-  def contact_params_source
-    @contact_params_source ||= params[:contact].present? ? params.require(:contact) : params
-  end
-
-  def contact_create_params
-    permitted_contact_params.except(:avatar_url)
-                            .merge(company_id: @company.id)
-                            .merge(additional_attributes: contact_additional_attributes)
-  end
-
-  def contact_additional_attributes
-    permitted_contact_params[:additional_attributes].to_h.merge('company_name' => @company.name)
-  end
-
-  def process_avatar_from_url
-    ::Avatar::AvatarFromUrlJob.perform_later(@contact, permitted_contact_params[:avatar_url]) if permitted_contact_params[:avatar_url].present?
   end
 end

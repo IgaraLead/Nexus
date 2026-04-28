@@ -57,7 +57,7 @@ class CompanyAPI extends ApiClient {
     );
   }
 
-  createContact(id, payload) {
+  linkContact(id, payload) {
     return axios.post(`${this.url}/${id}/contacts`, payload);
   }
 
