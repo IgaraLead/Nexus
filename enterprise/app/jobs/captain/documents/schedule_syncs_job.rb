@@ -7,16 +7,23 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
 
   def perform
     @remaining_global_capacity = GLOBAL_HOURLY_CAP
+    stats = { accounts_scanned: 0, accounts_enabled: 0, accounts_scheduled: 0, documents_enqueued: 0 }
 
     Account.joins(:captain_documents).distinct.find_each do |account|
       break if @remaining_global_capacity <= 0
+
+      stats[:accounts_scanned] += 1
       next unless account.feature_enabled?('captain_document_auto_sync')
 
+      stats[:accounts_enabled] += 1
       interval = account.captain_document_sync_interval
       next unless interval
 
-      enqueue_due_documents(account, interval)
+      stats[:accounts_scheduled] += 1
+      stats[:documents_enqueued] += enqueue_due_documents(account, interval)
     end
+
+    log_scheduler_summary(stats)
   end
 
   private
@@ -25,6 +32,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
     syncing = Captain::Document.sync_statuses[:syncing]
     stale_cutoff = SYNC_STALE_TIMEOUT.ago
     per_account_limit = [PER_ACCOUNT_HOURLY_CAP, @remaining_global_capacity].min
+    enqueued_count = 0
 
     account.captain_documents.syncable.where(status: :available).where(
       'last_sync_attempted_at IS NULL OR last_sync_attempted_at < ? OR (sync_status = ? AND last_sync_attempted_at < ?)',
@@ -36,6 +44,19 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
       document.update!(sync_status: :syncing, last_sync_attempted_at: Time.current)
       Captain::Documents::PerformSyncJob.perform_later(document)
       @remaining_global_capacity -= 1
+      enqueued_count += 1
     end
+
+    enqueued_count
+  end
+
+  def log_scheduler_summary(stats)
+    payload = {
+      event: 'completed',
+      global_cap_hit: @remaining_global_capacity <= 0,
+      remaining_global_capacity: @remaining_global_capacity
+    }.merge(stats)
+
+    Rails.logger.info("[Captain::Documents::ScheduleSyncsJob] #{payload.to_json}")
   end
 end
