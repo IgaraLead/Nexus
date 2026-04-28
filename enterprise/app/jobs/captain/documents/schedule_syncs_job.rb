@@ -9,7 +9,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
     @remaining_global_capacity = GLOBAL_HOURLY_CAP
     stats = { accounts_scanned: 0, accounts_enabled: 0, accounts_scheduled: 0, documents_enqueued: 0 }
 
-    Account.joins(:captain_documents).distinct.find_each do |account|
+    Account.joins(:captain_documents).distinct.find_each(batch_size: 100) do |account|
       break if @remaining_global_capacity <= 0
 
       stats[:accounts_scanned] += 1
