@@ -78,32 +78,30 @@ describe('documentHelper', () => {
     });
 
     describe('Regular URLs', () => {
-      it('returns regular URLs unchanged', () => {
-        expect(formatDocumentLink('https://example.com')).toBe(
-          'https://example.com'
-        );
+      it('removes http(s) and www prefixes for compact display', () => {
+        expect(formatDocumentLink('https://example.com')).toBe('example.com');
         expect(formatDocumentLink('http://docs.example.com/api')).toBe(
-          'http://docs.example.com/api'
+          'docs.example.com/api'
         );
-        expect(formatDocumentLink('https://github.com/user/repo')).toBe(
-          'https://github.com/user/repo'
+        expect(formatDocumentLink('https://www.github.com/user/repo')).toBe(
+          'github.com/user/repo'
         );
       });
 
       it('handles URLs with query parameters', () => {
         expect(formatDocumentLink('https://example.com?param=value')).toBe(
-          'https://example.com?param=value'
+          'example.com?param=value'
         );
         expect(
           formatDocumentLink(
             'https://api.example.com/docs?version=v1&format=json'
           )
-        ).toBe('https://api.example.com/docs?version=v1&format=json');
+        ).toBe('api.example.com/docs?version=v1&format=json');
       });
 
       it('handles URLs with fragments', () => {
         expect(formatDocumentLink('https://example.com/docs#section1')).toBe(
-          'https://example.com/docs#section1'
+          'example.com/docs#section1'
         );
       });
     });
