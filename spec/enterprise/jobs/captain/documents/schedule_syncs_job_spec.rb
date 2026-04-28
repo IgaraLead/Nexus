@@ -90,12 +90,12 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
   end
 
-  context 'when a document is stuck in syncing past the lock timeout' do
+  context 'when a document is stuck in syncing past the scheduler stale timeout' do
     it 'requeues a sync to recover the lock' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
       document.update!(
         sync_status: :syncing,
-        last_sync_attempted_at: (Captain::Documents::PerformSyncJob::LOCK_TIMEOUT + 1.minute).ago
+        last_sync_attempted_at: (described_class::SYNC_STALE_TIMEOUT + 1.minute).ago
       )
       clear_enqueued_jobs
 
@@ -104,7 +104,20 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
   end
 
-  context 'when a document is currently syncing within the lock timeout' do
+  context 'when a document has been queued longer than the worker lock timeout' do
+    it 'leaves it alone so queue lag is not treated as a dead worker' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(
+        sync_status: :syncing,
+        last_sync_attempted_at: (Captain::Documents::PerformSyncJob::LOCK_TIMEOUT + 1.minute).ago
+      )
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
+    end
+  end
+
+  context 'when a document is currently syncing within the scheduler stale timeout' do
     it 'leaves it alone so the holder can finish' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
       document.update!(sync_status: :syncing, last_sync_attempted_at: 1.minute.ago)
