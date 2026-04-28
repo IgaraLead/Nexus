@@ -38,7 +38,8 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
 
   def update
     ActiveRecord::Base.transaction do
-      @company.update!(company_params)
+      # TODO: Revisit company activity tracking when we add a broader activity surface.
+      @company.update!(company_params.merge(last_activity_at: Time.current))
       sync_linked_contact_names if @company.saved_change_to_name?
     end
   end

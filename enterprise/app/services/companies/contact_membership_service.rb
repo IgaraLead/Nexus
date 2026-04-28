@@ -45,7 +45,6 @@ class Companies::ContactMembershipService
     # rubocop:enable Rails/SkipsModelValidations
 
     sync_contact_counters(old_company_id: old_company_id, new_company_id: new_company_id)
-    sync_company_activity(contact: contact, old_company_id: old_company_id, new_company_id: new_company_id)
     contact
   end
 
@@ -56,13 +55,6 @@ class Companies::ContactMembershipService
     Company.decrement_counter(:contacts_count, old_company_id) if old_company_id.present?
     Company.increment_counter(:contacts_count, new_company_id) if new_company_id.present?
     # rubocop:enable Rails/SkipsModelValidations
-  end
-
-  def sync_company_activity(contact:, old_company_id:, new_company_id:)
-    Company.find_by(id: new_company_id)&.update_last_activity!(contact.last_activity_at) if new_company_id.present?
-    return if old_company_id.blank? || old_company_id == new_company_id
-
-    Company.find_by(id: old_company_id)&.refresh_last_activity!
   end
 
   def synced_additional_attributes(contact, company_name)

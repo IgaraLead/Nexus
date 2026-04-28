@@ -57,30 +57,7 @@ class Company < ApplicationRecord
     )
   }
 
-  def update_last_activity!(activity_timestamp)
-    return if activity_timestamp.blank?
-
-    # rubocop:disable Rails/SkipsModelValidations
-    company_scope = self.class.where(id: id)
-    company_scope.where('last_activity_at IS NULL OR last_activity_at < ?', activity_timestamp)
-                 .update_all(last_activity_at: activity_timestamp)
-    # rubocop:enable Rails/SkipsModelValidations
-  end
-
-  def refresh_last_activity!
-    # rubocop:disable Rails/SkipsModelValidations
-    update_column(:last_activity_at, latest_linked_activity_at)
-    # rubocop:enable Rails/SkipsModelValidations
-  end
-
   private
-
-  def latest_linked_activity_at
-    [
-      contacts.maximum(:last_activity_at),
-      Conversation.where(contact_id: contacts.select(:id)).maximum(:last_activity_at)
-    ].compact.max
-  end
 
   def fetch_favicon
     Avatar::AvatarFromFaviconJob.set(wait: 5.seconds).perform_later(self)
