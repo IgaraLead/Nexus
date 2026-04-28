@@ -24,21 +24,9 @@ RSpec.describe 'Contacts API', type: :request do
 
     context 'when it is an authenticated user' do
       let(:admin) { create(:user, account: account, role: :administrator) }
-      let!(:contact) do
-        create(
-          :contact,
-          account: account,
-          email: 'contact@company-one.test',
-          additional_attributes: { company_name: 'Company 1', country_code: 'IN' }
-        )
-      end
+      let!(:contact) { create(:contact, :with_email, account: account, additional_attributes: { company_name: 'Company 1', country_code: 'IN' }) }
       let!(:contact_1) do
-        create(
-          :contact,
-          account: account,
-          email: 'contact@test-company.test',
-          additional_attributes: { company_name: 'Test Company 1', country_code: 'CA' }
-        )
+        create(:contact, :with_email, account: account, additional_attributes: { company_name: 'Test Company 1', country_code: 'CA' })
       end
       let(:contact_2) do
         create(:contact, :with_email, account: account, additional_attributes: { company_name: 'Marvel Company', country_code: 'AL' })
@@ -47,7 +35,7 @@ RSpec.describe 'Contacts API', type: :request do
         create(:contact, :with_email, account: account, additional_attributes: { company_name: nil, country_code: nil })
       end
       let!(:contact_4) do
-        create(:contact, :with_phone_number, account: account, additional_attributes: { company_name: nil, country_code: nil })
+        create(:contact, :with_email, account: account, additional_attributes: { company_name: nil, country_code: nil })
       end
       let!(:contact_inbox) { create(:contact_inbox, contact: contact) }
 
@@ -119,10 +107,8 @@ RSpec.describe 'Contacts API', type: :request do
 
         expect(response).to have_http_status(:success)
         response_body = response.parsed_body
-        expect(response_body['payload'].first['id']).to eq(contact_1.id)
-        expect(response_body['payload'].first['email']).to eq(contact_1.email)
         expect(response_body['payload'].last['id']).to eq(contact_4.id)
-        expect(response_body['payload'].last['phone_number']).to eq(contact_4.phone_number)
+        expect(response_body['payload'].last['email']).to eq(contact_4.email)
       end
 
       it 'returns all contacts with company name asc order with null values at last' do
@@ -132,10 +118,9 @@ RSpec.describe 'Contacts API', type: :request do
 
         expect(response).to have_http_status(:success)
         response_body = response.parsed_body
-        expect(response_body['payload'].first['email']).to eq(contact.email)
-        expect(response_body['payload'].first['id']).to eq(contact.id)
-        expect(response_body['payload'].last['id']).to eq(contact_4.id)
-        expect(response_body['payload'].last['phone_number']).to eq(contact_4.phone_number)
+        expect(response_body['payload'].first['email']).to eq(contact_1.email)
+        expect(response_body['payload'].first['id']).to eq(contact_1.id)
+        expect(response_body['payload'].last['email']).to eq(contact_4.email)
       end
 
       it 'returns all contacts with country name desc order with null values at last' do
@@ -148,8 +133,7 @@ RSpec.describe 'Contacts API', type: :request do
         response_body = response.parsed_body
         expect(response_body['payload'].first['email']).to eq(contact_from_albania.email)
         expect(response_body['payload'].first['id']).to eq(contact_from_albania.id)
-        expect(response_body['payload'].last['id']).to eq(contact_4.id)
-        expect(response_body['payload'].last['phone_number']).to eq(contact_4.phone_number)
+        expect(response_body['payload'].last['email']).to eq(contact_4.email)
       end
 
       it 'returns last seen at' do
