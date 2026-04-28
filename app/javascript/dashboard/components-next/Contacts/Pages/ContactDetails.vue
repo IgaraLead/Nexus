@@ -58,6 +58,18 @@ const lastActivityAt = computed(() => {
     ? dynamicTime(contactData.value.lastActivityAt)
     : '';
 });
+const summaryItems = computed(() => {
+  const createdAtLabel = createdAt.value
+    ? t('CONTACTS_LAYOUT.DETAILS.CREATED_AT', { date: createdAt.value })
+    : '';
+  const lastActivityAtLabel = lastActivityAt.value
+    ? t('CONTACTS_LAYOUT.DETAILS.LAST_ACTIVITY', {
+        date: lastActivityAt.value,
+      })
+    : '';
+
+  return [createdAtLabel, lastActivityAtLabel].filter(Boolean);
+});
 
 const avatarSrc = computed(() => {
   return avatarUrl.value ? avatarUrl.value : contactData.value?.thumbnail;
@@ -143,18 +155,12 @@ const handleAvatarDelete = async () => {
             <span class="i-ph-user-gear text-n-slate-10 size-4" />
             {{ selectedContact?.identifier }}
           </span>
-          <span class="inline-flex items-center gap-1 text-sm text-n-slate-11">
-            <span
-              v-if="selectedContact?.identifier"
-              class="i-ph-activity text-n-slate-10 size-4"
-            />
-            {{ $t('CONTACTS_LAYOUT.DETAILS.CREATED_AT', { date: createdAt }) }}
-            •
-            {{
-              $t('CONTACTS_LAYOUT.DETAILS.LAST_ACTIVITY', {
-                date: lastActivityAt,
-              })
-            }}
+          <span
+            v-if="summaryItems.length"
+            class="inline-flex items-center gap-1 text-sm text-n-slate-11"
+          >
+            <span class="i-ph-calendar-blank text-n-slate-10 size-4" />
+            {{ summaryItems.join(' • ') }}
           </span>
         </div>
       </div>
