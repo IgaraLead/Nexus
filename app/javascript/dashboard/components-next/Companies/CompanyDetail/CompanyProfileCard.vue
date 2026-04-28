@@ -113,21 +113,20 @@ watch(
 
 const summaryItems = computed(() => {
   const createdAt = props.company?.createdAt
-    ? t('COMPANIES.DETAIL.PROFILE.CREATED_AT', {
-        date: formatDistanceToNow(new Date(props.company.createdAt), {
-          addSuffix: true,
-        }),
+    ? formatDistanceToNow(new Date(props.company.createdAt), {
+        addSuffix: true,
       })
     : '';
   const lastActiveAt = props.company?.lastActivityAt
-    ? t('COMPANIES.DETAIL.PROFILE.LAST_ACTIVE', {
-        date: formatDistanceToNow(new Date(props.company.lastActivityAt), {
-          addSuffix: true,
-        }),
+    ? formatDistanceToNow(new Date(props.company.lastActivityAt), {
+        addSuffix: true,
       })
     : '';
 
-  return [createdAt, lastActiveAt].filter(Boolean);
+  return [
+    t('COMPANIES.DETAIL.PROFILE.CREATED_AT', { date: createdAt }),
+    t('COMPANIES.DETAIL.PROFILE.LAST_ACTIVE', { date: lastActiveAt }),
+  ];
 });
 
 const socialProfilesForm = computed(() =>
