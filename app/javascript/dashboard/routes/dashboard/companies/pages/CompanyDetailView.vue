@@ -13,9 +13,6 @@ import CompanyProfileCard from 'dashboard/components-next/Companies/CompanyDetai
 import CompanyContactsSidebar from 'dashboard/components-next/Companies/CompanyDetail/CompanyContactsSidebar.vue';
 import CompanyHistorySidebar from 'dashboard/components-next/Companies/CompanyDetail/CompanyHistorySidebar.vue';
 import CompanyNotesSidebar from 'dashboard/components-next/Companies/CompanyDetail/CompanyNotesSidebar.vue';
-import AddCompanyContactDialog from 'dashboard/components-next/Companies/CompanyDetail/AddCompanyContactDialog.vue';
-import CreateCompanyContactDialog from 'dashboard/components-next/Companies/CompanyDetail/CreateCompanyContactDialog.vue';
-import ConfirmCompanyContactReassignDialog from 'dashboard/components-next/Companies/CompanyDetail/ConfirmCompanyContactReassignDialog.vue';
 import ConfirmCompanyDeleteDialog from 'dashboard/components-next/Companies/CompanyDetail/ConfirmCompanyDeleteDialog.vue';
 import { useCompaniesStore } from 'dashboard/stores/companies';
 
@@ -24,12 +21,8 @@ const router = useRouter();
 const companiesStore = useCompaniesStore();
 const { t } = useI18n();
 
-const addCompanyContactDialogRef = ref(null);
-const createCompanyContactDialogRef = ref(null);
-const confirmReassignDialogRef = ref(null);
 const confirmDeleteDialogRef = ref(null);
 const selectedCandidate = ref(null);
-const contactSearchQuery = ref('');
 const activeSidebarTab = ref('notes');
 
 const companyId = computed(() => Number(route.params.companyId));
@@ -39,7 +32,6 @@ const companyContactsMeta = computed(() => companiesStore.companyContactsMeta);
 const contactSearchResults = computed(
   () => companiesStore.contactSearchResults
 );
-const contactSearchMeta = computed(() => companiesStore.contactSearchMeta);
 const uiFlags = computed(() => companiesStore.getUIFlags);
 
 const isFetchingCompany = computed(() => uiFlags.value.fetchingItem);
@@ -144,45 +136,12 @@ const refreshDetail = async page => {
   ]);
 };
 
-const resetContactSearch = async () => {
-  contactSearchQuery.value = '';
-
-  if (!companyId.value) {
-    return;
-  }
-
-  await companiesStore.searchCompanyContactCandidates(companyId.value, '');
-};
-
-const openAddContactDialog = () => {
-  addCompanyContactDialogRef.value?.dialogRef.open();
-};
-
-const openCreateContactDialog = () => {
-  createCompanyContactDialogRef.value?.dialogRef.open();
-};
-
-const openCreateContactDialogFromSearch = () => {
-  addCompanyContactDialogRef.value?.dialogRef.close();
-  openCreateContactDialog();
-};
-
 const openDeleteCompanyDialog = () => {
   confirmDeleteDialogRef.value?.dialogRef.open();
 };
 
 const handleContactSearch = async query => {
-  contactSearchQuery.value = query;
   await companiesStore.searchCompanyContactCandidates(companyId.value, query);
-};
-
-const handleContactSearchPage = async ({ page, query }) => {
-  contactSearchQuery.value = query;
-  await companiesStore.searchCompanyContactCandidates(
-    companyId.value,
-    query,
-    page
-  );
 };
 
 const clearSelectedCandidate = () => {
@@ -198,49 +157,35 @@ const attachSelectedContact = async ({
     await companiesStore.attachContactToCompany(companyId.value, contactId);
     useAlert(successMessage);
     await refreshDetail();
-    addCompanyContactDialogRef.value?.dialogRef.close();
+    await companiesStore.searchCompanyContactCandidates(companyId.value, '');
     clearSelectedCandidate();
-    confirmReassignDialogRef.value?.dialogRef.close();
   } catch {
     useAlert(errorMessage);
   }
 };
 
-const handleSelectContact = async contact => {
-  if (contact.company?.id && contact.company.id !== companyId.value) {
-    selectedCandidate.value = contact;
-    confirmReassignDialogRef.value?.dialogRef.open();
-    return;
-  }
-
-  await attachSelectedContact({
-    contactId: contact.id,
-    successMessage: t('COMPANIES.DETAIL.CONTACTS.MESSAGES.ADD_SUCCESS'),
-    errorMessage: t('COMPANIES.DETAIL.CONTACTS.MESSAGES.ADD_ERROR'),
-  });
+const handleSelectContact = contact => {
+  selectedCandidate.value = contact;
 };
 
-const handleConfirmReassign = async () => {
+const handleConfirmContactSelection = async () => {
   if (!selectedCandidate.value) {
     return;
   }
 
+  const isReassigning =
+    selectedCandidate.value.company?.id &&
+    selectedCandidate.value.company.id !== companyId.value;
+
   await attachSelectedContact({
     contactId: selectedCandidate.value.id,
-    successMessage: t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REASSIGN_SUCCESS'),
-    errorMessage: t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REASSIGN_ERROR'),
+    successMessage: isReassigning
+      ? t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REASSIGN_SUCCESS')
+      : t('COMPANIES.DETAIL.CONTACTS.MESSAGES.ADD_SUCCESS'),
+    errorMessage: isReassigning
+      ? t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REASSIGN_ERROR')
+      : t('COMPANIES.DETAIL.CONTACTS.MESSAGES.ADD_ERROR'),
   });
-};
-
-const handleCreateContact = async attrs => {
-  try {
-    await companiesStore.createContactInCompany(companyId.value, attrs);
-    useAlert(t('COMPANIES.DETAIL.CONTACTS.MESSAGES.CREATE_SUCCESS'));
-    createCompanyContactDialogRef.value?.onSuccess();
-    await refreshDetail();
-  } catch {
-    useAlert(t('COMPANIES.DETAIL.CONTACTS.MESSAGES.CREATE_ERROR'));
-  }
 };
 
 const handleRemoveContact = async contactId => {
@@ -350,12 +295,18 @@ onBeforeUnmount(() => {
 
         <CompanyContactsSidebar
           v-if="activeSidebarTab === 'contacts'"
+          :company="company"
           :contacts="companyContacts"
           :meta="companyContactsMeta"
           :is-loading="isFetchingContacts"
           :is-busy="isManagingContacts"
-          @add-contact="openAddContactDialog"
-          @create-contact="openCreateContactDialog"
+          :search-results="contactSearchResults"
+          :is-searching="isSearchingContacts"
+          :selected-contact="selectedCandidate"
+          @cancel-contact-selection="clearSelectedCandidate"
+          @confirm-contact-selection="handleConfirmContactSelection"
+          @search="handleContactSearch"
+          @select-contact="handleSelectContact"
           @remove-contact="handleRemoveContact"
           @update:current-page="loadCompanyContactsPage"
         />
@@ -377,33 +328,6 @@ onBeforeUnmount(() => {
       </div>
     </template>
 
-    <AddCompanyContactDialog
-      ref="addCompanyContactDialogRef"
-      :company="company"
-      :results="contactSearchResults"
-      :meta="contactSearchMeta"
-      :is-searching="isSearchingContacts"
-      :is-submitting="isManagingContacts"
-      @close="resetContactSearch"
-      @create-contact="openCreateContactDialogFromSearch"
-      @search="handleContactSearch"
-      @search-page="handleContactSearchPage"
-      @select-contact="handleSelectContact"
-    />
-    <CreateCompanyContactDialog
-      ref="createCompanyContactDialogRef"
-      :is-loading="isManagingContacts"
-      @create="handleCreateContact"
-    />
-    <ConfirmCompanyContactReassignDialog
-      ref="confirmReassignDialogRef"
-      :contact="selectedCandidate"
-      :from-company="selectedCandidate?.company"
-      :to-company="company"
-      :is-loading="isManagingContacts"
-      @close="clearSelectedCandidate"
-      @confirm="handleConfirmReassign"
-    />
     <ConfirmCompanyDeleteDialog
       ref="confirmDeleteDialogRef"
       :company="company"

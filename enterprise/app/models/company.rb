@@ -3,6 +3,8 @@
 # Table name: companies
 #
 #  additional_attributes :jsonb
+#  custom_attributes     :jsonb
+#  last_activity_at      :datetime
 #  id             :bigint           not null, primary key
 #  contacts_count :integer
 #  description    :text
@@ -14,9 +16,10 @@
 #
 # Indexes
 #
-#  index_companies_on_account_and_domain   (account_id,domain) UNIQUE WHERE (domain IS NOT NULL)
-#  index_companies_on_account_id           (account_id)
-#  index_companies_on_name_and_account_id  (name,account_id)
+#  index_companies_on_account_and_domain                (account_id,domain) UNIQUE WHERE (domain IS NOT NULL)
+#  index_companies_on_account_id                        (account_id)
+#  index_companies_on_account_id_and_last_activity_at   (account_id,last_activity_at DESC NULLS LAST)
+#  index_companies_on_name_and_account_id               (name,account_id)
 #
 class Company < ApplicationRecord
   include Avatarable
@@ -46,8 +49,38 @@ class Company < ApplicationRecord
       )
     )
   }
+  scope :order_on_last_activity_at, lambda { |direction|
+    order(
+      Arel::Nodes::SqlLiteral.new(
+        sanitize_sql_for_order("\"companies\".\"last_activity_at\" #{direction} NULLS LAST")
+      )
+    )
+  }
+
+  def update_last_activity!(activity_timestamp)
+    return if activity_timestamp.blank?
+
+    # rubocop:disable Rails/SkipsModelValidations
+    company_scope = self.class.where(id: id)
+    company_scope.where('last_activity_at IS NULL OR last_activity_at < ?', activity_timestamp)
+                 .update_all(last_activity_at: activity_timestamp)
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def refresh_last_activity!
+    # rubocop:disable Rails/SkipsModelValidations
+    update_column(:last_activity_at, latest_linked_activity_at)
+    # rubocop:enable Rails/SkipsModelValidations
+  end
 
   private
+
+  def latest_linked_activity_at
+    [
+      contacts.maximum(:last_activity_at),
+      Conversation.where(contact_id: contacts.select(:id)).maximum(:last_activity_at)
+    ].compact.max
+  end
 
   def fetch_favicon
     Avatar::AvatarFromFaviconJob.set(wait: 5.seconds).perform_later(self)

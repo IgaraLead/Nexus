@@ -24,7 +24,6 @@ const createInitialState = () => ({
   companyContacts: [],
   companyContactsMeta: {},
   contactSearchResults: [],
-  contactSearchMeta: {},
   activeCompanyId: null,
   companyDetailRequestToken: 0,
   companyContactsRequestToken: 0,
@@ -33,10 +32,16 @@ const createInitialState = () => ({
 });
 
 const normalizeCompanyRecord = record =>
-  camelcaseKeys(record || {}, { deep: true });
+  camelcaseKeys(record || {}, {
+    deep: true,
+    stopPaths: ['custom_attributes'],
+  });
 
 const normalizeCompanyCollection = collection =>
-  camelcaseKeys(collection || [], { deep: true });
+  camelcaseKeys(collection || [], {
+    deep: true,
+    stopPaths: ['custom_attributes'],
+  });
 
 const normalizeContactRecord = record =>
   camelcaseKeys(record || {}, {
@@ -55,19 +60,6 @@ const normalizeMeta = meta => ({
 
 const sortRecordsByIdDesc = records =>
   [...records].sort((r1, r2) => r2.id - r1.id);
-
-const sortContacts = contacts =>
-  [...contacts].sort((contactA, contactB) => {
-    const nameComparison = (contactA.name || '').localeCompare(
-      contactB.name || ''
-    );
-
-    if (nameComparison !== 0) {
-      return nameComparison;
-    }
-
-    return (contactA.id || 0) - (contactB.id || 0);
-  });
 
 const upsertRecord = (records, record) => {
   const index = records.findIndex(
@@ -131,14 +123,6 @@ const buildFormData = (payload, rootKey = '') => {
   return formData;
 };
 
-const clearCompanySearchState = page => ({
-  results: [],
-  meta: {
-    totalCount: 0,
-    page,
-  },
-});
-
 export const useCompaniesStore = defineStore('companies', {
   state: createInitialState,
 
@@ -199,23 +183,6 @@ export const useCompaniesStore = defineStore('companies', {
         ...company,
         contactsCount: Math.max(0, Number(company.contactsCount || 0) + delta),
       });
-    },
-
-    updateActiveCompanyCount(delta) {
-      this.updateCompanyCount(this.activeCompanyId, delta);
-    },
-
-    syncCompanyContact(contact) {
-      this.companyContacts = sortContacts(
-        upsertRecord(this.companyContacts, normalizeContactRecord(contact))
-      );
-    },
-
-    syncContactSearchResult(contact) {
-      this.contactSearchResults = upsertRecord(
-        this.contactSearchResults,
-        normalizeContactRecord(contact)
-      );
     },
 
     async get({ page = 1, sort = 'name' } = {}) {
@@ -297,9 +264,6 @@ export const useCompaniesStore = defineStore('companies', {
         } = await CompanyAPI.update(id, requestPayload);
         const company = normalizeCompanyRecord(updatedPayload);
         this.upsertCompanyRecord(company);
-        if (this.activeCompanyId === company.id) {
-          this.setActiveCompanyId(company.id);
-        }
         return company;
       } catch (error) {
         return throwErrorMessage(error);
@@ -389,9 +353,7 @@ export const useCompaniesStore = defineStore('companies', {
       this.activeContactSearchQuery = normalizedQuery;
 
       if (!normalizedQuery) {
-        const emptyState = clearCompanySearchState(page);
-        this.contactSearchResults = emptyState.results;
-        this.contactSearchMeta = emptyState.meta;
+        this.contactSearchResults = [];
         this.setUIFlag({ searchingContacts: false });
         return this.contactSearchResults;
       }
@@ -399,7 +361,7 @@ export const useCompaniesStore = defineStore('companies', {
       this.setUIFlag({ searchingContacts: true });
       try {
         const {
-          data: { payload, meta },
+          data: { payload },
         } = await CompanyAPI.searchContacts(companyId, normalizedQuery, page);
 
         const results = normalizeContactCollection(payload);
@@ -413,7 +375,6 @@ export const useCompaniesStore = defineStore('companies', {
         }
 
         this.contactSearchResults = results;
-        this.contactSearchMeta = normalizeMeta(meta);
         return this.contactSearchResults;
       } catch (error) {
         return throwErrorMessage(error);
@@ -438,7 +399,10 @@ export const useCompaniesStore = defineStore('companies', {
           contact_id: contactId,
         });
         const contact = normalizeContactRecord(payload);
-        this.syncContactSearchResult(contact);
+        this.contactSearchResults = upsertRecord(
+          this.contactSearchResults,
+          contact
+        );
         if (
           previousCompanyId &&
           previousCompanyId !== Number(companyId) &&
@@ -449,31 +413,7 @@ export const useCompaniesStore = defineStore('companies', {
         if (contact.company) {
           this.upsertCompanyRecord(contact.company);
         } else {
-          this.updateActiveCompanyCount(1);
-        }
-        await this.getCompanyContacts(companyId, currentPage);
-        return contact;
-      } catch (error) {
-        return throwErrorMessage(error);
-      } finally {
-        this.setUIFlag({ creatingContact: false });
-      }
-    },
-
-    async createContactInCompany(companyId, attrs) {
-      this.setUIFlag({ creatingContact: true });
-      this.ensureActiveCompanyContext(companyId);
-      const currentPage = this.companyContactsMeta.page || 1;
-      try {
-        const payload = snakecaseKeys(attrs, { deep: true });
-        const {
-          data: { payload: createdPayload },
-        } = await CompanyAPI.createContact(companyId, buildFormData(payload));
-        const contact = normalizeContactRecord(createdPayload);
-        if (contact.company) {
-          this.upsertCompanyRecord(contact.company);
-        } else {
-          this.updateActiveCompanyCount(1);
+          this.updateCompanyCount(companyId, 1);
         }
         await this.getCompanyContacts(companyId, currentPage);
         return contact;
@@ -531,7 +471,6 @@ export const useCompaniesStore = defineStore('companies', {
       this.companyContacts = [];
       this.companyContactsMeta = {};
       this.contactSearchResults = [];
-      this.contactSearchMeta = {};
       this.activeCompanyId = null;
       this.companyContactsRequestToken += 1;
       this.contactSearchRequestToken += 1;

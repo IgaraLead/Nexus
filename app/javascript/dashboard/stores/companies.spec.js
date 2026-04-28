@@ -108,7 +108,6 @@ describe('companies store', () => {
     expect(CompanyAPI.searchContacts).not.toHaveBeenCalled();
     expect(companiesStore.activeCompanyId).toBe(2);
     expect(companiesStore.contactSearchResults).toEqual([]);
-    expect(companiesStore.contactSearchMeta).toEqual({});
   });
 
   it('decrements the removed contact count on the company being modified even if the active company changes mid-request', async () => {

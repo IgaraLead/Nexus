@@ -7,6 +7,7 @@
         "NAME": "Name",
         "DOMAIN": "Domain",
         "CREATED_AT": "Created at",
+        "LAST_ACTIVITY_AT": "Last activity",
         "CONTACTS_COUNT": "Contacts count"
       }
     },
@@ -20,7 +21,6 @@
     "SEARCH_PLACEHOLDER": "Search companies...",
     "LOADING": "Loading companies...",
     "UNNAMED": "Unnamed Company",
-    "UNNAMED_CONTACT": "Unnamed contact",
     "CONTACTS_COUNT": "{n} contact | {n} contacts",
     "CREATE": {
       "TITLE": "Create company",
@@ -55,8 +55,9 @@
         "DELETE_ERROR": "Could not remove the company avatar."
       },
       "PROFILE": {
-        "TITLE": "Company details",
-        "NOT_PROVIDED": "Not provided",
+        "TITLE": "Edit company details",
+        "CREATED_AT": "Created {date}",
+        "LAST_ACTIVE": "Last active {date}",
         "DESCRIPTION_PLACEHOLDER": "Add a short description for this company",
         "ACTIONS": {
           "SAVE": "Update company"
@@ -65,78 +66,39 @@
           "UPDATE_SUCCESS": "Company updated.",
           "UPDATE_ERROR": "Could not update the company."
         },
-        "PLACEHOLDERS": {
-          "LINKEDIN_URL": "https://linkedin.com/company/acme",
-          "TWITTER_URL": "https://x.com/acme",
-          "GITHUB_URL": "https://github.com/acme",
-          "INSTAGRAM_URL": "https://instagram.com/acme"
-        },
         "FIELDS": {
           "NAME": "Name",
-          "DOMAIN": "Domain",
-          "DESCRIPTION": "Description",
-          "SOCIAL_LINKS": "Social media",
-          "LINKEDIN_URL": "LinkedIn",
-          "TWITTER_URL": "X",
-          "GITHUB_URL": "GitHub",
-          "INSTAGRAM_URL": "Instagram",
-          "CONTACTS_COUNT": "Contacts",
-          "CREATED_AT": "Created",
-          "UPDATED_AT": "Last updated"
+          "DOMAIN": "Domain"
         }
       },
       "SIDEBAR": {
         "TABS": {
-          "ATTRIBUTES": "Attributes",
           "NOTES": "Notes",
           "HISTORY": "History",
           "CONTACTS": "Contacts"
         }
       },
-      "ATTRIBUTES": {
-        "TITLE": "Attributes",
-        "SUBTITLE": "Custom attributes for this company.",
-        "PLACEHOLDER": "Company custom attributes are not available yet. This tab is a placeholder until the company attributes model is ready."
-      },
       "CONTACTS": {
-        "TITLE": "Contacts",
-        "SUBTITLE": "Contacts currently associated with this company.",
         "LOADING": "Loading contacts...",
         "EMPTY": "No contacts are linked to this company yet.",
-        "VIEW_CONTACT": "View contact",
+        "UNNAMED_CONTACT": "Unnamed contact",
         "ACTIONS": {
           "ADD": "Link contact",
-          "CREATE": "Create contact",
           "REMOVE": "Remove contact"
         },
         "DIALOGS": {
           "ADD": {
-            "TITLE": "Link an existing contact",
             "DESCRIPTION": "Search contacts in this account and link them to this company.",
             "SEARCH_PLACEHOLDER": "Search by name, email, phone, or identifier",
             "INITIAL": "Start typing to search contacts in this account.",
             "EMPTY": "No contacts matched that search.",
-            "RESULTS": "{n} contact found | {n} contacts found",
-            "INFO": "Already linked contacts are marked. Reassigning will move the contact from its current company.",
-            "CURRENT_COMPANY": "Currently assigned to {companyName}",
-            "ALREADY_LINKED": "Already linked to this company.",
             "ADD": "Link contact",
-            "REASSIGN": "Reassign contact",
-            "LINKED": "Linked",
-            "STATUSES": {
-              "AVAILABLE": "Available",
-              "LINKED": "Linked",
-              "ASSIGNED": "Assigned elsewhere"
-            }
-          },
-          "CREATE": {
-            "TITLE": "Create a contact",
-            "SAVE": "Create contact"
-          },
-          "REASSIGN": {
-            "TITLE": "Reassign contact?",
-            "DESCRIPTION": "{contactName} is currently assigned to {fromCompany}. Reassign them to {toCompany}?",
-            "CONFIRM": "Reassign contact"
+            "CANCEL": "Cancel",
+            "CONFIRM_TITLE": "Confirm contact link",
+            "CONFIRM_DESCRIPTION": "Review the contact and company before linking.",
+            "CONTACT_LABEL": "Contact",
+            "COMPANY_LABEL": "Company",
+            "CURRENT_COMPANY": "Linked to {companyName}"
           }
         },
         "MESSAGES": {
@@ -144,8 +106,6 @@
           "ADD_ERROR": "Could not link the contact to this company.",
           "REASSIGN_SUCCESS": "Contact reassigned to company.",
           "REASSIGN_ERROR": "Could not reassign the contact.",
-          "CREATE_SUCCESS": "Contact created and linked to company.",
-          "CREATE_ERROR": "Could not create the contact in this company.",
           "REMOVE_SUCCESS": "Contact removed from company.",
           "REMOVE_ERROR": "Could not remove the contact from this company."
         }

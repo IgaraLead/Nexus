@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { formatDistanceToNow } from 'date-fns';
 import { useAlert } from 'dashboard/composables';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
@@ -23,40 +24,21 @@ const props = defineProps({
 
 const { t } = useI18n();
 const companiesStore = useCompaniesStore();
-const SOCIAL_LINK_FIELDS = [
-  {
-    key: 'linkedin',
-    icon: 'i-ri-linkedin-box-fill',
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.LINKEDIN_URL'),
-    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.LINKEDIN_URL'),
-  },
-  {
-    key: 'twitter',
-    icon: 'i-ri-twitter-x-fill',
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.TWITTER_URL'),
-    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.TWITTER_URL'),
-  },
-  {
-    key: 'github',
-    icon: 'i-ri-github-fill',
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.GITHUB_URL'),
-    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.GITHUB_URL'),
-  },
-  {
-    key: 'instagram',
-    icon: 'i-ri-instagram-line',
-    label: t('COMPANIES.DETAIL.PROFILE.FIELDS.INSTAGRAM_URL'),
-    placeholder: t('COMPANIES.DETAIL.PROFILE.PLACEHOLDERS.INSTAGRAM_URL'),
-  },
+
+const SOCIAL_PROFILES = [
+  ['linkedin', 'i-ri-linkedin-box-fill'],
+  ['facebook', 'i-ri-facebook-circle-fill'],
+  ['instagram', 'i-ri-instagram-line'],
+  ['telegram', 'i-ri-telegram-fill'],
+  ['tiktok', 'i-ri-tiktok-fill'],
+  ['twitter', 'i-ri-twitter-x-fill'],
+  ['github', 'i-ri-github-fill'],
 ];
 
 const editableName = ref('');
 const editableDomain = ref('');
 const editableDescription = ref('');
-const editableLinkedinUrl = ref('');
-const editableTwitterUrl = ref('');
-const editableGithubUrl = ref('');
-const editableInstagramUrl = ref('');
+const editableSocialProfiles = ref({});
 const avatarPreviewUrl = ref('');
 const isUploadingAvatar = ref(false);
 
@@ -80,36 +62,28 @@ const socialProfiles = computed(
   () => props.company?.additionalAttributes?.socialProfiles || {}
 );
 const isFormInvalid = computed(() => !editableName.value.trim());
+const normalizeSocialProfiles = profiles => ({
+  ...Object.fromEntries(SOCIAL_PROFILES.map(([key]) => [key, ''])),
+  ...(profiles || {}),
+});
 const hasChanges = computed(() => {
+  const currentSocialProfiles = normalizeSocialProfiles(socialProfiles.value);
+  const nextSocialProfiles = normalizeSocialProfiles(
+    editableSocialProfiles.value
+  );
+
   return (
     editableName.value.trim() !== `${props.company?.name || ''}`.trim() ||
     editableDomain.value.trim() !== `${props.company?.domain || ''}`.trim() ||
     editableDescription.value.trim() !==
       `${props.company?.description || ''}`.trim() ||
-    editableLinkedinUrl.value.trim() !==
-      `${socialProfiles.value.linkedin || ''}`.trim() ||
-    editableTwitterUrl.value.trim() !==
-      `${socialProfiles.value.twitter || ''}`.trim() ||
-    editableGithubUrl.value.trim() !==
-      `${socialProfiles.value.github || ''}`.trim() ||
-    editableInstagramUrl.value.trim() !==
-      `${socialProfiles.value.instagram || ''}`.trim()
+    Object.keys(nextSocialProfiles).some(
+      key =>
+        `${nextSocialProfiles[key] || ''}`.trim() !==
+        `${currentSocialProfiles[key] || ''}`.trim()
+    )
   );
 });
-
-const formatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
-
-const formatDate = value => {
-  if (!value) {
-    return t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED');
-  }
-
-  return formatter.format(new Date(value));
-};
 
 const syncEditableFields = company => {
   const companySocialProfiles =
@@ -118,10 +92,7 @@ const syncEditableFields = company => {
   editableName.value = company?.name || '';
   editableDomain.value = company?.domain || '';
   editableDescription.value = company?.description || '';
-  editableLinkedinUrl.value = companySocialProfiles.linkedin || '';
-  editableTwitterUrl.value = companySocialProfiles.twitter || '';
-  editableGithubUrl.value = companySocialProfiles.github || '';
-  editableInstagramUrl.value = companySocialProfiles.instagram || '';
+  editableSocialProfiles.value = normalizeSocialProfiles(companySocialProfiles);
 };
 
 watch(
@@ -141,55 +112,39 @@ watch(
 );
 
 const summaryItems = computed(() => {
-  const items = [
-    t('COMPANIES.CONTACTS_COUNT', {
-      n: Number(props.company?.contactsCount || 0),
-    }),
-    `${t('COMPANIES.DETAIL.PROFILE.FIELDS.CREATED_AT')} ${formatDate(
-      props.company?.createdAt
-    )}`,
-    `${t('COMPANIES.DETAIL.PROFILE.FIELDS.UPDATED_AT')} ${formatDate(
-      props.company?.updatedAt
-    )}`,
-  ];
+  const createdAt = props.company?.createdAt
+    ? t('COMPANIES.DETAIL.PROFILE.CREATED_AT', {
+        date: formatDistanceToNow(new Date(props.company.createdAt), {
+          addSuffix: true,
+        }),
+      })
+    : '';
+  const lastActiveAt = props.company?.lastActivityAt
+    ? t('COMPANIES.DETAIL.PROFILE.LAST_ACTIVE', {
+        date: formatDistanceToNow(new Date(props.company.lastActivityAt), {
+          addSuffix: true,
+        }),
+      })
+    : '';
 
-  if (props.company?.domain) {
-    items.unshift(props.company.domain);
-  }
-
-  return items;
+  return [createdAt, lastActiveAt].filter(Boolean);
 });
 
-const socialLinkInputs = computed(() => [
-  {
-    key: 'linkedin',
-    label: SOCIAL_LINK_FIELDS[0].label,
-    icon: SOCIAL_LINK_FIELDS[0].icon,
-    model: editableLinkedinUrl,
-    placeholder: SOCIAL_LINK_FIELDS[0].placeholder,
-  },
-  {
-    key: 'twitter',
-    label: SOCIAL_LINK_FIELDS[1].label,
-    icon: SOCIAL_LINK_FIELDS[1].icon,
-    model: editableTwitterUrl,
-    placeholder: SOCIAL_LINK_FIELDS[1].placeholder,
-  },
-  {
-    key: 'github',
-    label: SOCIAL_LINK_FIELDS[2].label,
-    icon: SOCIAL_LINK_FIELDS[2].icon,
-    model: editableGithubUrl,
-    placeholder: SOCIAL_LINK_FIELDS[2].placeholder,
-  },
-  {
-    key: 'instagram',
-    label: SOCIAL_LINK_FIELDS[3].label,
-    icon: SOCIAL_LINK_FIELDS[3].icon,
-    model: editableInstagramUrl,
-    placeholder: SOCIAL_LINK_FIELDS[3].placeholder,
-  },
-]);
+const socialProfilesForm = computed(() =>
+  [
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.LINKEDIN.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.FACEBOOK.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.INSTAGRAM.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TELEGRAM.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TIKTOK.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TWITTER.PLACEHOLDER'),
+    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.GITHUB.PLACEHOLDER'),
+  ].map((placeholder, index) => ({
+    key: SOCIAL_PROFILES[index][0],
+    icon: SOCIAL_PROFILES[index][1],
+    placeholder,
+  }))
+);
 
 const handleAvatarUpload = async ({ file, url }) => {
   if (!props.company?.id || isAvatarBusy.value) {
@@ -240,13 +195,7 @@ const handleUpdateCompany = async () => {
       description: editableDescription.value.trim(),
       additionalAttributes: {
         ...(props.company?.additionalAttributes || {}),
-        socialProfiles: {
-          ...socialProfiles.value,
-          linkedin: editableLinkedinUrl.value.trim(),
-          twitter: editableTwitterUrl.value.trim(),
-          github: editableGithubUrl.value.trim(),
-          instagram: editableInstagramUrl.value.trim(),
-        },
+        socialProfiles: normalizeSocialProfiles(editableSocialProfiles.value),
       },
     });
     syncEditableFields(updatedCompany);
@@ -277,11 +226,9 @@ const handleUpdateCompany = async () => {
       />
 
       <div class="flex flex-col gap-1">
-        <div class="flex flex-col gap-1">
-          <h3 class="text-base font-medium text-n-slate-12">
-            {{ displayName }}
-          </h3>
-        </div>
+        <h3 class="text-base font-medium text-n-slate-12">
+          {{ displayName }}
+        </h3>
 
         <span class="text-sm leading-6 text-n-slate-11">
           {{ summaryItems.join(' • ') }}
@@ -295,31 +242,30 @@ const handleUpdateCompany = async () => {
 
     <div class="flex flex-col items-start w-full gap-6">
       <div class="flex flex-col gap-1">
-        <h3 class="text-base font-medium text-n-slate-12">
+        <span class="py-1 text-sm font-medium text-n-slate-12">
           {{ t('COMPANIES.DETAIL.PROFILE.TITLE') }}
-        </h3>
+        </span>
       </div>
 
-      <div class="grid w-full gap-6 sm:grid-cols-2">
+      <div class="grid w-full gap-4 sm:grid-cols-2">
         <Input
           v-model="editableName"
-          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME')"
-          :placeholder="t('COMPANIES.UNNAMED')"
+          :placeholder="t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME')"
           :disabled="isUpdating"
+          custom-input-class="h-8 !pt-1 !pb-1"
         />
 
         <Input
           v-model="editableDomain"
-          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN')"
-          :placeholder="t('COMPANIES.DETAIL.PROFILE.NOT_PROVIDED')"
+          :placeholder="t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN')"
           :disabled="isUpdating"
+          custom-input-class="h-8 !pt-1 !pb-1"
         />
       </div>
 
-      <div class="flex flex-col w-full gap-3">
+      <div class="flex flex-col w-full gap-2">
         <TextArea
           v-model="editableDescription"
-          :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.DESCRIPTION')"
           :placeholder="t('COMPANIES.DETAIL.PROFILE.DESCRIPTION_PLACEHOLDER')"
           :disabled="isUpdating"
           :max-length="280"
@@ -330,27 +276,25 @@ const handleUpdateCompany = async () => {
 
       <div class="flex flex-col items-start gap-2">
         <span class="py-1 text-sm font-medium text-n-slate-12">
-          {{ t('COMPANIES.DETAIL.PROFILE.FIELDS.SOCIAL_LINKS') }}
+          {{ t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.TITLE') }}
         </span>
 
         <div class="flex flex-wrap gap-2">
           <div
-            v-for="field in socialLinkInputs"
-            :key="field.key"
+            v-for="item in socialProfilesForm"
+            :key="item.key"
             class="flex items-center h-8 gap-2 px-2 rounded-lg bg-n-alpha-2 dark:bg-n-solid-2"
           >
             <Icon
-              :icon="field.icon"
+              :icon="item.icon"
               class="flex-shrink-0 text-n-slate-11 size-4"
             />
             <input
-              v-model="field.model.value"
-              type="url"
-              :aria-label="field.label"
+              v-model="editableSocialProfiles[item.key]"
               :disabled="isUpdating"
-              :placeholder="field.placeholder"
-              class="w-auto min-w-[100px] text-sm bg-transparent outline-none reset-base text-n-slate-12 dark:text-n-slate-12 placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:opacity-60"
-              :size="field.placeholder.length"
+              class="w-auto min-w-[100px] text-sm bg-transparent outline-none reset-base text-n-slate-12 dark:text-n-slate-12 placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:cursor-not-allowed disabled:opacity-50"
+              :placeholder="item.placeholder"
+              :size="item.placeholder.length"
             />
           </div>
         </div>

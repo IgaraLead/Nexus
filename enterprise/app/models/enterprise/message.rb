@@ -1,6 +1,11 @@
 module Enterprise::Message
   private
 
+  def set_conversation_activity
+    super
+    conversation.contact&.company&.update_last_activity!(conversation.last_activity_at)
+  end
+
   def mark_pending_conversation_as_open_for_human_response
     return unless captain_pending_conversation?
     return unless human_response?
