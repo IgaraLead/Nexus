@@ -113,6 +113,31 @@ RSpec.describe Captain::Document, type: :model do
       expect(document.effective_sync_status).to be_nil
       expect(document.effective_last_synced_at).to be_nil
     end
+
+    it 'counts legacy documents updated before the stale threshold as stale' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(updated_at: 8.days.ago)
+
+      expect(described_class.stale).to include(document)
+    end
+
+    it 'counts legacy documents updated within the stale threshold as recently synced' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(updated_at: 1.day.ago)
+
+      expect(described_class.stale).not_to include(document)
+      expect(described_class.synced_since(7.days.ago)).to include(document)
+    end
+
+    it 'does not count legacy PDFs as stale' do
+      pdf_document = build(:captain_document, assistant: assistant, account: account, external_link: nil, status: :available)
+      pdf_document.pdf_file.attach(io: StringIO.new('PDF content'), filename: 'test.pdf',
+                                   content_type: 'application/pdf')
+      pdf_document.save!
+      pdf_document.update!(updated_at: 8.days.ago)
+
+      expect(described_class.stale).not_to include(pdf_document)
+    end
   end
 
   describe 'response builder job callback' do

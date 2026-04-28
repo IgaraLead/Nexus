@@ -66,9 +66,16 @@ class Captain::Document < ApplicationRecord
   scope :for_assistant, ->(assistant_id) { where(assistant_id: assistant_id) }
   scope :syncable, -> { where("external_link NOT LIKE 'PDF:%' AND external_link NOT LIKE '%.pdf'") }
   scope :stale, lambda {
-    sync_failed.or(sync_synced.where(arel_table[:last_synced_at].lt(STALE_THRESHOLD.ago)))
+    legacy_synced.where(arel_table[:updated_at].lt(STALE_THRESHOLD.ago))
+                 .or(sync_failed)
+                 .or(sync_synced.where(arel_table[:last_synced_at].lt(STALE_THRESHOLD.ago)))
   }
-  scope :synced_since, ->(time) { sync_synced.where(arel_table[:last_synced_at].gteq(time)) }
+  scope :synced_since, lambda { |time|
+    sync_synced
+      .where(arel_table[:last_synced_at].gteq(time))
+      .or(legacy_synced.where(arel_table[:updated_at].gteq(time)))
+  }
+  scope :legacy_synced, -> { syncable.where(sync_status: nil, status: statuses[:available]) }
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'
