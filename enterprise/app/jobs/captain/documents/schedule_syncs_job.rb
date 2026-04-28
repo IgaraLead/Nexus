@@ -3,7 +3,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
 
   PER_ACCOUNT_HOURLY_CAP = 50
   GLOBAL_HOURLY_CAP = 1000
-  SYNC_STALE_TIMEOUT = 2.hours
+  SYNC_STALE_TIMEOUT = Captain::Document::SYNC_STALE_TIMEOUT
 
   def perform
     @remaining_global_capacity = GLOBAL_HOURLY_CAP
@@ -30,13 +30,16 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
 
   def enqueue_due_documents(account, interval)
     syncing = Captain::Document.sync_statuses[:syncing]
+    synced = Captain::Document.sync_statuses[:synced]
+    failed = Captain::Document.sync_statuses[:failed]
     stale_cutoff = SYNC_STALE_TIMEOUT.ago
     per_account_limit = [PER_ACCOUNT_HOURLY_CAP, @remaining_global_capacity].min
     enqueued_count = 0
 
     account.captain_documents.syncable.where(status: :available).where(
-      'COALESCE(last_sync_attempted_at, last_synced_at, updated_at) < ? OR (sync_status = ? AND last_sync_attempted_at < ?)',
-      interval.ago, syncing, stale_cutoff
+      '(sync_status = ? AND last_synced_at < ?) OR (sync_status = ? AND last_sync_attempted_at < ?) OR ' \
+      '(sync_status = ? AND last_sync_attempted_at < ?)',
+      synced, interval.ago, failed, interval.ago, syncing, stale_cutoff
     ).order(Arel.sql('last_sync_attempted_at ASC NULLS FIRST'), :id).limit(per_account_limit).each do |document|
       next unless document.syncable?
 

@@ -28,6 +28,7 @@
 #
 class Captain::Document < ApplicationRecord
   class LimitExceededError < StandardError; end
+  SYNC_STALE_TIMEOUT = 2.hours
   self.table_name = 'captain_documents'
 
   belongs_to :assistant, class_name: 'Captain::Assistant'
@@ -66,16 +67,11 @@ class Captain::Document < ApplicationRecord
   scope :for_assistant, ->(assistant_id) { where(assistant_id: assistant_id) }
   scope :syncable, -> { where("external_link NOT LIKE 'PDF:%' AND external_link NOT LIKE '%.pdf'") }
   scope :stale, lambda {
-    legacy_synced.where(arel_table[:updated_at].lt(STALE_THRESHOLD.ago))
-                 .or(sync_failed)
-                 .or(sync_synced.where(arel_table[:last_synced_at].lt(STALE_THRESHOLD.ago)))
+    sync_failed.or(sync_synced.where(arel_table[:last_synced_at].lt(STALE_THRESHOLD.ago)))
   }
   scope :synced_since, lambda { |time|
-    sync_synced
-      .where(arel_table[:last_synced_at].gteq(time))
-      .or(legacy_synced.where(arel_table[:updated_at].gteq(time)))
+    sync_synced.where(arel_table[:last_synced_at].gteq(time))
   }
-  scope :legacy_synced, -> { syncable.where(sync_status: nil, status: statuses[:available]) }
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'
@@ -114,12 +110,12 @@ class Captain::Document < ApplicationRecord
     !pdf_document?
   end
 
-  def effective_sync_status
-    sync_status || (available? && syncable? ? 'synced' : nil)
+  def sync_stale?
+    sync_syncing? && (last_sync_attempted_at.blank? || last_sync_attempted_at < SYNC_STALE_TIMEOUT.ago)
   end
 
-  def effective_last_synced_at
-    last_synced_at || (available? && syncable? ? updated_at : nil)
+  def sync_in_progress?
+    sync_syncing? && !sync_stale?
   end
 
   private

@@ -11,8 +11,9 @@ json.file_size resource.file_size
 json.id resource.id
 json.name resource.name
 json.status resource.status
-json.sync_status resource.effective_sync_status
-json.last_synced_at resource.effective_last_synced_at&.to_i
+json.sync_status resource.sync_status
+json.sync_in_progress resource.sync_in_progress?
+json.last_synced_at resource.last_synced_at&.to_i
 json.last_sync_attempted_at resource.last_sync_attempted_at&.to_i
 json.last_sync_error_code resource.last_sync_error_code
 json.updated_at resource.updated_at.to_i

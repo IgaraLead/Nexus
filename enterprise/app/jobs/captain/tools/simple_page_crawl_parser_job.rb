@@ -19,15 +19,31 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
       raise "Failed to fetch page: #{page_link}"
     end
 
-    document.update!(
-      external_link: normalized_link,
-      name: (crawler.page_title || '')[0..254], content: (crawler.body_markdown || '')[0..14_999], status: :available
-    )
+    persist_document!(document, normalized_link, crawler)
   rescue StandardError => e
     raise "Failed to parse data: #{page_link} #{e.message}"
   end
 
   private
+
+  def persist_document!(document, normalized_link, crawler)
+    document.update!(
+      external_link: normalized_link,
+      name: (crawler.page_title || '')[0..254],
+      content: (crawler.body_markdown || '')[0..14_999],
+      status: :available,
+      **synced_attributes
+    )
+  end
+
+  def synced_attributes
+    {
+      sync_status: :synced,
+      last_synced_at: Time.current,
+      last_sync_attempted_at: Time.current,
+      last_sync_error_code: nil
+    }
+  end
 
   def mark_failed!(document, status_code)
     document.update!(

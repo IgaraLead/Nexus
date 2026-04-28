@@ -49,6 +49,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  syncInProgress: {
+    type: Boolean,
+    default: false,
+  },
   isSelected: {
     type: Boolean,
     default: false,
@@ -82,6 +86,9 @@ const isPdf = computed(() => isPdfDocument(props.externalLink));
 const canManage = computed(() => checkPermissions(['administrator']));
 const isSyncing = computed(() => props.syncStatus === 'syncing');
 const isFailed = computed(() => props.syncStatus === 'failed');
+const isRetryableSync = computed(
+  () => isFailed.value || (isSyncing.value && !props.syncInProgress)
+);
 const showSyncStatus = computed(() => !isPdf.value);
 
 const menuItems = computed(() => {
@@ -96,13 +103,13 @@ const menuItems = computed(() => {
 
   if (canManage.value && !isPdf.value) {
     allOptions.push({
-      label: isFailed.value
+      label: isRetryableSync.value
         ? t('CAPTAIN.DOCUMENTS.OPTIONS.RETRY_SYNC')
         : t('CAPTAIN.DOCUMENTS.OPTIONS.SYNC_NOW'),
       value: 'sync',
       action: 'sync',
       icon: 'i-lucide-refresh-cw',
-      disabled: isSyncing.value,
+      disabled: props.syncInProgress,
     });
   }
 

@@ -142,9 +142,25 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
         expect(json_response[:external_link]).to eq(document.external_link)
       end
 
-      it 'returns updated_at as the sync baseline for legacy documents' do
+      it 'returns sync metadata when the document has been synced' do
+        synced_at = 1.hour.ago
+        document.update!(sync_status: :synced, last_synced_at: synced_at)
+
+        get "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}",
+            headers: agent.create_new_auth_token, as: :json
+
         expect(json_response[:sync_status]).to eq('synced')
-        expect(json_response[:last_synced_at]).to eq(document.updated_at.to_i)
+        expect(json_response[:last_synced_at]).to eq(synced_at.to_i)
+      end
+
+      it 'does not report failed documents without a successful sync as last synced' do
+        document.update!(sync_status: :failed, last_sync_attempted_at: 1.minute.ago)
+
+        get "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}",
+            headers: agent.create_new_auth_token, as: :json
+
+        expect(json_response[:sync_status]).to eq('failed')
+        expect(json_response[:last_synced_at]).to be_nil
       end
     end
   end
@@ -285,6 +301,24 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
         end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
 
         expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'queues stale syncing documents again' do
+        freeze_time do
+          document.update!(sync_status: :syncing, last_sync_attempted_at: (Captain::Document::SYNC_STALE_TIMEOUT + 1.minute).ago)
+
+          expect do
+            post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync",
+                 headers: admin.create_new_auth_token, as: :json
+          end.to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+
+          expect(document.reload).to have_attributes(
+            sync_status: 'syncing',
+            last_sync_attempted_at: Time.current
+          )
+        end
+
+        expect(response).to have_http_status(:accepted)
       end
 
       it 'rejects PDF documents with an explanatory error' do

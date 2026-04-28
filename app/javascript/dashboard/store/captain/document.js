@@ -11,6 +11,7 @@ const markRecordsSyncing = (records, ids) => {
       ? {
           ...record,
           sync_status: SYNCING_STATE,
+          sync_in_progress: true,
           last_sync_attempted_at: Math.floor(Date.now() / 1000),
           last_sync_error_code: null,
         }

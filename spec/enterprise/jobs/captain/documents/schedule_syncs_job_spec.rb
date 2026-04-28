@@ -31,17 +31,30 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
   end
 
-  context 'when an available document has legacy sync metadata' do
-    it 'leaves it alone when updated within the plan cadence' do
-      create(:captain_document, assistant: assistant, account: account, status: :available)
+  context 'when an available document has backfilled sync metadata' do
+    it 'leaves it alone when last synced within the plan cadence' do
+      create(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        status: :available,
+        sync_status: :synced,
+        last_synced_at: 1.hour.ago
+      )
       clear_enqueued_jobs
 
       expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
     end
 
-    it 'queues a sync when updated before the plan cadence' do
-      document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      document.update!(updated_at: 2.days.ago)
+    it 'queues a sync when last synced before the plan cadence' do
+      document = create(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        status: :available,
+        sync_status: :synced,
+        last_synced_at: 3.days.ago
+      )
       clear_enqueued_jobs
 
       expect { described_class.new.perform }
@@ -49,12 +62,17 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
 
     it 'marks the due document as syncing before queueing' do
-      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document = create(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        status: :available,
+        sync_status: :synced,
+        last_synced_at: 3.days.ago
+      )
       clear_enqueued_jobs
 
       travel_to Time.zone.local(2026, 4, 27, 10, 0, 0) do
-        document.update!(updated_at: 2.days.ago)
-
         described_class.new.perform
 
         expect(document.reload).to have_attributes(
@@ -65,8 +83,14 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
 
     it 'does not queue the same document again while the reserved sync is fresh' do
-      document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      document.update!(updated_at: 2.days.ago)
+      document = create(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        status: :available,
+        sync_status: :synced,
+        last_synced_at: 2.days.ago
+      )
       clear_enqueued_jobs
 
       expect { described_class.new.perform }
@@ -81,7 +105,7 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
   context 'when an available document was synced within the plan cadence' do
     it 'leaves it alone' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      document.update!(sync_status: :synced, last_sync_attempted_at: 1.hour.ago)
+      document.update!(sync_status: :synced, last_synced_at: 1.hour.ago, last_sync_attempted_at: 1.hour.ago)
       clear_enqueued_jobs
 
       expect { described_class.new.perform }.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
@@ -91,7 +115,7 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
   context 'when an available document was last synced before the plan cadence' do
     it 'queues a sync for that document' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      document.update!(sync_status: :synced, last_sync_attempted_at: 2.days.ago)
+      document.update!(sync_status: :synced, last_synced_at: 2.days.ago, last_sync_attempted_at: 2.days.ago)
       clear_enqueued_jobs
 
       expect { described_class.new.perform }
@@ -104,20 +128,31 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
       stub_const("#{described_class}::PER_ACCOUNT_HOURLY_CAP", 2)
     end
 
-    it 'queues never-attempted and oldest-attempted documents first' do
+    it 'queues backfilled and oldest-attempted documents first' do
       newest_document = create(:captain_document, assistant: assistant, account: account, status: :available)
       oldest_document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      never_attempted_document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      backfilled_document = create(:captain_document, assistant: assistant, account: account, status: :available)
 
-      newest_document.update!(sync_status: :synced, last_sync_attempted_at: 2.days.ago)
-      oldest_document.update!(sync_status: :synced, last_sync_attempted_at: 3.days.ago)
-      never_attempted_document.update!(updated_at: 4.days.ago)
+      newest_document.update!(sync_status: :synced, last_synced_at: 2.days.ago, last_sync_attempted_at: 2.days.ago)
+      oldest_document.update!(sync_status: :synced, last_synced_at: 3.days.ago, last_sync_attempted_at: 3.days.ago)
+      backfilled_document.update!(sync_status: :synced, last_synced_at: 4.days.ago, last_sync_attempted_at: nil)
       clear_enqueued_jobs
 
       expect { described_class.new.perform }
-        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(never_attempted_document)
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(backfilled_document)
         .and have_enqueued_job(Captain::Documents::PerformSyncJob).with(oldest_document)
       expect(Captain::Documents::PerformSyncJob).not_to have_been_enqueued.with(newest_document)
+    end
+  end
+
+  context 'when an available document failed before the plan cadence' do
+    it 'queues a sync for that document' do
+      document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      document.update!(sync_status: :failed, last_sync_attempted_at: 2.days.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
     end
   end
 

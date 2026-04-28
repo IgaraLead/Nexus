@@ -128,7 +128,7 @@ const stopSyncPolling = () => {
 };
 
 const hasDocumentsSyncing = computed(() =>
-  (documents.value || []).some(doc => doc.sync_status === 'syncing')
+  (documents.value || []).some(doc => doc.sync_in_progress)
 );
 
 const scheduleSyncPoll = () => {
@@ -426,6 +426,7 @@ onBeforeUnmount(() => {
           :sync-status="doc.sync_status"
           :last-synced-at="doc.last_synced_at"
           :last-sync-error-code="doc.last_sync_error_code"
+          :sync-in-progress="doc.sync_in_progress"
           :is-selected="canManageDocuments && bulkSelectedIds.has(doc.id)"
           :selectable="canManageDocuments"
           :show-selection-control="shouldShowSelectionControl(doc.id)"

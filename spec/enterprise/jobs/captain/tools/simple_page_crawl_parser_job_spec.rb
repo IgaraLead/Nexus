@@ -20,15 +20,22 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
 
     context 'when the page is successfully crawled' do
       it 'creates a new document if one does not exist' do
-        expect do
-          described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
-        end.to change(assistant.documents, :count).by(1)
+        freeze_time do
+          expect do
+            described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
+          end.to change(assistant.documents, :count).by(1)
 
-        document = assistant.documents.last
-        expect(document.external_link).to eq('https://example.com/page')
-        expect(document.name).to eq(page_title)
-        expect(document.content).to eq(content)
-        expect(document.status).to eq('available')
+          document = assistant.documents.last
+          expect(document.external_link).to eq('https://example.com/page')
+          expect(document.name).to eq(page_title)
+          expect(document.content).to eq(content)
+          expect(document).to have_attributes(
+            status: 'available',
+            sync_status: 'synced',
+            last_synced_at: Time.current,
+            last_sync_attempted_at: Time.current
+          )
+        end
       end
 
       it 'updates existing document if one exists' do
@@ -38,14 +45,21 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
                                    name: 'Old Title',
                                    content: 'Old content')
 
-        expect do
-          described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
-        end.not_to change(assistant.documents, :count)
+        freeze_time do
+          expect do
+            described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
+          end.not_to change(assistant.documents, :count)
 
-        existing_document.reload
-        expect(existing_document.name).to eq(page_title)
-        expect(existing_document.content).to eq(content)
-        expect(existing_document.status).to eq('available')
+          existing_document.reload
+          expect(existing_document.name).to eq(page_title)
+          expect(existing_document.content).to eq(content)
+          expect(existing_document).to have_attributes(
+            status: 'available',
+            sync_status: 'synced',
+            last_synced_at: Time.current,
+            last_sync_attempted_at: Time.current
+          )
+        end
       end
 
       context 'when title or content exceed maximum length' do

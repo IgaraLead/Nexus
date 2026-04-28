@@ -204,6 +204,32 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it 'queues stale syncing documents again' do
+        syncing_document = create(:captain_document, assistant: assistant, account: account, status: :available)
+
+        freeze_time do
+          syncing_document.update!(
+            sync_status: :syncing,
+            last_sync_attempted_at: (Captain::Document::SYNC_STALE_TIMEOUT + 1.minute).ago
+          )
+
+          expect do
+            post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
+                 params: sync_params.merge(ids: [syncing_document.id]),
+                 headers: admin.create_new_auth_token,
+                 as: :json
+          end.to have_enqueued_job(Captain::Documents::PerformSyncJob).with(syncing_document)
+
+          expect(syncing_document.reload).to have_attributes(
+            sync_status: 'syncing',
+            last_sync_attempted_at: Time.current
+          )
+        end
+
+        expect(response).to have_http_status(:ok)
+        expect(json_response).to eq({ ids: [syncing_document.id], count: 1 })
+      end
+
       it 'denies non-administrators' do
         post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
              params: sync_params,
