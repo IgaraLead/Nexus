@@ -234,6 +234,7 @@ export default {
           const tr = editorView.state.tr.replaceSelectionWith(tableNode);
           editorView.dispatch(tr.scrollIntoView());
         },
+        imageUpload: () => this.openFileBrowser(),
       };
 
       const command = commandMap[actionKey];
