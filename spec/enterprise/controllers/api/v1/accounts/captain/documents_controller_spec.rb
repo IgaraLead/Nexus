@@ -236,8 +236,6 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
   end
 
   describe 'POST /api/v1/accounts/:account_id/captain/documents/:id/sync' do
-    include ActiveJob::TestHelper
-
     before { clear_enqueued_jobs }
 
     context 'when it is an un-authenticated user' do

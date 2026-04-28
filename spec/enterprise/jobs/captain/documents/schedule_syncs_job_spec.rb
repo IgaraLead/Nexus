@@ -1,8 +1,6 @@
 require 'rails_helper'
 
 RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
-  include ActiveJob::TestHelper
-
   let(:account) { create(:account, custom_attributes: { plan_name: 'business' }) }
   let(:assistant) { create(:captain_assistant, account: account) }
 
