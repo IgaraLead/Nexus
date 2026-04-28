@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { formatDistanceToNow } from 'date-fns';
 import { useAlert } from 'dashboard/composables';
+import { dynamicTime } from 'shared/helpers/timeHelper';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -113,14 +113,10 @@ watch(
 
 const summaryItems = computed(() => {
   const createdAt = props.company?.createdAt
-    ? formatDistanceToNow(new Date(props.company.createdAt), {
-        addSuffix: true,
-      })
+    ? dynamicTime(props.company.createdAt)
     : '';
   const lastActiveAt = props.company?.lastActivityAt
-    ? formatDistanceToNow(new Date(props.company.lastActivityAt), {
-        addSuffix: true,
-      })
+    ? dynamicTime(props.company.lastActivityAt)
     : '';
 
   return [

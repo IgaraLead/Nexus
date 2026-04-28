@@ -38,7 +38,7 @@ const isFetchingCompany = computed(() => uiFlags.value.fetchingItem);
 const isFetchingContacts = computed(() => uiFlags.value.fetchingContacts);
 const isSearchingContacts = computed(() => uiFlags.value.searchingContacts);
 const isManagingContacts = computed(
-  () => uiFlags.value.creatingContact || uiFlags.value.removingContact
+  () => uiFlags.value.linkingContact || uiFlags.value.removingContact
 );
 const isDeletingCompany = computed(() => uiFlags.value.deletingItem);
 const hasCompany = computed(() => Boolean(company.value?.id));

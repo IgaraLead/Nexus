@@ -12,7 +12,7 @@ const createInitialUIFlags = () => ({
   deletingItem: false,
   fetchingContacts: false,
   searchingContacts: false,
-  creatingContact: false,
+  linkingContact: false,
   removingContact: false,
   deletingAvatar: false,
 });
@@ -386,7 +386,7 @@ export const useCompaniesStore = defineStore('companies', {
     },
 
     async attachContactToCompany(companyId, contactId) {
-      this.setUIFlag({ creatingContact: true });
+      this.setUIFlag({ linkingContact: true });
       this.ensureActiveCompanyContext(companyId);
       const currentPage = this.companyContactsMeta.page || 1;
       const previousCompanyId = this.contactSearchResults.find(
@@ -420,7 +420,7 @@ export const useCompaniesStore = defineStore('companies', {
       } catch (error) {
         return throwErrorMessage(error);
       } finally {
-        this.setUIFlag({ creatingContact: false });
+        this.setUIFlag({ linkingContact: false });
       }
     },
 
@@ -479,7 +479,7 @@ export const useCompaniesStore = defineStore('companies', {
         fetchingItem: false,
         fetchingContacts: false,
         searchingContacts: false,
-        creatingContact: false,
+        linkingContact: false,
         removingContact: false,
         deletingAvatar: false,
       });
