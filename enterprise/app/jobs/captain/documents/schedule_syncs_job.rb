@@ -29,7 +29,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
     account.captain_documents.syncable.where(status: :available).where(
       'last_sync_attempted_at IS NULL OR last_sync_attempted_at < ? OR (sync_status = ? AND last_sync_attempted_at < ?)',
       interval.ago, syncing, stale_cutoff
-    ).limit(per_account_limit).each do |document|
+    ).order(Arel.sql('last_sync_attempted_at ASC NULLS FIRST'), :id).limit(per_account_limit).each do |document|
       next unless document.syncable?
 
       # Reserve the sync slot before enqueueing so later scheduler runs skip this document while the job is queued.

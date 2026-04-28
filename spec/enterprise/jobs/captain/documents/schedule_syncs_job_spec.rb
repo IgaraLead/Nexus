@@ -90,6 +90,27 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
   end
 
+  context 'when more documents are due than the account cap allows' do
+    before do
+      stub_const("#{described_class}::PER_ACCOUNT_HOURLY_CAP", 2)
+    end
+
+    it 'queues never-attempted and oldest-attempted documents first' do
+      newest_document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      oldest_document = create(:captain_document, assistant: assistant, account: account, status: :available)
+      never_attempted_document = create(:captain_document, assistant: assistant, account: account, status: :available)
+
+      newest_document.update!(sync_status: :synced, last_sync_attempted_at: 2.days.ago)
+      oldest_document.update!(sync_status: :synced, last_sync_attempted_at: 3.days.ago)
+      clear_enqueued_jobs
+
+      expect { described_class.new.perform }
+        .to have_enqueued_job(Captain::Documents::PerformSyncJob).with(never_attempted_document)
+        .and have_enqueued_job(Captain::Documents::PerformSyncJob).with(oldest_document)
+      expect(Captain::Documents::PerformSyncJob).not_to have_been_enqueued.with(newest_document)
+    end
+  end
+
   context 'when a document is stuck in syncing past the scheduler stale timeout' do
     it 'requeues a sync to recover the lock' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
