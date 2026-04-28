@@ -761,7 +761,7 @@
         "ERROR_MESSAGE": "Could not queue sync, please try again."
       },
       "STATS": {
-        "TOTAL": "Total",
+        "TOTAL": "Web pages",
         "STALE": "Stale",
         "SYNCING": "Syncing",
         "SYNCED_RECENTLY": "Synced this week",
