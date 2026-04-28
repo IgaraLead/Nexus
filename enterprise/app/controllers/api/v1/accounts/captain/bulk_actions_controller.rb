@@ -70,7 +70,9 @@ class Api::V1::Accounts::Captain::BulkActionsController < Api::V1::Accounts::Bas
     Current.account.captain_documents.where(id: params[:ids]).find_each do |document|
       next unless document.syncable?
       next unless document.available?
+      next if document.sync_syncing?
 
+      document.update!(sync_status: :syncing, last_sync_attempted_at: Time.current)
       Captain::Documents::PerformSyncJob.perform_later(document)
     end
     []
