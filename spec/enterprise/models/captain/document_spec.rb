@@ -116,15 +116,14 @@ RSpec.describe Captain::Document, type: :model do
 
     it 'counts legacy documents updated before the stale threshold as stale' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      # Skip callbacks so a queued ResponseBuilderJob can't mutate sync_status away from the legacy state under test
-      document.update_columns(updated_at: 8.days.ago, sync_status: nil, last_synced_at: nil)
+      document.update!(updated_at: 8.days.ago, sync_status: nil, last_synced_at: nil)
 
       expect(described_class.stale).to include(document)
     end
 
     it 'counts legacy documents updated within the stale threshold as recently synced' do
       document = create(:captain_document, assistant: assistant, account: account, status: :available)
-      document.update_columns(updated_at: 1.day.ago, sync_status: nil, last_synced_at: nil)
+      document.update!(updated_at: 1.day.ago, sync_status: nil, last_synced_at: nil)
 
       expect(described_class.stale).not_to include(document)
       expect(described_class.synced_since(7.days.ago)).to include(document)
