@@ -116,6 +116,12 @@ export default {
       this.focusEditorInputField();
     }
   },
+  beforeUnmount() {
+    if (editorView) {
+      editorView.destroy();
+      editorView = null;
+    }
+  },
   methods: {
     createSlashPlugin() {
       return suggestionsPlugin({

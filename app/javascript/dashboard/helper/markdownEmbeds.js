@@ -3,9 +3,8 @@ import yamlSource from '../../../../config/markdown_embeds.yml?raw';
 
 const config = yaml.load(yamlSource);
 
-// Scripts inserted via innerHTML don't execute (HTML spec), so embed templates
-// that rely on <script> (e.g. github_gist, wistia) would render blank in the editor preview.
-const isPreviewable = ({ template }) => !/<script\b/i.test(template);
+// Gists rely on document.write() and can't render inline in the editor.
+const isPreviewable = ({ template }) => !template.includes('gist.github.com');
 
 export const embeds = Object.values(config)
   .filter(isPreviewable)
