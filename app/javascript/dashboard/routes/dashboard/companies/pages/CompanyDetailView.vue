@@ -108,9 +108,7 @@ const loadCompanyContactsPage = async page => {
     return;
   }
 
-  await Promise.allSettled([
-    companiesStore.getCompanyContacts(companyId.value, page),
-  ]);
+  await companiesStore.getCompanyContacts(companyId.value, page);
 };
 
 const goToCompaniesList = () => {
@@ -120,20 +118,6 @@ const goToCompaniesList = () => {
   }
 
   goToCompaniesIndex();
-};
-
-const refreshDetail = async page => {
-  if (!companyId.value) {
-    return;
-  }
-
-  await Promise.allSettled([
-    companiesStore.show(companyId.value),
-    companiesStore.getCompanyContacts(
-      companyId.value,
-      page || companiesStore.companyContactsMeta.page || 1
-    ),
-  ]);
 };
 
 const openDeleteCompanyDialog = () => {
@@ -156,7 +140,6 @@ const attachSelectedContact = async ({
   try {
     await companiesStore.attachContactToCompany(companyId.value, contactId);
     useAlert(successMessage);
-    await refreshDetail();
     await companiesStore.searchCompanyContactCandidates(companyId.value, '');
     clearSelectedCandidate();
   } catch {
@@ -196,9 +179,12 @@ const handleRemoveContact = async contactId => {
       : currentPage;
 
   try {
-    await companiesStore.removeContactFromCompany(companyId.value, contactId);
+    await companiesStore.removeContactFromCompany(
+      companyId.value,
+      contactId,
+      nextPage
+    );
     useAlert(t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REMOVE_SUCCESS'));
-    await refreshDetail(nextPage);
   } catch {
     useAlert(t('COMPANIES.DETAIL.CONTACTS.MESSAGES.REMOVE_ERROR'));
   }

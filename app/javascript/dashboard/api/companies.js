@@ -1,26 +1,23 @@
 /* global axios */
 import ApiClient from './ApiClient';
 
-export const buildCompanyParams = (page, sort) => {
-  let params = `page=${page}`;
-  if (sort) {
-    params = `${params}&sort=${sort}`;
-  }
-  return params;
-};
+const buildParams = params =>
+  Object.entries(params)
+    .filter(
+      ([key, value]) => value !== undefined && (value !== '' || key === 'q')
+    )
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join('&');
 
-export const buildSearchParams = (query, page, sort) => {
-  let params = `q=${encodeURIComponent(query)}&page=${page}`;
-  if (sort) {
-    params = `${params}&sort=${sort}`;
-  }
-  return params;
-};
+const buildCompanyParams = (page, sort) => buildParams({ page, sort });
 
-export const buildCompanyContactParams = page => `page=${page}`;
+const buildSearchParams = (query, page, sort) =>
+  buildParams({ q: query, page, sort });
 
-export const buildCompanyContactSearchParams = (query, page) =>
-  `q=${encodeURIComponent(query)}&page=${page}`;
+const buildCompanyContactParams = page => buildParams({ page });
+
+const buildCompanyContactSearchParams = (query, page) =>
+  buildParams({ q: query, page });
 
 class CompanyAPI extends ApiClient {
   constructor() {

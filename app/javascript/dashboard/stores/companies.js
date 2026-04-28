@@ -58,9 +58,6 @@ const normalizeMeta = meta => ({
   page: Number(meta?.page || 1),
 });
 
-const sortRecordsByIdDesc = records =>
-  [...records].sort((r1, r2) => r2.id - r1.id);
-
 const upsertRecord = (records, record) => {
   const index = records.findIndex(
     existingRecord => existingRecord.id === record.id
@@ -127,14 +124,11 @@ export const useCompaniesStore = defineStore('companies', {
   state: createInitialState,
 
   getters: {
-    getRecords: state => sortRecordsByIdDesc(state.records),
     getRecord: state => id =>
       state.records.find(record => record.id === Number(id)) || {},
     getUIFlags: state => state.uiFlags,
     getMeta: state => state.meta,
-    getCompaniesList: state => {
-      return camelcaseKeys(state.records, { deep: true });
-    },
+    getCompaniesList: state => state.records,
   },
 
   actions: {
@@ -424,10 +418,10 @@ export const useCompaniesStore = defineStore('companies', {
       }
     },
 
-    async removeContactFromCompany(companyId, contactId) {
+    async removeContactFromCompany(companyId, contactId, page) {
       this.setUIFlag({ removingContact: true });
       this.ensureActiveCompanyContext(companyId);
-      const currentPage = this.companyContactsMeta.page || 1;
+      const currentPage = page || this.companyContactsMeta.page || 1;
       try {
         await CompanyAPI.removeContact(companyId, contactId);
         this.contactSearchResults = updateContactInCollection(
@@ -472,6 +466,7 @@ export const useCompaniesStore = defineStore('companies', {
       this.companyContactsMeta = {};
       this.contactSearchResults = [];
       this.activeCompanyId = null;
+      this.companyDetailRequestToken += 1;
       this.companyContactsRequestToken += 1;
       this.contactSearchRequestToken += 1;
       this.activeContactSearchQuery = '';

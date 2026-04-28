@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { formatDistanceToNow } from 'date-fns';
+import { dynamicTime } from 'shared/helpers/timeHelper';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
@@ -34,9 +34,7 @@ const contactsCountLabel = computed(() =>
 
 const formattedLastActivityAt = computed(() => {
   if (!props.lastActivityAt) return '';
-  return formatDistanceToNow(new Date(props.lastActivityAt), {
-    addSuffix: true,
-  });
+  return dynamicTime(props.lastActivityAt);
 });
 </script>
 

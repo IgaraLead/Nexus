@@ -111,18 +111,12 @@
         }
       },
       "NOTES": {
-        "TITLE": "Notes",
-        "SUBTITLE": "Notes captured across contacts.",
         "ADDED_BY": "Added by",
         "EMPTY": "No notes found for contacts yet.",
         "CONTACT_FALLBACK": "Contact"
       },
       "HISTORY": {
-        "TITLE": "Conversation history",
-        "SUBTITLE": "Recent conversations across contacts.",
-        "LOADING": "Loading recent conversations...",
         "EMPTY": "No recent conversations found for contacts yet.",
-        "NO_MESSAGE": "No recent message available",
         "CONTACT_FALLBACK": "Contact"
       },
       "DELETE": {
