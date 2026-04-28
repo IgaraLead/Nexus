@@ -48,6 +48,8 @@ class Captain::Document < ApplicationRecord
     available: 1
   }
 
+  enum :sync_status, { syncing: 0, synced: 1, failed: 2 }, prefix: :sync
+
   before_create :ensure_within_plan_limit
   after_create_commit :enqueue_crawl_job
   after_create_commit :update_document_usage
@@ -60,6 +62,7 @@ class Captain::Document < ApplicationRecord
 
   def pdf_document?
     return true if pdf_file.attached? && pdf_file.blob.content_type == 'application/pdf'
+    return true if external_link&.start_with?('PDF:')
 
     external_link&.ends_with?('.pdf')
   end
@@ -70,6 +73,30 @@ class Captain::Document < ApplicationRecord
 
   def file_size
     pdf_file.blob.byte_size if pdf_file.attached?
+  end
+
+  def content_fingerprint
+    metadata&.dig('content_fingerprint')
+  end
+
+  def content_fingerprint=(value)
+    self.metadata = (metadata || {}).merge('content_fingerprint' => value)
+  end
+
+  def last_sync_error_code
+    metadata&.dig('last_sync_error_code')
+  end
+
+  def last_sync_error_code=(value)
+    self.metadata = (metadata || {}).merge('last_sync_error_code' => value)
+  end
+
+  def sync_step
+    metadata&.dig('sync_step')
+  end
+
+  def store_sync_step(step)
+    update!(metadata: (metadata || {}).merge('sync_step' => step))
   end
 
   def openai_file_id
@@ -88,6 +115,10 @@ class Captain::Document < ApplicationRecord
     else
       external_link
     end
+  end
+
+  def to_llm_metadata
+    { document_id: id, assistant_id: assistant_id, external_link: external_link }
   end
 
   private

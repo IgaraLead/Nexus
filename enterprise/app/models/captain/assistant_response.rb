@@ -36,6 +36,7 @@ class Captain::AssistantResponse < ApplicationRecord
 
   before_validation :ensure_account
   before_validation :ensure_status
+  before_validation :mark_as_edited, on: :update
   after_commit :update_response_embedding
 
   scope :ordered, -> { order(created_at: :desc) }
@@ -54,6 +55,10 @@ class Captain::AssistantResponse < ApplicationRecord
 
   def ensure_status
     self.status ||= :approved
+  end
+
+  def mark_as_edited
+    self.edited = true if question_changed? || answer_changed?
   end
 
   def ensure_account
