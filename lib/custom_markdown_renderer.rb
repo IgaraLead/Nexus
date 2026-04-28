@@ -1,4 +1,4 @@
-class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
+class CustomMarkdownRenderer < BaseMarkdownRenderer
   CONFIG_PATH = Rails.root.join('config/markdown_embeds.yml')
 
   def self.config
