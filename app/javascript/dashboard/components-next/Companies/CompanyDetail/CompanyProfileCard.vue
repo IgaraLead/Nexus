@@ -230,10 +230,7 @@ const handleUpdateCompany = async () => {
           {{ displayName }}
         </h3>
 
-        <span
-          v-if="summaryItems.length"
-          class="text-sm leading-6 text-n-slate-11"
-        >
+        <span class="text-sm leading-6 text-n-slate-11">
           {{ summaryItems.join(' • ') }}
         </span>
 
