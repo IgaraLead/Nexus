@@ -3,6 +3,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
 
   PER_ACCOUNT_HOURLY_CAP = 50
   GLOBAL_HOURLY_CAP = 1000
+  SYNC_STALE_TIMEOUT = 2.hours
 
   def perform
     @remaining_global_capacity = GLOBAL_HOURLY_CAP
@@ -22,7 +23,7 @@ class Captain::Documents::ScheduleSyncsJob < ApplicationJob
 
   def enqueue_due_documents(account, interval)
     syncing = Captain::Document.sync_statuses[:syncing]
-    stale_cutoff = Captain::Documents::PerformSyncJob::LOCK_TIMEOUT.ago
+    stale_cutoff = SYNC_STALE_TIMEOUT.ago
     per_account_limit = [PER_ACCOUNT_HOURLY_CAP, @remaining_global_capacity].min
 
     account.captain_documents.syncable.where(status: :available).where(
