@@ -1,13 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import camelcaseKeys from 'camelcase-keys';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
-import CompanyAPI from 'dashboard/api/companies';
 import ContactNoteItem from 'dashboard/components-next/Contacts/ContactsSidebar/components/ContactNoteItem.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
+import { useCompanyContacts } from './useCompanyContacts';
 
 const props = defineProps({
   companyId: {
@@ -24,8 +23,6 @@ const props = defineProps({
   },
 });
 
-const RESULTS_PER_PAGE = 15;
-
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -34,33 +31,18 @@ const store = useStore();
 const notesByContactId = useMapGetter('contactNotes/getAllNotesByContactId');
 const currentUser = useMapGetter('getCurrentUser');
 
-const allCompanyContacts = ref([]);
+const companyId = computed(() => props.companyId);
+const companyContacts = computed(() => props.contacts);
+const meta = computed(() => props.meta);
 const isFetchingNotes = ref(false);
 const notesRequestToken = ref(0);
-
-const normalizeContactRecord = record =>
-  camelcaseKeys(record || {}, {
-    deep: true,
-    stopPaths: ['custom_attributes'],
-  });
-
-const companyContactsById = computed(() => {
-  return allCompanyContacts.value.reduce((acc, contact) => {
-    acc[contact.id] = contact;
-    return acc;
-  }, {});
-});
-
-const notesContactSignature = computed(() => {
-  return props.contacts
-    .map(contact => contact.id)
-    .sort((a, b) => a - b)
-    .join(',');
-});
-
-const totalContacts = computed(() =>
-  Number(props.meta?.totalCount || props.contacts.length || 0)
-);
+const {
+  allCompanyContacts,
+  companyContactsById,
+  contactSignature,
+  fetchAllCompanyContacts,
+  totalContacts,
+} = useCompanyContacts({ companyId, contacts: companyContacts, meta });
 
 const aggregatedNotes = computed(() => {
   const allNotes = [];
@@ -81,33 +63,6 @@ const aggregatedNotes = computed(() => {
     return Number(noteB.createdAt || 0) - Number(noteA.createdAt || 0);
   });
 });
-
-const fetchAllCompanyContacts = async () => {
-  const currentPage = Number(props.meta?.page || 1);
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalContacts.value / RESULTS_PER_PAGE)
-  );
-  const contactsById = new Map(
-    props.contacts.map(contact => [contact.id, contact])
-  );
-  const pagesToFetch = Array.from(
-    { length: totalPages },
-    (_, index) => index + 1
-  ).filter(page => page !== currentPage);
-
-  const responses = await Promise.all(
-    pagesToFetch.map(page => CompanyAPI.listContacts(props.companyId, page))
-  );
-
-  responses.forEach(({ data: { payload = [] } }) => {
-    payload
-      .map(record => normalizeContactRecord(record))
-      .forEach(contact => contactsById.set(contact.id, contact));
-  });
-
-  return [...contactsById.values()];
-};
 
 const loadNotes = async () => {
   if (!props.companyId) {
@@ -141,7 +96,7 @@ const loadNotes = async () => {
 
 watch(
   () =>
-    `${props.companyId}:${props.meta?.page || 1}:${totalContacts.value}:${notesContactSignature.value}`,
+    `${props.companyId}:${props.meta?.page || 1}:${totalContacts.value}:${contactSignature.value}`,
   () => {
     loadNotes();
   },
