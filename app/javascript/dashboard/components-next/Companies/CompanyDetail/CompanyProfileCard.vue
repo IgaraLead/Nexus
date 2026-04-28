@@ -6,9 +6,9 @@ import { useAlert } from 'dashboard/composables';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
-import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import SocialProfileFields from 'dashboard/components-next/Contacts/ContactsForm/SocialProfileFields.vue';
 import { useCompaniesStore } from 'dashboard/stores/companies';
 
 const props = defineProps({
@@ -25,14 +25,14 @@ const props = defineProps({
 const { t } = useI18n();
 const companiesStore = useCompaniesStore();
 
-const SOCIAL_PROFILES = [
-  ['linkedin', 'i-ri-linkedin-box-fill'],
-  ['facebook', 'i-ri-facebook-circle-fill'],
-  ['instagram', 'i-ri-instagram-line'],
-  ['telegram', 'i-ri-telegram-fill'],
-  ['tiktok', 'i-ri-tiktok-fill'],
-  ['twitter', 'i-ri-twitter-x-fill'],
-  ['github', 'i-ri-github-fill'],
+const SOCIAL_PROFILE_KEYS = [
+  'linkedin',
+  'facebook',
+  'instagram',
+  'telegram',
+  'tiktok',
+  'twitter',
+  'github',
 ];
 
 const editableName = ref('');
@@ -63,7 +63,7 @@ const socialProfiles = computed(
 );
 const isFormInvalid = computed(() => !editableName.value.trim());
 const normalizeSocialProfiles = profiles => ({
-  ...Object.fromEntries(SOCIAL_PROFILES.map(([key]) => [key, ''])),
+  ...Object.fromEntries(SOCIAL_PROFILE_KEYS.map(key => [key, ''])),
   ...(profiles || {}),
 });
 const hasChanges = computed(() => {
@@ -128,22 +128,6 @@ const summaryItems = computed(() => {
     t('COMPANIES.DETAIL.PROFILE.LAST_ACTIVE', { date: lastActiveAt }),
   ];
 });
-
-const socialProfilesForm = computed(() =>
-  [
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.LINKEDIN.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.FACEBOOK.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.INSTAGRAM.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TELEGRAM.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TIKTOK.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.TWITTER.PLACEHOLDER'),
-    t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.GITHUB.PLACEHOLDER'),
-  ].map((placeholder, index) => ({
-    key: SOCIAL_PROFILES[index][0],
-    icon: SOCIAL_PROFILES[index][1],
-    placeholder,
-  }))
-);
 
 const handleAvatarUpload = async ({ file, url }) => {
   if (!props.company?.id || isAvatarBusy.value) {
@@ -273,31 +257,11 @@ const handleUpdateCompany = async () => {
         />
       </div>
 
-      <div class="flex flex-col items-start gap-2">
-        <span class="py-1 text-sm font-medium text-n-slate-12">
-          {{ t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.TITLE') }}
-        </span>
-
-        <div class="flex flex-wrap gap-2">
-          <div
-            v-for="item in socialProfilesForm"
-            :key="item.key"
-            class="flex items-center h-8 gap-2 px-2 rounded-lg bg-n-alpha-2 dark:bg-n-solid-2"
-          >
-            <Icon
-              :icon="item.icon"
-              class="flex-shrink-0 text-n-slate-11 size-4"
-            />
-            <input
-              v-model="editableSocialProfiles[item.key]"
-              :disabled="isUpdating"
-              class="w-auto min-w-[100px] text-sm bg-transparent outline-none reset-base text-n-slate-12 dark:text-n-slate-12 placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:cursor-not-allowed disabled:opacity-50"
-              :placeholder="item.placeholder"
-              :size="item.placeholder.length"
-            />
-          </div>
-        </div>
-      </div>
+      <SocialProfileFields
+        v-model="editableSocialProfiles"
+        is-details-view
+        :disabled="isUpdating"
+      />
 
       <div class="flex items-center">
         <Button
