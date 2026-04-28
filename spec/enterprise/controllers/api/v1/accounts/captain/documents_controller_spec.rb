@@ -258,12 +258,30 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
 
     context 'when it is an admin' do
       it 'queues a sync and returns accepted' do
+        freeze_time do
+          expect do
+            post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync",
+                 headers: admin.create_new_auth_token, as: :json
+          end.to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+
+          expect(document.reload).to have_attributes(
+            sync_status: 'syncing',
+            last_sync_attempted_at: Time.current
+          )
+        end
+
+        expect(response).to have_http_status(:accepted)
+      end
+
+      it 'rejects documents that already have a sync in progress' do
+        document.update!(sync_status: :syncing, last_sync_attempted_at: 1.minute.ago)
+
         expect do
           post "/api/v1/accounts/#{account.id}/captain/documents/#{document.id}/sync",
                headers: admin.create_new_auth_token, as: :json
-        end.to have_enqueued_job(Captain::Documents::PerformSyncJob).with(document)
+        end.not_to have_enqueued_job(Captain::Documents::PerformSyncJob)
 
-        expect(response).to have_http_status(:accepted)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'rejects PDF documents with an explanatory error' do
