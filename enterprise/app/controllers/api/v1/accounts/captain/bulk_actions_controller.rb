@@ -63,10 +63,10 @@ class Api::V1::Accounts::Captain::BulkActionsController < Api::V1::Accounts::Bas
 
   def delete_documents
     documents = Current.account.captain_documents.where(id: params[:ids])
-    return [] unless documents.exists?
+    return render json: { count: 0 } unless documents.exists?
 
-    documents.destroy_all
-    []
+    destroyed_documents = documents.destroy_all
+    render json: { count: destroyed_documents.size }
   end
 
   def sync_documents

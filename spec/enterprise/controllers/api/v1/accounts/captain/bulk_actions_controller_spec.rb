@@ -116,7 +116,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
         }
       end
 
-      it 'deletes the documents and returns an empty array' do
+      it 'deletes the documents and returns the deleted count' do
         expect do
           post "/api/v1/accounts/#{account.id}/captain/bulk_actions",
                params: document_delete_params,
@@ -125,7 +125,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::BulkActions', type: :request do
         end.to change(Captain::Document, :count).by(-2)
 
         expect(response).to have_http_status(:ok)
-        expect(json_response).to eq([])
+        expect(json_response).to eq({ count: documents.size })
       end
     end
 
