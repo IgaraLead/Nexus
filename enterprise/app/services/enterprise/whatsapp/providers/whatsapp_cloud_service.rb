@@ -73,10 +73,10 @@ module Enterprise::Whatsapp::Providers::WhatsappCloudService
   def process_initiate_call_response(response)
     return response.parsed_response if response.success?
 
-    parsed = response.parsed_response
-    error_code = parsed&.dig('error', 'code')
-    error_msg = parsed&.dig('error', 'error_user_msg') || 'Failed to initiate call'
     Rails.logger.error "[WHATSAPP CALL] initiate_call failed: status=#{response.code} body=#{response.body}"
+    parsed = response.parsed_response.is_a?(Hash) ? response.parsed_response : {}
+    error_code = parsed.dig('error', 'code')
+    error_msg = parsed.dig('error', 'error_user_msg') || 'Failed to initiate call'
 
     raise Voice::CallErrors::NoCallPermission, error_msg if error_code == 138_006
 
