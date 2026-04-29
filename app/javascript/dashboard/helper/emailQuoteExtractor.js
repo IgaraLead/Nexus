@@ -1,6 +1,8 @@
 import DOMPurify from 'dompurify';
 
-// Quote detection strategies
+// Wrapper classes mainstream mail clients emit around the quoted reply.
+// Removed depth-agnostically (Gmail, Outlook, Yahoo, Thunderbird, Apple…).
+// Purely additive over develop — nothing here can match a non-quoted body.
 const QUOTE_INDICATORS = [
   '.gmail_quote_container',
   '.gmail_quote',
@@ -10,148 +12,196 @@ const QUOTE_INDICATORS = [
   '.quote',
   '[class*="quote"]',
   '[class*="Quote"]',
+  '.moz-cite-prefix', // Thunderbird attribution
+  '.yahoo_quoted', // Yahoo Mail wrapper
+  '#divRplyFwdMsg', // Outlook web/desktop reply/forward header
 ];
 
-const BLOCKQUOTE_FALLBACK_SELECTOR = 'blockquote';
-
-// Regex patterns for quote identification
-const QUOTE_PATTERNS = [
+// Inline header / attribution patterns. A text node containing one of these
+// causes its block-ancestor to be removed (matches develop behaviour exactly).
+const HEADER_PATTERNS = [
   /On .* wrote:/i,
   /-----Original Message-----/i,
   /Sent: /i,
   /From: /i,
 ];
 
+// "Hard" markers: the marker line plus every following sibling of its
+// block-ancestor are removed, so the quoted body itself (not just the
+// attribution line) gets stripped on forwarded / reply-with-original messages.
+const HARD_HEADER_PATTERNS = [
+  /-----Original Message-----/i,
+  /-{2,}\s*Forwarded message\s*-{2,}/i,
+  /Begin forwarded message:/i,
+];
+
+const BLOCK_TAGS = new Set(['DIV', 'P', 'BLOCKQUOTE', 'SECTION']);
+
 export class EmailQuoteExtractor {
-  /**
-   * Remove quotes from email HTML and return cleaned HTML
-   * @param {string} htmlContent - Full HTML content of the email
-   * @returns {string} HTML content with quotes removed
-   */
-  static extractQuotes(htmlContent) {
-    // Create a temporary DOM element to parse HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
+  // ---------- public API ----------
 
-    // Remove elements matching class selectors
+  /** Strip the quoted-reply tail from `html` and return the cleaned HTML. */
+  static extractQuotes(html) {
+    const root = this.parse(html);
+    this.removeIndicatorElements(root);
+    this.removeHardHeaderTails(root);
+    this.removeTrailingBlockquote(root);
+    this.removeHeaderBlocks(root);
+    this.removePlainTextTail(root);
+    return root.innerHTML;
+  }
+
+  /** True iff any quote-detection strategy finds material to strip. */
+  static hasQuotes(html) {
+    const root = this.parse(html);
+    return (
+      this.hasIndicatorElement(root) ||
+      this.hasTrailingBlockquote(root) ||
+      this.findHardHeaderBlocks(root).length > 0 ||
+      this.findHeaderBlocks(root).length > 0 ||
+      this.findPlainTextTailStart(root) !== -1
+    );
+  }
+
+  // ---------- shared parser ----------
+
+  static parse(html) {
+    const root = document.createElement('div');
+    root.innerHTML = DOMPurify.sanitize(html);
+    return root;
+  }
+
+  // ---------- 1. Indicator classes (depth-agnostic) ----------
+
+  static removeIndicatorElements(root) {
     QUOTE_INDICATORS.forEach(selector => {
-      tempDiv.querySelectorAll(selector).forEach(el => {
-        el.remove();
-      });
+      root.querySelectorAll(selector).forEach(el => el.remove());
     });
-
-    this.removeTrailingBlockquote(tempDiv);
-
-    // Remove text-based quotes
-    const textNodeQuotes = this.findTextNodeQuotes(tempDiv);
-    textNodeQuotes.forEach(el => {
-      el.remove();
-    });
-
-    return tempDiv.innerHTML;
   }
 
-  /**
-   * Check if HTML content contains any quotes
-   * @param {string} htmlContent - Full HTML content of the email
-   * @returns {boolean} True if quotes are detected, false otherwise
-   */
-  static hasQuotes(htmlContent) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
+  static hasIndicatorElement(root) {
+    return QUOTE_INDICATORS.some(selector => root.querySelector(selector));
+  }
 
-    // Check for class-based quotes
-    // eslint-disable-next-line no-restricted-syntax
-    for (const selector of QUOTE_INDICATORS) {
-      if (tempDiv.querySelector(selector)) {
-        return true;
+  // ---------- 2. Hard header tails ----------
+  // For every block containing a hard-header text, remove the block AND every
+  // following sibling within its parent. This strips the quoted body, not just
+  // the attribution line.
+
+  static removeHardHeaderTails(root) {
+    this.findHardHeaderBlocks(root).forEach(block => {
+      let cursor = block;
+      while (cursor) {
+        const next = cursor.nextSibling;
+        cursor.remove();
+        cursor = next;
       }
-    }
-
-    if (this.findTrailingBlockquote(tempDiv)) {
-      return true;
-    }
-
-    // Check for text-based quotes
-    const textNodeQuotes = this.findTextNodeQuotes(tempDiv);
-    return textNodeQuotes.length > 0;
+    });
   }
 
-  /**
-   * Find text nodes that match quote patterns
-   * @param {Element} rootElement - Root element to search
-   * @returns {Element[]} Array of parent block elements containing quote-like text
-   */
-  static findTextNodeQuotes(rootElement) {
-    const quoteBlocks = [];
-    const treeWalker = document.createTreeWalker(
-      rootElement,
+  static findHardHeaderBlocks(root) {
+    return this.findBlocksContainingText(root, HARD_HEADER_PATTERNS);
+  }
+
+  // ---------- 3. Trailing <blockquote> ----------
+
+  static removeTrailingBlockquote(root) {
+    const last = root.lastElementChild;
+    if (last?.matches?.('blockquote')) last.remove();
+  }
+
+  static hasTrailingBlockquote(root) {
+    return root.lastElementChild?.matches?.('blockquote') ?? false;
+  }
+
+  // ---------- 4. Header blocks (deep, develop-compatible) ----------
+  // For every text node matching a header pattern, remove its block-ancestor.
+  // This is the develop-branch behaviour preserved verbatim.
+
+  static removeHeaderBlocks(root) {
+    this.findHeaderBlocks(root).forEach(el => el.remove());
+  }
+
+  static findHeaderBlocks(root) {
+    return this.findBlocksContainingText(root, HEADER_PATTERNS);
+  }
+
+  // ---------- 5. Plain-text RFC `>` tail ----------
+  // For text/plain emails (after sanitizeTextForRender converts \n → <br>),
+  // find the earliest top-level text node whose visible lines all begin with
+  // `>` and strip from there to the end (collapsing leading <br>/whitespace
+  // separators back into the tail).
+
+  static removePlainTextTail(root) {
+    const start = this.findPlainTextTailStart(root);
+    if (start === -1) return;
+    const nodes = Array.from(root.childNodes);
+    for (let i = start; i < nodes.length; i += 1) nodes[i].remove();
+  }
+
+  static findPlainTextTailStart(root) {
+    const children = Array.from(root.childNodes);
+    for (let i = 0; i < children.length; i += 1) {
+      if (!this.isQuotePrefixedTextNode(children[i])) continue; // eslint-disable-line no-continue
+      let start = i;
+      while (start > 0 && this.isNeutralNode(children[start - 1])) {
+        start -= 1;
+      }
+      return start;
+    }
+    return -1;
+  }
+
+  static isQuotePrefixedTextNode(node) {
+    if (node.nodeType !== Node.TEXT_NODE) return false;
+    const text = node.textContent;
+    if (!text.trim()) return false;
+    return text
+      .split('\n')
+      .filter(line => line.trim() !== '')
+      .every(line => line.trim().startsWith('>'));
+  }
+
+  static isNeutralNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent.trim() === '';
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      return node.tagName === 'BR';
+    }
+    return false;
+  }
+
+  // ---------- shared text-walker primitive ----------
+
+  static findBlocksContainingText(root, patterns) {
+    const blocks = [];
+    const walker = document.createTreeWalker(
+      root,
       NodeFilter.SHOW_TEXT,
       null,
       false
     );
-
     for (
-      let currentNode = treeWalker.nextNode();
-      currentNode !== null;
-      currentNode = treeWalker.nextNode()
+      let node = walker.nextNode();
+      node !== null;
+      node = walker.nextNode()
     ) {
-      const isQuoteLike = QUOTE_PATTERNS.some(pattern =>
-        pattern.test(currentNode.textContent)
-      );
-
-      if (isQuoteLike) {
-        const parentBlock = this.findParentBlock(currentNode);
-        if (parentBlock && !quoteBlocks.includes(parentBlock)) {
-          quoteBlocks.push(parentBlock);
-        }
+      const text = node.textContent;
+      if (!patterns.some(p => p.test(text))) continue; // eslint-disable-line no-continue
+      const block = this.findBlockAncestor(node);
+      if (block && block !== root && !blocks.includes(block)) {
+        blocks.push(block);
       }
     }
-
-    return quoteBlocks;
+    return blocks;
   }
 
-  /**
-   * Find the closest block-level parent element by recursively traversing up the DOM tree.
-   * This method searches for common block-level elements like DIV, P, BLOCKQUOTE, and SECTION
-   * that contain the text node. It's used to identify and remove entire block-level elements
-   * that contain quote-like text, rather than just removing the text node itself. This ensures
-   * proper structural removal of quoted content while maintaining HTML integrity.
-   * @param {Node} node - Starting node to find parent
-   * @returns {Element|null} Block-level parent element
-   */
-  static findParentBlock(node) {
-    const blockElements = ['DIV', 'P', 'BLOCKQUOTE', 'SECTION'];
+  static findBlockAncestor(node) {
     let current = node.parentElement;
-
     while (current) {
-      if (blockElements.includes(current.tagName)) {
-        return current;
-      }
+      if (BLOCK_TAGS.has(current.tagName)) return current;
       current = current.parentElement;
-    }
-
-    return null;
-  }
-
-  /**
-   * Remove fallback blockquote if it is the last top-level element.
-   * @param {Element} rootElement - Root element containing the HTML
-   */
-  static removeTrailingBlockquote(rootElement) {
-    const trailingBlockquote = this.findTrailingBlockquote(rootElement);
-    trailingBlockquote?.remove();
-  }
-
-  /**
-   * Locate a fallback blockquote that is the last top-level element.
-   * @param {Element} rootElement - Root element containing the HTML
-   * @returns {Element|null} The trailing blockquote element if present
-   */
-  static findTrailingBlockquote(rootElement) {
-    const lastElement = rootElement.lastElementChild;
-    if (lastElement?.matches?.(BLOCKQUOTE_FALLBACK_SELECTOR)) {
-      return lastElement;
     }
     return null;
   }
