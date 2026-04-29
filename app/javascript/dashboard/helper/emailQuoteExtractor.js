@@ -32,7 +32,9 @@ const ATTRIBUTION = /^On .* wrote:/im;
 const HEADER_LINE = /^(?:From|Sent|To|Cc|Bcc|Date|Subject):\s/im;
 
 const BLOCK_SELECTOR = 'div, p, blockquote, section';
-const { TEXT_NODE: TEXT, ELEMENT_NODE: ELEM } = Node;
+
+const TEXT = 3; // Node.TEXT_NODE
+const ELEM = 1; // Node.ELEMENT_NODE
 
 // `<br>` and whitespace-only text — sit inside a tail, never start one.
 const isNeutral = n =>
