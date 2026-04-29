@@ -1,5 +1,9 @@
 class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
+  class PermanentCrawlError < StandardError; end
+
   queue_as :low
+
+  discard_on PermanentCrawlError
 
   def perform(assistant_id:, page_link:)
     assistant = Captain::Assistant.find(assistant_id)
@@ -14,17 +18,26 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
     normalized_link = normalize_link(page_link)
     document = assistant.documents.find_or_initialize_by(external_link: normalized_link)
 
-    unless crawler.success?
-      mark_failed!(document, crawler.status_code) if document.persisted?
-      raise "Failed to fetch page: #{page_link}"
-    end
+    handle_failed_fetch!(document, crawler.status_code, page_link) unless crawler.success?
 
     persist_document!(document, normalized_link, crawler)
+  rescue PermanentCrawlError
+    raise
   rescue StandardError => e
     raise "Failed to parse data: #{page_link} #{e.message}"
   end
 
   private
+
+  def handle_failed_fetch!(document, status_code, page_link)
+    error_code = http_error_code(status_code)
+    mark_failed!(document, error_code) if document.persisted?
+
+    error_message = "Failed to fetch page: #{page_link}"
+    raise PermanentCrawlError, error_message if permanent_failure?(error_code)
+
+    raise error_message
+  end
 
   def persist_document!(document, normalized_link, crawler)
     document.update!(
@@ -45,11 +58,11 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
     }
   end
 
-  def mark_failed!(document, status_code)
+  def mark_failed!(document, error_code)
     document.update!(
       status: :available,
       sync_status: :failed,
-      last_sync_error_code: http_error_code(status_code),
+      last_sync_error_code: error_code,
       last_sync_attempted_at: Time.current
     )
   end
@@ -61,6 +74,10 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
     when 408, 504 then 'timeout'
     else 'fetch_failed'
     end
+  end
+
+  def permanent_failure?(error_code)
+    Captain::Documents::SyncService::PERMANENT_ERROR_CODES.include?(error_code)
   end
 
   def normalize_link(raw_link)

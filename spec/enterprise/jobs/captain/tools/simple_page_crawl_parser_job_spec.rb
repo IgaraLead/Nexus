@@ -128,6 +128,41 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
           )
         end
       end
+
+      context 'when the failure is permanent' do
+        before do
+          allow(crawler).to receive(:status_code).and_return(404)
+        end
+
+        it 'does not retry a discovered link that was never persisted' do
+          expect do
+            described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
+          end.not_to change(assistant.documents, :count)
+        end
+
+        it 'marks an existing document as available and failed without raising' do
+          document = create(
+            :captain_document,
+            assistant: assistant,
+            account: assistant.account,
+            external_link: 'https://example.com/page',
+            status: :in_progress
+          )
+
+          freeze_time do
+            expect do
+              described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
+            end.not_to raise_error
+
+            expect(document.reload).to have_attributes(
+              status: 'available',
+              sync_status: 'failed',
+              last_sync_error_code: 'not_found',
+              last_sync_attempted_at: Time.current
+            )
+          end
+        end
+      end
     end
 
     context 'when title and content are nil' do
