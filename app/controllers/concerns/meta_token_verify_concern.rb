@@ -2,6 +2,7 @@
 # This concern handles the token verification step.
 
 module MetaTokenVerifyConcern
+  CHANNEL_APP_SECRET_KEYS = %w[app_secret app_secret_key client_secret api_secret].freeze
   META_SIGNATURE_HEADER = 'X-Hub-Signature-256'.freeze
   META_SIGNATURE_PREFIX = 'sha256='.freeze
 
@@ -41,6 +42,22 @@ module MetaTokenVerifyConcern
 
   def meta_app_secrets
     raise 'Overwrite this method in your controller'
+  end
+
+  def channel_meta_app_secrets(channel)
+    return [] if channel.blank?
+
+    secrets = []
+    secrets << channel.app_secret if channel.respond_to?(:app_secret)
+    secrets.concat(provider_config_meta_app_secrets(channel))
+    secrets.compact_blank.uniq
+  end
+
+  def provider_config_meta_app_secrets(channel)
+    return [] unless channel.respond_to?(:provider_config)
+
+    provider_config = channel.provider_config.to_h.with_indifferent_access
+    CHANNEL_APP_SECRET_KEYS.filter_map { |key| provider_config[key].presence }
   end
 
   def valid_token?(_token)

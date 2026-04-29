@@ -5,12 +5,12 @@ RSpec.describe 'Webhooks::WhatsappController', type: :request do
   let(:client_secret) { 'test-whatsapp-secret' }
   let(:body) { { content: 'hello' }.to_json }
 
-  def signature_for(body)
-    "sha256=#{OpenSSL::HMAC.hexdigest('SHA256', client_secret, body)}"
+  def signature_for(body, secret = client_secret)
+    "sha256=#{OpenSSL::HMAC.hexdigest('SHA256', secret, body)}"
   end
 
-  def post_whatsapp_webhook(path, body, signature: signature_for(body))
-    with_modified_env WHATSAPP_APP_SECRET: client_secret do
+  def post_whatsapp_webhook(path, body, signature: signature_for(body), env: { WHATSAPP_APP_SECRET: client_secret })
+    with_modified_env env do
       post path,
            params: body,
            headers: { 'CONTENT_TYPE' => 'application/json', 'X-Hub-Signature-256' => signature }
@@ -46,6 +46,38 @@ RSpec.describe 'Webhooks::WhatsappController', type: :request do
       allow(Webhooks::WhatsappEventsJob).to receive(:perform_later)
       expect(Webhooks::WhatsappEventsJob).to receive(:perform_later)
       post_whatsapp_webhook('/webhooks/whatsapp/123221321', body)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'accepts webhook payloads signed with the channel app secret' do
+      channel_secret = 'channel-whatsapp-secret'
+      channel.provider_config = channel.provider_config.merge('app_secret' => channel_secret)
+      channel.save!
+
+      allow(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+      expect(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+
+      channel_body = {
+        object: 'whatsapp_business_account',
+        entry: [{
+          changes: [{
+            value: {
+              metadata: {
+                display_phone_number: channel.phone_number.delete_prefix('+'),
+                phone_number_id: channel.provider_config['phone_number_id']
+              }
+            }
+          }]
+        }]
+      }.to_json
+
+      post_whatsapp_webhook(
+        "/webhooks/whatsapp/#{channel.phone_number}",
+        channel_body,
+        signature: signature_for(channel_body, channel_secret),
+        env: {}
+      )
+
       expect(response).to have_http_status(:success)
     end
 

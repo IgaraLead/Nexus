@@ -23,7 +23,34 @@ class Webhooks::WhatsappController < ActionController::API
   end
 
   def meta_app_secrets
-    [GlobalConfigService.load('WHATSAPP_APP_SECRET', nil)]
+    [
+      *channel_meta_app_secrets(whatsapp_channel),
+      GlobalConfigService.load('WHATSAPP_APP_SECRET', nil)
+    ]
+  end
+
+  def whatsapp_channel
+    @whatsapp_channel ||= whatsapp_business_payload_channel || Channel::Whatsapp.find_by(phone_number: params[:phone_number])
+  end
+
+  def whatsapp_business_payload_channel
+    return unless params[:object] == 'whatsapp_business_account'
+
+    metadata = params.dig(:entry, 0, :changes, 0, :value, :metadata)
+    return if metadata.blank?
+
+    phone_number = normalized_phone_number(metadata[:display_phone_number])
+    phone_number_id = metadata[:phone_number_id]
+    channel = Channel::Whatsapp.find_by(phone_number: phone_number)
+
+    return channel if channel && channel.provider_config['phone_number_id'] == phone_number_id
+  end
+
+  def normalized_phone_number(phone_number)
+    return if phone_number.blank?
+
+    phone_number = phone_number.to_s
+    phone_number.start_with?('+') ? phone_number : "+#{phone_number}"
   end
 
   def inactive_whatsapp_number?
