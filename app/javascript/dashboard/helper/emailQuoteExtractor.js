@@ -141,15 +141,15 @@ export class EmailQuoteExtractor {
 
   static findPlainTextTailStart(root) {
     const children = Array.from(root.childNodes);
-    for (let i = 0; i < children.length; i += 1) {
-      if (!this.isQuotePrefixedTextNode(children[i])) continue; // eslint-disable-line no-continue
-      let start = i;
-      while (start > 0 && this.isNeutralNode(children[start - 1])) {
-        start -= 1;
-      }
-      return start;
+    const tailIdx = children.findIndex(node =>
+      this.isQuotePrefixedTextNode(node)
+    );
+    if (tailIdx === -1) return -1;
+    let start = tailIdx;
+    while (start > 0 && this.isNeutralNode(children[start - 1])) {
+      start -= 1;
     }
-    return -1;
+    return start;
   }
 
   static isQuotePrefixedTextNode(node) {
@@ -175,26 +175,29 @@ export class EmailQuoteExtractor {
   // ---------- shared text-walker primitive ----------
 
   static findBlocksContainingText(root, patterns) {
-    const blocks = [];
+    const matchingBlocks = this.collectTextNodes(root)
+      .filter(node => patterns.some(p => p.test(node.textContent)))
+      .map(node => this.findBlockAncestor(node))
+      .filter(block => block && block !== root);
+    return Array.from(new Set(matchingBlocks));
+  }
+
+  static collectTextNodes(root) {
     const walker = document.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT,
       null,
       false
     );
+    const nodes = [];
     for (
       let node = walker.nextNode();
       node !== null;
       node = walker.nextNode()
     ) {
-      const text = node.textContent;
-      if (!patterns.some(p => p.test(text))) continue; // eslint-disable-line no-continue
-      const block = this.findBlockAncestor(node);
-      if (block && block !== root && !blocks.includes(block)) {
-        blocks.push(block);
-      }
+      nodes.push(node);
     }
-    return blocks;
+    return nodes;
   }
 
   static findBlockAncestor(node) {
