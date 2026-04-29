@@ -1,7 +1,8 @@
 import DOMPurify from 'dompurify';
 
-// Wrapper classes mainstream mail clients emit around the quoted reply.
-
+// Wrapper classes mail clients put around the quoted reply.
+// Removing these depth-agnostically covers Gmail, Outlook, Yahoo,
+// Thunderbird, ProtonMail, Apple Mail signatures, etc.
 const QUOTE_INDICATORS = [
   '.gmail_quote_container',
   '.gmail_quote',
@@ -11,222 +12,174 @@ const QUOTE_INDICATORS = [
   '.quote',
   '[class*="quote"]',
   '[class*="Quote"]',
-  '.moz-cite-prefix', // Thunderbird attribution
-  '.yahoo_quoted', // Yahoo Mail wrapper
-  '#divRplyFwdMsg', // Outlook web/desktop reply/forward header
+  '.moz-cite-prefix',
+  '.yahoo_quoted',
+  '#divRplyFwdMsg',
 ];
 
-// Soft attribution markers — match removes the containing block only.
-// Anchored to a line start AND tightened so prose lines that legitimately
-// begin with "From: " / "Sent: " don't false-trigger:
-//   - From:  must be followed by email-shape content with `@` on the line
-//            (real headers are "From: name <addr@host>" or "From: addr@host").
-//   - Sent:  must be followed by a 4-digit year (real timestamps include one,
-//            "Sent: yesterday by …" doesn't).
-const SOFT_HEADERS = [/^On .* wrote:/im, /^From: .*@/im, /^Sent: .*\d{4}/im];
-
-// Hard markers — match removes the containing block AND every following
-// sibling within its parent, so the quoted body itself (not just the
-// attribution) gets stripped on forwarded / reply-with-original messages.
-// Anchored to a full line so a sentence containing the phrase ("the markdown
-// for `-----Original Message-----` should render correctly") can't trigger.
+// Full-line forwarded-section markers. Anchored so prose containing the
+// phrase mid-sentence can't false-trigger a strip.
 const HARD_HEADERS = [
   /^\s*-+\s*Original Message\s*-+\s*$/im,
   /^\s*-+\s*Forwarded message\s*-+\s*$/im,
   /^\s*Begin forwarded message:\s*$/im,
 ];
 
+const ATTRIBUTION = /^On .* wrote:/im;
+
+// One Outlook header field. A block needs >= 2 such lines to count, so a
+// single prose line like "From: now on, please …" can't false-trigger.
+const HEADER_LINE = /^(?:From|Sent|To|Cc|Bcc|Date|Subject):\s/im;
+
 const BLOCK_SELECTOR = 'div, p, blockquote, section';
+const { TEXT_NODE: TEXT, ELEMENT_NODE: ELEM } = Node;
+
+// `<br>` and whitespace-only text — sit inside a tail, never start one.
+const isNeutral = n =>
+  (n.nodeType === TEXT && !n.textContent.trim()) ||
+  (n.nodeType === ELEM && n.tagName === 'BR');
+
+// Read element text with `<br>` rendered as `\n`, so line-anchored regexes
+// match shapes like `<p>From: Sam<br>Sent: Wed</p>`.
+const blockText = el => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = el.innerHTML.replaceAll(/<br\s*\/?>/gi, '\n');
+  return tmp.textContent;
+};
+
+const nodeText = n => {
+  if (n.nodeType === TEXT) return n.textContent;
+  if (n.nodeType === ELEM) return blockText(n);
+  return '';
+};
+
+// Walk back over leading neutrals so the cut sits at the boundary, not in
+// the middle of a `<br>` separator.
+const walkBack = (kids, idx) => {
+  let i = idx;
+  while (i > 0 && isNeutral(kids[i - 1])) i -= 1;
+  return i;
+};
+
+const countHeaderLines = t =>
+  t.split('\n').filter(l => HEADER_LINE.test(l)).length;
+
+const isSoftHeader = t => ATTRIBUTION.test(t) || countHeaderLines(t) >= 2;
+const isHardHeader = t => HARD_HEADERS.some(re => re.test(t));
+
+// Find blocks matching `predicate`, then keep only the innermost — outer
+// wrappers that match via inner header text would otherwise take the user's
+// reply with them.
+const findBlocks = (root, predicate) => {
+  const all = [...root.querySelectorAll(BLOCK_SELECTOR)].filter(el =>
+    predicate(blockText(el))
+  );
+  return all.filter(el => !all.some(o => o !== el && el.contains(o)));
+};
+
+// Strip from the first child whose text matches `marker` (skipping leading
+// neutrals), then remove every sibling after `block` — the original-message
+// body lives there on forwarded layouts. Drop `block` if it ends empty.
+const cutBlockAtMarker = (block, marker) => {
+  const kids = [...block.childNodes];
+  const idx = kids.findIndex(c => marker(nodeText(c)));
+  const from = idx === -1 ? 0 : walkBack(kids, idx);
+  kids.slice(from).forEach(c => c.remove());
+  while (block.nextSibling) block.nextSibling.remove();
+  if (!block.childNodes.length) block.remove();
+};
+
+// Walk up while `block` is the first substantive child of its parent.
+// Promotes the cut to the wrapper, so a divider `<div>` plus the body
+// siblings AFTER it strip together.
+const expandToWrapper = (block, root) => {
+  let cur = block;
+  while (cur.parentElement && cur.parentElement !== root) {
+    const kids = [...cur.parentElement.childNodes];
+    const before = kids.slice(0, kids.indexOf(cur));
+    if (before.some(c => !isNeutral(c) && c.textContent.trim())) break;
+    cur = cur.parentElement;
+  }
+  return cur;
+};
+
+// Every visible line of the text node begins with `>`.
+const isRfcQuoted = n =>
+  n.nodeType === TEXT &&
+  !!n.textContent.trim() &&
+  n.textContent
+    .split('\n')
+    .filter(l => l.trim())
+    .every(l => l.trim().startsWith('>'));
+
+// Top-level (text + <br>, no block wrapper) tail-start index.
+// RFC `>` only fires when every following node is `>`-quoted or neutral
+// (preserves bottom/inline posting). A header-line text node needs the
+// joined tail to carry >= 2 header lines.
+const findTopLevelTailStart = root => {
+  const kids = [...root.childNodes];
+  const tailText = i =>
+    kids
+      .slice(i)
+      .map(n => {
+        if (n.nodeType === TEXT) return n.textContent;
+        if (n.nodeType !== ELEM) return '';
+        return n.tagName === 'BR' ? '\n' : blockText(n);
+      })
+      .join('');
+  const idx = kids.findIndex((n, i) => {
+    if (isRfcQuoted(n))
+      return kids.slice(i).every(c => isRfcQuoted(c) || isNeutral(c));
+    if (n.nodeType !== TEXT || !n.textContent.trim()) return false;
+    const t = n.textContent;
+    if (HARD_HEADERS.some(re => re.test(t)) || ATTRIBUTION.test(t)) return true;
+    return HEADER_LINE.test(t) && countHeaderLines(tailText(i)) >= 2;
+  });
+  return idx === -1 ? -1 : walkBack(kids, idx);
+};
+
+// Five strategies, each independent. Run in order.
+const apply = root => {
+  // 1. Strip every known quote-wrapper class.
+  root.querySelectorAll(QUOTE_INDICATORS.join(',')).forEach(el => el.remove());
+  // 2. Hard markers cut block + every following sibling.
+  findBlocks(root, isHardHeader).forEach(b =>
+    cutBlockAtMarker(b, isHardHeader)
+  );
+  // 3. Trailing <blockquote> as the last top-level child.
+  if (root.lastElementChild?.matches?.('blockquote'))
+    root.lastElementChild.remove();
+  // 4. Soft headers — same hard-cut, but walk up to the wrapper first.
+  findBlocks(root, isSoftHeader).forEach(b =>
+    cutBlockAtMarker(
+      expandToWrapper(b, root),
+      t => HEADER_LINE.test(t) || ATTRIBUTION.test(t)
+    )
+  );
+  // 5. Top-level RFC `>` / header tail.
+  const start = findTopLevelTailStart(root);
+  if (start !== -1) [...root.childNodes].slice(start).forEach(n => n.remove());
+};
+
+const parse = html => {
+  const root = document.createElement('div');
+  root.innerHTML = DOMPurify.sanitize(html);
+  return root;
+};
 
 export class EmailQuoteExtractor {
-  // ---------- public API ----------
-
+  /** Strip the quoted-reply tail and return the cleaned HTML. */
   static extractQuotes(html) {
-    const root = this.parse(html);
-    this.removeIndicatorElements(root);
-    this.removeHardHeaderTails(root);
-    this.removeTrailingBlockquote(root);
-    this.removeSoftHeaderBlocks(root);
-    this.removePlainTextTail(root);
+    const root = parse(html);
+    apply(root);
     return root.innerHTML;
   }
 
+  /** True when any strategy would strip something. */
   static hasQuotes(html) {
-    const root = this.parse(html);
-    return (
-      this.hasIndicatorElement(root) ||
-      this.findBlocksMatching(root, HARD_HEADERS).length > 0 ||
-      this.hasTrailingBlockquote(root) ||
-      this.findBlocksMatching(root, SOFT_HEADERS).length > 0 ||
-      this.findPlainTextTailStart(root) !== -1
-    );
-  }
-
-  // ---------- shared parser ----------
-
-  static parse(html) {
-    const root = document.createElement('div');
-    root.innerHTML = DOMPurify.sanitize(html);
-    return root;
-  }
-
-  // ---------- 1. Wrapper-class strip ----------
-
-  static removeIndicatorElements(root) {
-    QUOTE_INDICATORS.forEach(selector => {
-      root.querySelectorAll(selector).forEach(el => el.remove());
-    });
-  }
-
-  static hasIndicatorElement(root) {
-    return QUOTE_INDICATORS.some(selector => root.querySelector(selector));
-  }
-
-  // ---------- 2. Hard header tails ----------
-  // For each block that matches a hard header, trim from the marker child
-  // forward (preserving any reply text that sits before the marker in the
-  // same block) and then strip every following sibling at the parent level.
-
-  static removeHardHeaderTails(root) {
-    this.findBlocksMatching(root, HARD_HEADERS).forEach(block => {
-      this.stripFromHardMarkerWithin(block);
-      this.removeFollowingSiblings(block);
-      if (block.childNodes.length === 0) block.remove();
-    });
-  }
-
-  static stripFromHardMarkerWithin(block) {
-    const children = Array.from(block.childNodes);
-    const markerIdx = children.findIndex(child =>
-      HARD_HEADERS.some(p => p.test(this.nodeText(child)))
-    );
-    if (markerIdx === -1) return;
-    const start = this.walkBackOverNeutrals(children, markerIdx);
-    for (let i = start; i < children.length; i += 1) children[i].remove();
-  }
-
-  static nodeText(node) {
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
-    if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    return this.blockText(node);
-  }
-
-  static removeFollowingSiblings(node) {
-    let cursor = node.nextSibling;
-    while (cursor) {
-      const next = cursor.nextSibling;
-      cursor.remove();
-      cursor = next;
-    }
-  }
-
-  // ---------- 3. Trailing blockquote ----------
-
-  static removeTrailingBlockquote(root) {
-    const last = root.lastElementChild;
-    if (last?.matches?.('blockquote')) last.remove();
-  }
-
-  static hasTrailingBlockquote(root) {
-    return root.lastElementChild?.matches?.('blockquote') ?? false;
-  }
-
-  // ---------- 4. Soft header blocks ----------
-
-  static removeSoftHeaderBlocks(root) {
-    this.findBlocksMatching(root, SOFT_HEADERS).forEach(el => el.remove());
-  }
-
-  // ---------- shared block matcher ----------
-  // Iterate DIV/P/BLOCKQUOTE/SECTION descendants. For each, read its text
-  // treating <br> as a real newline so the line-anchored patterns work even
-  // for `<p>From: Sam<br>Sent: …</p>` shapes.
-
-  static findBlocksMatching(root, patterns) {
-    const blocks = [];
-    root.querySelectorAll(BLOCK_SELECTOR).forEach(el => {
-      const text = this.blockText(el);
-      if (patterns.some(p => p.test(text))) blocks.push(el);
-    });
-    return blocks;
-  }
-
-  static blockText(el) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = el.innerHTML.replace(/<br\s*\/?>/gi, '\n');
-    return tmp.textContent;
-  }
-
-  // ---------- 5. Top-level RFC `>` / header tail ----------
-  // Replies that arrive as text + <br> with no block wrapper. RFC `>`-prefixed
-  // text only counts when nothing substantive follows it (preserves bottom /
-  // inline posting). A header marker as a top-level text node is a hard cut.
-
-  static removePlainTextTail(root) {
-    const start = this.findPlainTextTailStart(root);
-    if (start === -1) return;
-    const nodes = Array.from(root.childNodes);
-    for (let i = start; i < nodes.length; i += 1) nodes[i].remove();
-  }
-
-  static findPlainTextTailStart(root) {
-    const children = Array.from(root.childNodes);
-    for (let i = 0; i < children.length; i += 1) {
-      const idx = this.tailStartAt(children, i);
-      if (idx !== -1) return idx;
-    }
-    return -1;
-  }
-
-  static tailStartAt(children, i) {
-    const node = children[i];
-    if (this.isRfcQuotedTextNode(node)) {
-      return this.isPureRfcTailFrom(children, i)
-        ? this.walkBackOverNeutrals(children, i)
-        : -1;
-    }
-    if (this.isHeaderMarkerTextNode(node)) {
-      return this.walkBackOverNeutrals(children, i);
-    }
-    return -1;
-  }
-
-  static isRfcQuotedTextNode(node) {
-    if (node.nodeType !== Node.TEXT_NODE) return false;
-    const text = node.textContent;
-    if (!text.trim()) return false;
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    return lines.length > 0 && lines.every(l => l.trim().startsWith('>'));
-  }
-
-  static isHeaderMarkerTextNode(node) {
-    if (node.nodeType !== Node.TEXT_NODE) return false;
-    const text = node.textContent;
-    if (!text.trim()) return false;
-    return [...SOFT_HEADERS, ...HARD_HEADERS].some(p => p.test(text));
-  }
-
-  static isPureRfcTailFrom(children, startIdx) {
-    return children
-      .slice(startIdx)
-      .every(n => this.isRfcQuotedTextNode(n) || this.isNeutralNode(n));
-  }
-
-  static walkBackOverNeutrals(children, idx) {
-    let start = idx;
-    while (start > 0 && this.isNeutralNode(children[start - 1])) {
-      start -= 1;
-    }
-    return start;
-  }
-
-  static isNeutralNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent.trim() === '';
-    }
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      return node.tagName === 'BR';
-    }
-    return false;
+    const root = parse(html);
+    const before = root.innerHTML;
+    apply(root);
+    return root.innerHTML !== before;
   }
 }

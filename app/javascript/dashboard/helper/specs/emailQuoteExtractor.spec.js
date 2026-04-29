@@ -301,6 +301,35 @@ describe('EmailQuoteExtractor', () => {
       expect(c.textContent).toContain('Here is my fix');
     });
 
+    it('detects minimal "From: name + Sent: weekday" header (no @, no year)', () => {
+      const html =
+        '<p>Reply text.</p><p>From: Sam<br>Sent: Wednesday<br>To: Pat<br>Subject: Re: foo</p><p>Old body</p>';
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+      const cleaned = EmailQuoteExtractor.extractQuotes(html);
+      expect(cleaned).toContain('Reply text');
+      expect(cleaned).not.toContain('From: Sam');
+    });
+
+    it('preserves reply when the From-header sits inside a deep wrapper (Outlook WordSection1)', () => {
+      const html = `
+        <div class="WordSection1">
+          <p>Pat — please look into this when you get a chance.</p>
+          <p>Thanks,<br>Sam</p>
+          <div style="border-top:solid #E1E1E1 1.0pt">
+            <p><b>From:</b> Maya &lt;maya@example.test&gt;<br><b>Sent:</b> Wednesday, December 4, 2024 8:42 AM<br><b>To:</b> Sam &lt;sam@example.test&gt;<br><b>Subject:</b> Customer escalation</p>
+          </div>
+          <p>Sam, Acme Corp is threatening to churn over recent latency issues.</p>
+          <p>Maya</p>
+        </div>
+      `;
+      const c = document.createElement('div');
+      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
+      expect(c.textContent).toContain('Pat — please look into this');
+      expect(c.textContent).toContain('Thanks');
+      expect(c.textContent).not.toContain('From: Maya');
+      expect(c.textContent).not.toContain('Subject: Customer escalation');
+    });
+
     it('does not strip prose paragraphs that start with "From: " or "Sent: "', () => {
       const fromHtml =
         '<p>From: now on, please follow this checklist.</p><p>This is regular content.</p>';
