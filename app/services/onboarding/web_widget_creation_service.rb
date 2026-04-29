@@ -1,4 +1,4 @@
-class WidgetCreationService
+class Onboarding::WebWidgetCreationService
   DEFAULT_WIDGET_COLOR = '#1f93ff'.freeze
 
   def initialize(account, user)
@@ -56,4 +56,4 @@ class WidgetCreationService
   end
 end
 
-WidgetCreationService.prepend_mod_with('WidgetCreationService')
+Onboarding::WebWidgetCreationService.prepend_mod_with('Onboarding::WebWidgetCreationService')

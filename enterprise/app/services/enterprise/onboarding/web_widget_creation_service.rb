@@ -1,4 +1,4 @@
-module Enterprise::WidgetCreationService
+module Enterprise::Onboarding::WebWidgetCreationService
   private
 
   def welcome_tagline_text
