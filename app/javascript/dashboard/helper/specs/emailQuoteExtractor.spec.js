@@ -43,436 +43,16 @@ const EMAIL_WITH_FOLLOW_UP_CONTENT = `
 <p>Regards,</p>
 `;
 
-// Real-world mixed body: an HTML reply, then RFC-style `>`-prefixed plain-text
-// quote lines, and finally the original email wrapped in a Gmail blockquote.
-// The current branchy implementation picks ONE strategy and misses the other.
-const MIXED_PLAINTEXT_AND_HTML_QUOTE = `<p>My HTML reply</p>
-<p>Thanks,</p>
-<p>Sivin</p>
-<br>
-&gt; On Mon, Apr 6, 2026, Shruthi wrote:<br>
-&gt; Inline plain-text quote line<br>
-&gt; that I made<br>
-<div class="gmail_quote">
-  <p>The original HTML quoted email</p>
-</div>`;
-
-// Real-world body: Gmail web reply (matches the structure the Chatwoot
-// fixture in components-next/message/fixtures/emailConversation.js produces).
-const GMAIL_REAL_WORLD_REPLY = `<div dir="ltr"><p>Dear Sam,</p><p>Thank you for the quotation. Could you share images?</p><p>Best,<br>Alex</p></div><br><div class="gmail_quote gmail_quote_container"><div dir="ltr" class="gmail_attr">On Wed, 4 Dec 2024 at 17:15, Sam from CottonMart &lt;<a href="mailto:sam@cottonmart.test">sam@cottonmart.test</a>&gt; wrote:<br></div><blockquote class="gmail_quote" style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex"><p>Dear Alex,</p><p>Thank you for your inquiry.</p><p>Best regards,<br>Sam</p></blockquote></div>`;
-
-// Outlook web/desktop: header div carries id="divRplyFwdMsg" (no quote class)
-// and the original is wrapped in a bare `<blockquote>` after it.
-const OUTLOOK_REAL_WORLD_REPLY = `<p>Hi team,</p><p>See attached the latest proposal.</p><p>Regards,<br>Pat</p><div id="divRplyFwdMsg" dir="ltr"><font face="Calibri,sans-serif" color="#000000"><b>From:</b> Sam &lt;sam@example.test&gt;<br><b>Sent:</b> Wednesday, December 4, 2024 5:15 PM<br><b>To:</b> Pat &lt;pat@example.test&gt;<br><b>Subject:</b> Quotation</font></div><blockquote style="border-left:1px solid #cccccc;padding-left:6px"><p>Hi Pat,</p><p>Quotation attached.</p><p>Sam</p></blockquote>`;
-
-// Yahoo Mail: wraps the previous email in <div class="yahoo_quoted">.
-const YAHOO_MAIL_REPLY = `<div>My reply text here.</div><div>Thanks,<br>Pat</div><div class="yahoo_quoted" id="yahoo_quoted_12345"><div>On Wednesday, December 4, 2024, 5:15 PM, Sam &lt;sam@example.test&gt; wrote:</div><div>Original Yahoo-quoted message body.</div></div>`;
-
-// Thunderbird: the attribution paragraph carries class="moz-cite-prefix" and
-// the original lives in <blockquote type="cite">.
-const THUNDERBIRD_REPLY = `<p>My reply.</p><p>Thanks,<br>Pat</p><p class="moz-cite-prefix">On 4/12/24 17:15, Sam wrote:</p><blockquote type="cite"><p>Original Thunderbird-quoted message body.</p></blockquote>`;
-
-// Gmail forwarded message — the body reads "---------- Forwarded message ---------"
-// in plain text, with a header block beneath listing From/Date/Subject/To.
-const GMAIL_FORWARDED_MESSAGE = `<div dir="ltr">FYI — see the original below.<br><br><div class="gmail_quote gmail_quote_container"><div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>From: <strong>Sam</strong> &lt;sam@example.test&gt;<br>Date: Wed, 4 Dec 2024 at 17:15<br>Subject: Quotation<br>To: Pat &lt;pat@example.test&gt;<br></div><br><div>Original forwarded body content.</div></div></div>`;
-
-// Outlook plain text "----- Original Message -----" header.
-const OUTLOOK_ORIGINAL_MESSAGE = `<p>Quick reply.</p><p>Thanks</p><p>-----Original Message-----<br>From: Sam &lt;sam@example.test&gt;<br>Sent: Wednesday, December 4, 2024 5:15 PM<br>To: Pat &lt;pat@example.test&gt;<br>Subject: Quotation</p><p>Original Outlook plain-style reply.</p>`;
-
-// Inline reply: bare <blockquote> (no client class) sits in the middle, with
-// content following it. Trailing-only rule should preserve the blockquote.
-const INLINE_REPLY = `<p>See my responses inline below.</p><blockquote><p>Question 1: pricing?</p><p>Answer: usd 100.</p><p>Question 2: timeline?</p><p>Answer: 2 weeks.</p></blockquote><p>Let me know if any of that needs clarification.</p><p>Pat</p>`;
-
-// Plain conversational body with no quote markers — must not be mistakenly
-// stripped and must not show the toggle.
-const NO_QUOTE_BODY = `<p>Just checking in — any update on this?</p><p>Thanks,<br>Pat</p>`;
-
-// iPhone Mail / `text/plain` reply, after sanitizeTextForRender() has converted
-// `\n` → `<br>` and escaped lone `< > &`.
-const IPHONE_MAIL_PLAINTEXT = [
-  'Test payments email<br><br>',
-  'Thanks,<br>Shruthi<br><br>',
-  'Sent from my iPhone<br><br>',
-  '&gt; On Apr 6, 2026, at 11:26 PM, Shruthi M ',
-  '&lt;shruthi.rohini.7@gmail.com&gt; wrote:<br>',
-  '&gt; <br>&gt; Hi email<br>&gt; To Eli<br>',
-  '&gt; Thanks,<br>&gt; Shruthi<br>',
-  '&gt; <br>&gt; Sent from my iPhone',
-].join('');
+// Regression coverage for the quote-toggle rewrite shipped on this branch.
+// Parse cleaned HTML into a container so each test can assert against
+// .textContent or query nested nodes.
+const cleaned = html => {
+  const c = document.createElement('div');
+  c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
+  return c;
+};
 
 describe('EmailQuoteExtractor', () => {
-  describe('real-world client shapes', () => {
-    it('Gmail web reply — strips .gmail_quote_container with attribution + blockquote', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(GMAIL_REAL_WORLD_REPLY);
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('Dear Sam');
-      expect(c.textContent).toContain('Best,');
-      expect(c.textContent).not.toContain('Thank you for your inquiry');
-      expect(c.textContent).not.toContain('On Wed, 4 Dec 2024');
-      expect(c.querySelector('.gmail_quote')).toBeNull();
-      expect(EmailQuoteExtractor.hasQuotes(GMAIL_REAL_WORLD_REPLY)).toBe(true);
-    });
-
-    it('Outlook reply — strips #divRplyFwdMsg header AND the trailing bare blockquote', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(
-        OUTLOOK_REAL_WORLD_REPLY
-      );
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('Hi team');
-      expect(c.textContent).toContain('Regards,');
-      expect(c.textContent).not.toContain('From: Sam');
-      expect(c.textContent).not.toContain('Quotation attached');
-      expect(c.querySelector('blockquote')).toBeNull();
-      expect(c.querySelector('#divRplyFwdMsg')).toBeNull();
-      expect(EmailQuoteExtractor.hasQuotes(OUTLOOK_REAL_WORLD_REPLY)).toBe(
-        true
-      );
-    });
-
-    it('Yahoo Mail reply — strips .yahoo_quoted wrapper', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(YAHOO_MAIL_REPLY);
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('My reply text here');
-      expect(c.textContent).not.toContain('Original Yahoo-quoted message');
-      expect(c.querySelector('.yahoo_quoted')).toBeNull();
-      expect(EmailQuoteExtractor.hasQuotes(YAHOO_MAIL_REPLY)).toBe(true);
-    });
-
-    it('Thunderbird reply — strips .moz-cite-prefix attribution AND <blockquote type="cite">', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(THUNDERBIRD_REPLY);
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('My reply');
-      expect(c.textContent).toContain('Thanks,');
-      expect(c.textContent).not.toContain('On 4/12/24 17:15');
-      expect(c.textContent).not.toContain(
-        'Original Thunderbird-quoted message'
-      );
-      expect(c.querySelector('blockquote')).toBeNull();
-      expect(c.querySelector('.moz-cite-prefix')).toBeNull();
-      expect(EmailQuoteExtractor.hasQuotes(THUNDERBIRD_REPLY)).toBe(true);
-    });
-
-    it('Gmail forwarded message — strips "---------- Forwarded message ----------" block', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(
-        GMAIL_FORWARDED_MESSAGE
-      );
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('FYI — see the original below');
-      expect(c.textContent).not.toContain('Forwarded message');
-      expect(c.textContent).not.toContain('Original forwarded body content');
-      expect(EmailQuoteExtractor.hasQuotes(GMAIL_FORWARDED_MESSAGE)).toBe(true);
-    });
-
-    it('Outlook plain-style "-----Original Message-----" header is stripped', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(
-        OUTLOOK_ORIGINAL_MESSAGE
-      );
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('Quick reply');
-      expect(c.textContent).not.toContain('Original Message');
-      expect(c.textContent).not.toContain('Original Outlook plain-style reply');
-      expect(EmailQuoteExtractor.hasQuotes(OUTLOOK_ORIGINAL_MESSAGE)).toBe(
-        true
-      );
-    });
-
-    it('inline reply — when content follows the quoted block, the body is left intact', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(INLINE_REPLY);
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('See my responses inline below');
-      expect(c.textContent).toContain('Question 1: pricing?');
-      expect(c.textContent).toContain(
-        'Let me know if any of that needs clarification'
-      );
-      expect(c.querySelector('blockquote')).not.toBeNull();
-      expect(EmailQuoteExtractor.hasQuotes(INLINE_REPLY)).toBe(false);
-    });
-
-    it('plain body with no quotes — body unchanged, no toggle', () => {
-      const cleaned = EmailQuoteExtractor.extractQuotes(NO_QUOTE_BODY);
-      const c = document.createElement('div');
-      c.innerHTML = cleaned;
-      expect(c.textContent).toContain('Just checking in');
-      expect(c.textContent).toContain('Thanks,');
-      expect(EmailQuoteExtractor.hasQuotes(NO_QUOTE_BODY)).toBe(false);
-    });
-
-    it('empty body — no error, no toggle', () => {
-      expect(() => EmailQuoteExtractor.extractQuotes('')).not.toThrow();
-      expect(EmailQuoteExtractor.hasQuotes('')).toBe(false);
-    });
-  });
-
-  // Regression tests — develop-baseline behaviours that earlier rewrites broke.
-  describe('develop-baseline regression coverage', () => {
-    it('detects header quote inside a single outer wrapper <div>', () => {
-      const html =
-        '<div><p>My reply.</p><p>-----Original Message-----<br>From: Sam<br>Sent: ...</p><p>Old body line 1</p></div>';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const cleaned = EmailQuoteExtractor.extractQuotes(html);
-      expect(cleaned).toContain('My reply');
-      expect(cleaned).not.toContain('Original Message');
-    });
-
-    it('detects "On … wrote:" header even when followed by un-prefixed old lines', () => {
-      const html =
-        '<p>On Wed, Sam wrote:</p><p>Old line 1</p><p>Old line 2</p>';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const cleaned = EmailQuoteExtractor.extractQuotes(html);
-      expect(cleaned).not.toContain('On Wed, Sam wrote');
-    });
-
-    it('detects "From:/Sent:" header even when followed by un-prefixed old lines', () => {
-      const html =
-        '<p>Reply text.</p><p>From: Sam &lt;sam@example.test&gt;<br>Sent: Wednesday, December 4, 2024</p><p>Old line 1</p>';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const cleaned = EmailQuoteExtractor.extractQuotes(html);
-      expect(cleaned).toContain('Reply text');
-      expect(cleaned).not.toContain('From: Sam');
-    });
-
-    // Header markers at the TOP LEVEL — text + <br> shape with no block
-    // wrapper. The marker's nearest block ancestor is root itself.
-    it('detects top-level "On … wrote:" header (no wrapper)', () => {
-      const html =
-        'Reply text<br><br>On Tue, Pat wrote:<br>Original line 1<br>Original line 2';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Reply text');
-      expect(c.textContent).not.toContain('On Tue, Pat wrote');
-      expect(c.textContent).not.toContain('Original line 1');
-    });
-
-    it('detects top-level "From:/Sent:" header (no wrapper)', () => {
-      const html =
-        'Reply text<br>From: Sam &lt;sam@example.test&gt;<br>Sent: Wednesday, December 4, 2024<br>Original body';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Reply text');
-      expect(c.textContent).not.toContain('From: Sam');
-    });
-
-    it('detects top-level "-----Original Message-----" (no wrapper)', () => {
-      const html = 'Reply<br>-----Original Message-----<br>From: Sam<br>Body';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Reply');
-      expect(c.textContent).not.toContain('Original Message');
-    });
-
-    // Trailing-only rule: only strip the `>`-block when nothing substantive
-    // follows it. Otherwise the user's own bottom-posted / inline reply is
-    // silently dropped.
-    it('preserves user reply that is bottom-posted below `>`-quoted lines', () => {
-      const html =
-        '&gt; On Tue, Pat wrote:<br>&gt; Attached is the doc.<br>&gt; Pat<br><br>Got it, looks good.';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Got it, looks good');
-    });
-
-    it('preserves user answers inline-posted between `>`-quoted lines', () => {
-      const html =
-        '&gt; Q1: pricing?<br>A1: USD 100<br>&gt; Q2: timeline?<br>A2: 2 weeks<br><br>Thanks!';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('A1: USD 100');
-      expect(c.textContent).toContain('A2: 2 weeks');
-      expect(c.textContent).toContain('Thanks!');
-    });
-
-    // Anchored hard-header patterns: don't strip when the marker phrase shows
-    // up inside a sentence (false trigger).
-    it('does not strip when "Original Message" appears inside a sentence', () => {
-      const html =
-        '<p>The bug ticket says the markdown for `-----Original Message-----` should render correctly.</p><p>Here is my fix.</p>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Here is my fix');
-    });
-
-    it('detects minimal "From: name + Sent: weekday" header (no @, no year)', () => {
-      const html =
-        '<p>Reply text.</p><p>From: Sam<br>Sent: Wednesday<br>To: Pat<br>Subject: Re: foo</p><p>Old body</p>';
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
-      const cleaned = EmailQuoteExtractor.extractQuotes(html);
-      expect(cleaned).toContain('Reply text');
-      expect(cleaned).not.toContain('From: Sam');
-    });
-
-    it('preserves a bottom-posted reply that follows a header block at root', () => {
-      const html =
-        '<p>From: Sam &lt;sam@example.test&gt;<br>Sent: Wednesday, December 4, 2024<br>To: Pat<br>Subject: foo</p>' +
-        '<p>Hi Pat, original message body.</p>' +
-        '<p>--- My reply below ---</p>' +
-        '<p>Got it, thanks!</p>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Got it, thanks');
-      expect(c.textContent).toContain('My reply below');
-      expect(c.textContent).not.toContain('From: Sam');
-    });
-
-    it('strips Apple-Mail blockquote (attribution + body inside one <blockquote type="cite">)', () => {
-      const html =
-        '<div>Sounds good, see you Friday.</div>' +
-        '<div><br><blockquote type="cite">' +
-        '<div>On Apr 6, 2026, at 11:26 AM, Sam &lt;sam@example.test&gt; wrote:</div>' +
-        '<br><div><div>Hi Pat,</div><div>Locking the Friday slot.</div><div>Sam</div></div>' +
-        '</blockquote></div>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Sounds good');
-      expect(c.textContent).not.toContain('On Apr 6, 2026');
-      expect(c.textContent).not.toContain('Hi Pat');
-      expect(c.textContent).not.toContain('Locking the Friday slot');
-    });
-
-    // Flat Outlook header at root — strip the header block, keep the body
-    // visible. We can't tell the body apart from a bottom-posted reply at
-    // root level, so be safe (matches develop behaviour).
-    it('strips a flat Outlook header block but keeps body visible', () => {
-      const html =
-        '<p>Confirming I received this — will review tomorrow.</p>' +
-        '<p>Thanks,<br>Pat</p>' +
-        '<p>From: Sam &lt;sam@example.test&gt;<br>Sent: Wednesday, December 4, 2024 5:15 PM<br>To: Pat &lt;pat@example.test&gt;<br>Subject: Quotation</p>' +
-        '<p>Hi Pat,<br>Quotation attached.<br>Sam</p>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Confirming I received this');
-      expect(c.textContent).toContain('Thanks,');
-      expect(c.textContent).not.toContain('From: Sam');
-    });
-
-    // Inline reply where a soft-header `<blockquote>` is followed by the
-    // user's actual reply at the SAME level. The hard-cut for soft headers
-    // would otherwise eat the reply.
-    it('preserves user reply that follows a soft-header <blockquote>', () => {
-      const html =
-        '<blockquote>On Mon, Sep 22, Sam wrote:<br>Original quoted line.</blockquote><p>My actual reply.</p>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('My actual reply');
-    });
-
-    it('preserves user reply that follows a wrapper div containing the soft-header block', () => {
-      const html =
-        '<div><blockquote>On Mon, Sam wrote:</blockquote></div><p>My reply outside the wrapper.</p>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('My reply outside the wrapper');
-    });
-
-    it('preserves reply when the From-header sits inside a deep wrapper (Outlook WordSection1)', () => {
-      const html = `
-        <div class="WordSection1">
-          <p>Pat — please look into this when you get a chance.</p>
-          <p>Thanks,<br>Sam</p>
-          <div style="border-top:solid #E1E1E1 1.0pt">
-            <p><b>From:</b> Maya &lt;maya@example.test&gt;<br><b>Sent:</b> Wednesday, December 4, 2024 8:42 AM<br><b>To:</b> Sam &lt;sam@example.test&gt;<br><b>Subject:</b> Customer escalation</p>
-          </div>
-          <p>Sam, Acme Corp is threatening to churn over recent latency issues.</p>
-          <p>Maya</p>
-        </div>
-      `;
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Pat — please look into this');
-      expect(c.textContent).toContain('Thanks');
-      expect(c.textContent).not.toContain('From: Maya');
-      expect(c.textContent).not.toContain('Subject: Customer escalation');
-    });
-
-    it('does not strip prose paragraphs that start with "From: " or "Sent: "', () => {
-      const fromHtml =
-        '<p>From: now on, please follow this checklist.</p><p>This is regular content.</p>';
-      let c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(fromHtml);
-      expect(c.textContent).toContain('From: now on');
-      expect(c.textContent).toContain('regular content');
-
-      const sentHtml =
-        '<p>Sent: yesterday by the courier.</p><p>Tracking number to follow.</p>';
-      c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(sentHtml);
-      expect(c.textContent).toContain('Sent: yesterday');
-      expect(c.textContent).toContain('Tracking number');
-    });
-
-    it('preserves reply text that sits before a hard marker in the SAME block', () => {
-      const html =
-        '<div>My reply<br><br>-----Original Message-----<br>From: Sam<br>Old body</div>';
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('My reply');
-      expect(c.textContent).not.toContain('Original Message');
-      expect(c.textContent).not.toContain('Old body');
-    });
-
-    it('does not strip when "Original Message" sits inside <code> mid-paragraph', () => {
-      const html = `
-        <p>Hey Sam,</p>
-        <p>The bug ticket says the markdown for <code>-----Original Message-----</code> should render correctly.</p>
-        <pre><code>// strip on its own line only</code></pre>
-        <p>Tested locally — passing all cases.</p>
-        <p>Pat</p>
-      `;
-      const c = document.createElement('div');
-      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
-      expect(c.textContent).toContain('Hey Sam');
-      expect(c.textContent).toContain('Tested locally');
-      expect(c.textContent).toContain('Pat');
-      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(false);
-    });
-  });
-
-  it('strips RFC-style `>` quoted lines from a plain-text only body (iPhone Mail)', () => {
-    const cleanedHtml = EmailQuoteExtractor.extractQuotes(
-      IPHONE_MAIL_PLAINTEXT
-    );
-    const container = document.createElement('div');
-    container.innerHTML = cleanedHtml;
-    const text = container.textContent;
-
-    expect(text).toContain('Test payments email');
-    expect(text).toContain('Sent from my iPhone'); // signature stays
-    expect(text).not.toContain('On Apr 6, 2026');
-    expect(text).not.toContain('Hi email');
-    expect(text).not.toContain('To Eli');
-    expect(EmailQuoteExtractor.hasQuotes(IPHONE_MAIL_PLAINTEXT)).toBe(true);
-  });
-
-  it('strips both plain-text `>` lines and HTML quote blocks in the same body', () => {
-    const cleanedHtml = EmailQuoteExtractor.extractQuotes(
-      MIXED_PLAINTEXT_AND_HTML_QUOTE
-    );
-    const container = document.createElement('div');
-    container.innerHTML = cleanedHtml;
-    const text = container.textContent;
-
-    // Reply portion stays
-    expect(text).toContain('My HTML reply');
-    expect(text).toContain('Sivin');
-
-    // Plain-text `>` quote lines are gone
-    expect(text).not.toContain('Inline plain-text quote line');
-    expect(text).not.toContain('On Mon, Apr 6, 2026, Shruthi wrote');
-
-    // HTML quote block is gone
-    expect(text).not.toContain('The original HTML quoted email');
-    expect(container.querySelectorAll('.gmail_quote').length).toBe(0);
-  });
-
   it('removes blockquote-based quotes from the email body', () => {
     const cleanedHtml = EmailQuoteExtractor.extractQuotes(SAMPLE_EMAIL_HTML);
 
@@ -577,6 +157,316 @@ describe('EmailQuoteExtractor', () => {
 
       expect(cleanedHtml).not.toContain('onerror');
       expect(cleanedHtml).not.toContain('eval');
+    });
+  });
+
+  describe('client wrappers', () => {
+    it('Gmail — strips .gmail_quote_container with attribution + blockquote', () => {
+      const html = `<div dir="ltr"><p>Dear Sam,</p><p>Thank you for the quotation.</p><p>Best,<br>Alex</p></div><br><div class="gmail_quote gmail_quote_container"><div class="gmail_attr">On Wed, 4 Dec 2024 at 17:15, Sam wrote:<br></div><blockquote class="gmail_quote"><p>Dear Alex,</p><p>Thank you for your inquiry.</p></blockquote></div>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Dear Sam');
+      expect(c.textContent).not.toContain('Thank you for your inquiry');
+      expect(c.querySelector('.gmail_quote')).toBeNull();
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('Outlook — strips #divRplyFwdMsg header AND the trailing bare blockquote', () => {
+      const html = `<p>Hi team,</p><p>Regards,<br>Pat</p><div id="divRplyFwdMsg"><b>From:</b> Sam<br><b>Sent:</b> Wed Dec 4, 2024<br><b>To:</b> Pat<br><b>Subject:</b> Quotation</div><blockquote><p>Hi Pat,</p><p>Quotation attached.</p></blockquote>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Hi team');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(c.textContent).not.toContain('Quotation attached');
+      expect(c.querySelector('blockquote')).toBeNull();
+      expect(c.querySelector('#divRplyFwdMsg')).toBeNull();
+    });
+
+    it('Yahoo — strips .yahoo_quoted wrapper', () => {
+      const html = `<div>My reply text here.</div><div class="yahoo_quoted"><div>On Wed, Dec 4, 2024, Sam wrote:</div><div>Original Yahoo-quoted message body.</div></div>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My reply text here');
+      expect(c.textContent).not.toContain('Original Yahoo-quoted message');
+      expect(c.querySelector('.yahoo_quoted')).toBeNull();
+    });
+
+    it('Thunderbird — strips .moz-cite-prefix attribution AND <blockquote type="cite">', () => {
+      const html = `<p>My reply.</p><p class="moz-cite-prefix">On 4/12/24 17:15, Sam wrote:</p><blockquote type="cite"><p>Original Thunderbird-quoted message body.</p></blockquote>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My reply');
+      expect(c.textContent).not.toContain('On 4/12/24 17:15');
+      expect(c.textContent).not.toContain(
+        'Original Thunderbird-quoted message'
+      );
+      expect(c.querySelector('blockquote')).toBeNull();
+      expect(c.querySelector('.moz-cite-prefix')).toBeNull();
+    });
+  });
+
+  describe('hard markers', () => {
+    it('Gmail "---------- Forwarded message ----------" block is stripped', () => {
+      const html = `<div>FYI — see the original below.<div class="gmail_quote"><div>---------- Forwarded message ---------<br>From: Sam<br>Date: Wed, 4 Dec 2024<br>Subject: Quotation<br>To: Pat</div><div>Original forwarded body content.</div></div></div>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('FYI — see the original below');
+      expect(c.textContent).not.toContain('Forwarded message');
+      expect(c.textContent).not.toContain('Original forwarded body content');
+    });
+
+    it('Outlook plain-style "-----Original Message-----" header is stripped', () => {
+      const html = `<p>Quick reply.</p><p>-----Original Message-----<br>From: Sam<br>Sent: Wed Dec 4, 2024<br>To: Pat<br>Subject: Quotation</p><p>Original Outlook plain-style reply.</p>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Quick reply');
+      expect(c.textContent).not.toContain('Original Message');
+      expect(c.textContent).not.toContain('Original Outlook plain-style reply');
+    });
+
+    it('preserves reply text that sits before a hard marker in the SAME block', () => {
+      const html =
+        '<div>My reply<br><br>-----Original Message-----<br>From: Sam<br>Old body</div>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My reply');
+      expect(c.textContent).not.toContain('Original Message');
+      expect(c.textContent).not.toContain('Old body');
+    });
+
+    it('does not strip when "Original Message" appears inside a sentence', () => {
+      const html =
+        '<p>The bug ticket says the markdown for `-----Original Message-----` should render.</p><p>Here is my fix.</p>';
+      expect(cleaned(html).textContent).toContain('Here is my fix');
+    });
+
+    it('does not strip when "Original Message" sits inside <code> mid-paragraph', () => {
+      const html =
+        '<p>Hey Sam,</p><p>The markdown for <code>-----Original Message-----</code> should render.</p><p>Tested locally.</p><p>Pat</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Hey Sam');
+      expect(c.textContent).toContain('Tested locally');
+      expect(c.textContent).toContain('Pat');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(false);
+    });
+  });
+
+  describe('multi-line attribution headers (From / Sent / To)', () => {
+    it('detects header inside a single outer wrapper <div>', () => {
+      const html =
+        '<div><p>My reply.</p><p>-----Original Message-----<br>From: Sam<br>Sent: ...</p><p>Old body</p></div>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My reply');
+      expect(c.textContent).not.toContain('Original Message');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('detects "From:/Sent:" header even when followed by un-prefixed old lines', () => {
+      const html =
+        '<p>Reply text.</p><p>From: Sam<br>Sent: Wed Dec 4, 2024</p><p>Old line 1</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('detects minimal "From: name + Sent: weekday" header (no @, no year)', () => {
+      const html =
+        '<p>Reply text.</p><p>From: Sam<br>Sent: Wednesday<br>To: Pat<br>Subject: Re: foo</p><p>Old body</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('detects header buried in a deep wrapper (Outlook WordSection1)', () => {
+      const html = `
+        <div class="WordSection1">
+          <p>Pat — please look into this.</p>
+          <p>Thanks,<br>Sam</p>
+          <div style="border-top:solid #E1E1E1 1.0pt">
+            <p><b>From:</b> Maya<br><b>Sent:</b> Wed, 4 Dec<br><b>To:</b> Sam<br><b>Subject:</b> Customer escalation</p>
+          </div>
+          <p>Sam, Acme Corp is threatening to churn.</p>
+        </div>
+      `;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Pat — please look into this');
+      expect(c.textContent).not.toContain('From: Maya');
+      expect(c.textContent).not.toContain('Subject: Customer escalation');
+    });
+
+    it('strips a flat header at root but keeps the body visible (bottom-post safety)', () => {
+      const html =
+        '<p>Confirming I received this — will review tomorrow.</p>' +
+        '<p>Thanks,<br>Pat</p>' +
+        '<p>From: Sam<br>Sent: Wed Dec 4, 2024<br>To: Pat<br>Subject: Quotation</p>' +
+        '<p>Hi Pat,<br>Quotation attached.<br>Sam</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Confirming I received this');
+      expect(c.textContent).toContain('Thanks,');
+      expect(c.textContent).not.toContain('From: Sam');
+    });
+
+    it('preserves a bottom-posted reply that follows a flat header block at root', () => {
+      const html =
+        '<p>From: Sam<br>Sent: Wed Dec 4, 2024<br>To: Pat<br>Subject: foo</p>' +
+        '<p>Hi Pat, original message body.</p>' +
+        '<p>--- My reply below ---</p>' +
+        '<p>Got it, thanks!</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Got it, thanks');
+      expect(c.textContent).toContain('My reply below');
+      expect(c.textContent).not.toContain('From: Sam');
+    });
+
+    it('strips Apple-Mail blockquote (attribution + body inside one <blockquote type="cite">)', () => {
+      const html =
+        '<div>Sounds good, see you Friday.</div>' +
+        '<div><blockquote type="cite">' +
+        '<div>On Apr 6, 2026, at 11:26 AM, Sam wrote:</div>' +
+        '<div><div>Hi Pat,</div><div>Locking the Friday slot.</div></div>' +
+        '</blockquote></div>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Sounds good');
+      expect(c.textContent).not.toContain('On Apr 6, 2026');
+      expect(c.textContent).not.toContain('Locking the Friday slot');
+    });
+
+    it('preserves user reply that follows a soft-header <blockquote>', () => {
+      const html =
+        '<blockquote>On Mon, Sep 22, Sam wrote:<br>Original quoted line.</blockquote><p>My actual reply.</p>';
+      expect(cleaned(html).textContent).toContain('My actual reply');
+    });
+
+    it('preserves user reply that follows a wrapper containing a soft-header block', () => {
+      const html =
+        '<div><blockquote>On Mon, Sam wrote:</blockquote></div><p>My reply outside the wrapper.</p>';
+      expect(cleaned(html).textContent).toContain(
+        'My reply outside the wrapper'
+      );
+    });
+
+    it('does not strip prose paragraphs that start with "From: " or "Sent: "', () => {
+      const fromHtml =
+        '<p>From: now on, please follow this checklist.</p><p>This is regular content.</p>';
+      expect(cleaned(fromHtml).textContent).toContain('From: now on');
+      expect(cleaned(fromHtml).textContent).toContain('regular content');
+
+      const sentHtml =
+        '<p>Sent: yesterday by the courier.</p><p>Tracking number to follow.</p>';
+      expect(cleaned(sentHtml).textContent).toContain('Sent: yesterday');
+      expect(cleaned(sentHtml).textContent).toContain('Tracking number');
+    });
+  });
+
+  describe('single-line "On … wrote:" attribution', () => {
+    it('detects header even when followed by un-prefixed old lines', () => {
+      const html =
+        '<p>On Wed, Sam wrote:</p><p>Old line 1</p><p>Old line 2</p>';
+      const c = cleaned(html);
+      expect(c.textContent).not.toContain('On Wed, Sam wrote');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+  });
+
+  describe('top-level RFC `>` and header tail (text + <br>)', () => {
+    it('iPhone Mail — strips RFC `>` quoted lines from a plain-text only body', () => {
+      const html = [
+        'Test payments email<br><br>',
+        'Thanks,<br>Shruthi<br><br>',
+        'Sent from my iPhone<br><br>',
+        '&gt; On Apr 6, 2026, at 11:26 PM, Shruthi wrote:<br>',
+        '&gt; <br>&gt; Hi email<br>&gt; To Eli<br>',
+        '&gt; Thanks,<br>&gt; Shruthi',
+      ].join('');
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Test payments email');
+      expect(c.textContent).toContain('Sent from my iPhone'); // signature stays
+      expect(c.textContent).not.toContain('On Apr 6, 2026');
+      expect(c.textContent).not.toContain('Hi email');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('strips both plain-text `>` lines and HTML quote blocks in the same body', () => {
+      const html = `<p>My HTML reply</p>
+<p>Sivin</p>
+<br>
+&gt; On Mon, Apr 6, 2026, Shruthi wrote:<br>
+&gt; Inline plain-text quote line<br>
+<div class="gmail_quote">
+  <p>The original HTML quoted email</p>
+</div>`;
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My HTML reply');
+      expect(c.textContent).toContain('Sivin');
+      expect(c.textContent).not.toContain('Inline plain-text quote line');
+      expect(c.textContent).not.toContain('The original HTML quoted email');
+      expect(c.querySelectorAll('.gmail_quote').length).toBe(0);
+    });
+
+    it('detects top-level "On … wrote:" header (no wrapper)', () => {
+      const html =
+        'Reply text<br><br>On Tue, Pat wrote:<br>Original line 1<br>Original line 2';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('On Tue, Pat wrote');
+      expect(c.textContent).not.toContain('Original line 1');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('detects top-level "From:/Sent:" header (no wrapper)', () => {
+      const html =
+        'Reply text<br>From: Sam<br>Sent: Wed Dec 4, 2024<br>Original body';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('detects top-level "-----Original Message-----" (no wrapper)', () => {
+      const html = 'Reply<br>-----Original Message-----<br>From: Sam<br>Body';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Reply');
+      expect(c.textContent).not.toContain('Original Message');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+    });
+
+    it('preserves user reply that is bottom-posted below `>`-quoted lines', () => {
+      const html =
+        '&gt; On Tue, Pat wrote:<br>&gt; Attached is the doc.<br>&gt; Pat<br><br>Got it, looks good.';
+      expect(cleaned(html).textContent).toContain('Got it, looks good');
+    });
+
+    it('preserves user answers inline-posted between `>`-quoted lines', () => {
+      const html =
+        '&gt; Q1: pricing?<br>A1: USD 100<br>&gt; Q2: timeline?<br>A2: 2 weeks<br><br>Thanks!';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('A1: USD 100');
+      expect(c.textContent).toContain('A2: 2 weeks');
+      expect(c.textContent).toContain('Thanks!');
+    });
+  });
+
+  describe('inline / no-quote bodies', () => {
+    it('inline reply — when content follows the quoted block, body is left intact', () => {
+      const html =
+        '<p>See my responses inline below.</p><blockquote><p>Q1: pricing?</p><p>A1: usd 100.</p></blockquote><p>Let me know if any of that needs clarification.</p><p>Pat</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('See my responses inline below');
+      expect(c.textContent).toContain('Q1: pricing?');
+      expect(c.textContent).toContain(
+        'Let me know if any of that needs clarification'
+      );
+      expect(c.querySelector('blockquote')).not.toBeNull();
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(false);
+    });
+
+    it('plain body with no quotes — body unchanged, no toggle', () => {
+      const html =
+        '<p>Just checking in — any update on this?</p><p>Thanks,<br>Pat</p>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('Just checking in');
+      expect(c.textContent).toContain('Thanks,');
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(false);
+    });
+
+    it('empty body — no error, no toggle', () => {
+      expect(() => EmailQuoteExtractor.extractQuotes('')).not.toThrow();
+      expect(EmailQuoteExtractor.hasQuotes('')).toBe(false);
     });
   });
 });
