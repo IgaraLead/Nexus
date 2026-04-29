@@ -20,11 +20,12 @@
 #
 # Indexes
 #
+#  idx_captain_documents_on_account_assistant_sync_stats      (account_id,assistant_id,sync_status,last_synced_at)
 #  index_captain_documents_on_account_id                      (account_id)
+#  index_captain_documents_on_account_id_and_sync_status      (account_id,sync_status)
 #  index_captain_documents_on_assistant_id                    (assistant_id)
 #  index_captain_documents_on_assistant_id_and_external_link  (assistant_id,external_link) UNIQUE
 #  index_captain_documents_on_status                          (status)
-#  index_captain_documents_on_sync_status                     (sync_status)
 #
 class Captain::Document < ApplicationRecord
   class LimitExceededError < StandardError; end
