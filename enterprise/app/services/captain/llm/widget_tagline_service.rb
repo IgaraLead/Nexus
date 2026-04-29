@@ -1,14 +1,21 @@
 class Captain::Llm::WidgetTaglineService < Captain::BaseTaskService
+  RESPONSE_SCHEMA = Captain::Llm::WidgetTaglineSchema
+
   pattr_initialize [:account!]
 
   def perform
-    response = make_api_call(model: tagline_model, messages: messages)
+    response = make_api_call(model: tagline_model, messages: messages, schema: RESPONSE_SCHEMA)
     return response if response[:error]
 
-    response.merge(message: response[:message].to_s.strip)
+    response.merge(message: extract_tagline(response[:message]))
   end
 
   private
+
+  def extract_tagline(message)
+    tagline = message.is_a?(Hash) ? (message['tagline'] || message[:tagline]) : message
+    tagline.to_s.strip
+  end
 
   def messages
     [
@@ -19,9 +26,8 @@ class Captain::Llm::WidgetTaglineService < Captain::BaseTaskService
 
   def system_prompt
     <<~PROMPT
-      You write a single short tagline for a company's customer-support chat widget.
-      Constraints: max 60 characters, plain text, no surrounding quotes, no emoji,
-      no trailing punctuation. Reply with the tagline only.
+      You write a short marketing tagline for a company's customer-support chat widget.
+      Use the provided company context to make the tagline specific and on-brand.
     PROMPT
   end
 
