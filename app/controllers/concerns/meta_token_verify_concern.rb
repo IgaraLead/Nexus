@@ -19,6 +19,7 @@ module MetaTokenVerifyConcern
   private
 
   def verify_meta_signature!
+    return unless meta_signature_verification_required?
     return if valid_meta_signature?
 
     head :unauthorized
@@ -42,6 +43,10 @@ module MetaTokenVerifyConcern
 
   def meta_app_secrets
     raise 'Overwrite this method in your controller'
+  end
+
+  def meta_signature_verification_required?
+    true
   end
 
   def channel_meta_app_secrets(channel)

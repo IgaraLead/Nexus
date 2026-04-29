@@ -33,6 +33,14 @@ class Webhooks::WhatsappController < ActionController::API
     @whatsapp_channel ||= whatsapp_business_payload_channel || Channel::Whatsapp.find_by(phone_number: params[:phone_number])
   end
 
+  def meta_signature_verification_required?
+    return true if whatsapp_channel.blank?
+    return false unless whatsapp_channel.provider == 'whatsapp_cloud'
+    return true if channel_meta_app_secrets(whatsapp_channel).present?
+
+    whatsapp_channel.provider_config['source'] == 'embedded_signup'
+  end
+
   def whatsapp_business_payload_channel
     return unless params[:object] == 'whatsapp_business_account'
 

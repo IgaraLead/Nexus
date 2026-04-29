@@ -17,6 +17,14 @@ RSpec.describe 'Webhooks::WhatsappController', type: :request do
     end
   end
 
+  def post_unsigned_whatsapp_webhook(path, body, env: { WHATSAPP_APP_SECRET: client_secret })
+    with_modified_env env do
+      post path,
+           params: body,
+           headers: { 'CONTENT_TYPE' => 'application/json' }
+    end
+  end
+
   before do
     InstallationConfig.where(name: 'WHATSAPP_APP_SECRET').delete_all
     GlobalConfig.clear_cache
@@ -77,6 +85,42 @@ RSpec.describe 'Webhooks::WhatsappController', type: :request do
         signature: signature_for(channel_body, channel_secret),
         env: {}
       )
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'skips signature validation for 360dialog channels' do
+      dialog_channel = create(:channel_whatsapp, provider: 'default', sync_templates: false, validate_provider_config: false)
+      allow(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+      expect(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+
+      post_unsigned_whatsapp_webhook("/webhooks/whatsapp/#{dialog_channel.phone_number}", body)
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'skips signature validation for manual whatsapp cloud channels without an app secret' do
+      channel.update!(
+        provider_config: channel.provider_config.except('app_secret', 'app_secret_key', 'api_secret', 'client_secret', 'source')
+      )
+      allow(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+      expect(Webhooks::WhatsappEventsJob).to receive(:perform_later)
+
+      channel_body = {
+        object: 'whatsapp_business_account',
+        entry: [{
+          changes: [{
+            value: {
+              metadata: {
+                display_phone_number: channel.phone_number.delete_prefix('+'),
+                phone_number_id: channel.provider_config['phone_number_id']
+              }
+            }
+          }]
+        }]
+      }.to_json
+
+      post_unsigned_whatsapp_webhook("/webhooks/whatsapp/#{channel.phone_number}", channel_body)
 
       expect(response).to have_http_status(:success)
     end
