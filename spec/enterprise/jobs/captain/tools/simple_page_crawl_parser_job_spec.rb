@@ -96,6 +96,7 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
     context 'when the page fetch fails' do
       before do
         allow(crawler).to receive(:success?).and_return(false)
+        allow(crawler).to receive(:status_code).and_return(500)
       end
 
       it 'raises an error without creating an available document' do
@@ -103,6 +104,29 @@ RSpec.describe Captain::Tools::SimplePageCrawlParserJob, type: :job do
           described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
         end.to raise_error("Failed to parse data: #{page_link} Failed to fetch page: #{page_link}")
           .and not_change(assistant.documents, :count)
+      end
+
+      it 'marks an existing document as available and failed' do
+        document = create(
+          :captain_document,
+          assistant: assistant,
+          account: assistant.account,
+          external_link: 'https://example.com/page',
+          status: :in_progress
+        )
+
+        freeze_time do
+          expect do
+            described_class.perform_now(assistant_id: assistant.id, page_link: page_link)
+          end.to raise_error("Failed to parse data: #{page_link} Failed to fetch page: #{page_link}")
+
+          expect(document.reload).to have_attributes(
+            status: 'available',
+            sync_status: 'failed',
+            last_sync_error_code: 'fetch_failed',
+            last_sync_attempted_at: Time.current
+          )
+        end
       end
     end
 

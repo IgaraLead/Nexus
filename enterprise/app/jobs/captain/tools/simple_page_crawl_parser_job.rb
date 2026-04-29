@@ -47,6 +47,7 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
 
   def mark_failed!(document, status_code)
     document.update!(
+      status: :available,
       sync_status: :failed,
       last_sync_error_code: http_error_code(status_code),
       last_sync_attempted_at: Time.current
