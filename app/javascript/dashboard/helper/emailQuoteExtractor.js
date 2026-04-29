@@ -126,11 +126,12 @@ export class EmailQuoteExtractor {
     return this.findBlocksContainingText(root, HEADER_PATTERNS);
   }
 
-  // ---------- 5. Plain-text RFC `>` tail ----------
-  // For text/plain emails (after sanitizeTextForRender converts \n → <br>),
-  // find the earliest top-level text node whose visible lines all begin with
-  // `>` and strip from there to the end (collapsing leading <br>/whitespace
-  // separators back into the tail).
+  // ---------- 5. Top-level quote tail ----------
+  // For replies that arrive as text + <br> with no block wrapper (text/plain
+  // bodies after sanitizeTextForRender). Find the earliest top-level text
+  // node that begins a quote tail — either every visible line starts with `>`
+  // (RFC quote prefix) or the text contains a header marker — and strip from
+  // there, collapsing leading <br>/whitespace separators into the tail.
 
   static removePlainTextTail(root) {
     const start = this.findPlainTextTailStart(root);
@@ -142,7 +143,7 @@ export class EmailQuoteExtractor {
   static findPlainTextTailStart(root) {
     const children = Array.from(root.childNodes);
     const tailIdx = children.findIndex(node =>
-      this.isQuotePrefixedTextNode(node)
+      this.isQuoteTailStartTextNode(node)
     );
     if (tailIdx === -1) return -1;
     let start = tailIdx;
@@ -152,14 +153,18 @@ export class EmailQuoteExtractor {
     return start;
   }
 
-  static isQuotePrefixedTextNode(node) {
+  static isQuoteTailStartTextNode(node) {
     if (node.nodeType !== Node.TEXT_NODE) return false;
     const text = node.textContent;
     if (!text.trim()) return false;
-    return text
-      .split('\n')
-      .filter(line => line.trim() !== '')
-      .every(line => line.trim().startsWith('>'));
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    if (lines.length > 0 && lines.every(l => l.trim().startsWith('>'))) {
+      return true;
+    }
+    return (
+      HEADER_PATTERNS.some(p => p.test(text)) ||
+      HARD_HEADER_PATTERNS.some(p => p.test(text))
+    );
   }
 
   static isNeutralNode(node) {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { EmailQuoteExtractor } from '../emailQuoteExtractor.js';
 
 const SAMPLE_EMAIL_HTML = `
@@ -236,6 +236,38 @@ describe('EmailQuoteExtractor', () => {
       const cleaned = EmailQuoteExtractor.extractQuotes(html);
       expect(cleaned).toContain('Reply text');
       expect(cleaned).not.toContain('From: Sam');
+    });
+
+    // Header markers at the TOP LEVEL — text + <br> shape with no block
+    // wrapper. The marker's nearest block ancestor is root itself.
+    it('detects top-level "On … wrote:" header (no wrapper)', () => {
+      const html =
+        'Reply text<br><br>On Tue, Pat wrote:<br>Original line 1<br>Original line 2';
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+      const c = document.createElement('div');
+      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('On Tue, Pat wrote');
+      expect(c.textContent).not.toContain('Original line 1');
+    });
+
+    it('detects top-level "From:/Sent:" header (no wrapper)', () => {
+      const html =
+        'Reply text<br>From: Sam<br>Sent: Wednesday<br>Original body';
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+      const c = document.createElement('div');
+      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
+      expect(c.textContent).toContain('Reply text');
+      expect(c.textContent).not.toContain('From: Sam');
+    });
+
+    it('detects top-level "-----Original Message-----" (no wrapper)', () => {
+      const html = 'Reply<br>-----Original Message-----<br>From: Sam<br>Body';
+      expect(EmailQuoteExtractor.hasQuotes(html)).toBe(true);
+      const c = document.createElement('div');
+      c.innerHTML = EmailQuoteExtractor.extractQuotes(html);
+      expect(c.textContent).toContain('Reply');
+      expect(c.textContent).not.toContain('Original Message');
     });
   });
 
