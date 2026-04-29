@@ -11,6 +11,12 @@ class Onboarding::WebWidgetCreationService
   end
 
   def perform
+    existing = existing_web_widget_inbox
+    if existing
+      Rails.logger.info "[WidgetCreation] Reusing existing web widget inbox #{existing.id} for account #{@account.id}"
+      return existing
+    end
+
     if website_url.blank?
       Rails.logger.info "[WidgetCreation] Skipping for account #{@account.id}: no website_url available"
       return nil
@@ -28,6 +34,10 @@ class Onboarding::WebWidgetCreationService
   end
 
   private
+
+  def existing_web_widget_inbox
+    @account.inboxes.find_by(channel_type: 'Channel::WebWidget')
+  end
 
   def build_channel
     @account.web_widgets.create!(
