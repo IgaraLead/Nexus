@@ -495,10 +495,10 @@ ar:
   portals:
     articles:
       captain_not_available: 'Translation requires Captain to be enabled for this account'
-      locale_not_available: 'Locale not available in this portal'
-      category_not_found: 'Category not found in this portal'
-      no_articles_found: 'No articles found to process'
-      invalid_status: 'Invalid status value'
+      locale_not_available: 'اللغة غير متوفرة في هذه البوابة'
+      category_not_found: 'التصنيف غير موجود في هذه البوابة'
+      no_articles_found: 'لا يوجد مقالات حتى يتم معالجتها'
+      invalid_status: 'قيمة الحالة غير صالحة'
     send_instructions:
       email_required: 'البريد الإلكتروني مطلوب'
       invalid_email_format: 'Invalid email format'
@@ -509,7 +509,7 @@ ar:
       custom_domain_not_configured: 'Custom domain is not configured'
   super_admin:
     push_diagnostics:
-      user_not_found: 'User not found.'
+      user_not_found: 'لم يتم العثور على المستخدم.'
       no_subscriptions_to_test: 'Select at least one subscription to test.'
       no_subscriptions_to_delete: 'Select at least one subscription to delete.'
       subscriptions_deleted: "Deleted %{count} subscription(s). The user's device(s) will re-register on next app launch."
