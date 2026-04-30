@@ -37,8 +37,16 @@ class Whatsapp::CallPermissionReplyService
          .first&.contact
   end
 
+  # Pick the conversation that actually requested permission, not just any open
+  # one — a contact with multiple open threads in the same inbox would otherwise
+  # have the wrong conversation cleared and broadcast.
   def find_active_conversation(contact)
-    inbox.conversations.where(contact: contact).where.not(status: :resolved).order(:created_at).last
+    inbox.conversations
+         .where(contact: contact)
+         .where.not(status: :resolved)
+         .where("additional_attributes ->> 'call_permission_requested_at' IS NOT NULL")
+         .order(:created_at)
+         .last
   end
 
   def clear_permission_flag(conversation)

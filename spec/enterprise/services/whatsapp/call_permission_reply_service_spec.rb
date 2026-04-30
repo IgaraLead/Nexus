@@ -59,4 +59,18 @@ describe Whatsapp::CallPermissionReplyService do
 
     expect(ActionCable.server).not_to have_received(:broadcast)
   end
+
+  it 'targets the conversation that requested permission, not just any open one' do
+    other_open = create(:conversation, account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox,
+                                       status: :open, additional_attributes: {})
+    allow(ActionCable.server).to receive(:broadcast)
+
+    described_class.new(inbox: inbox, params: reply_params(response: 'accept')).perform
+
+    expect(other_open.reload.additional_attributes).to eq({})
+    expect(ActionCable.server).to have_received(:broadcast).with(
+      "account_#{account.id}",
+      hash_including(data: hash_including(conversation_id: conversation.id))
+    )
+  end
 end

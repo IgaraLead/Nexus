@@ -101,6 +101,63 @@ describe Whatsapp::IncomingCallService do
     end
   end
 
+  describe 'duplicate inbound connect' do
+    let!(:call) do
+      conversation = create(:conversation, account: account, inbox: inbox)
+      create(:call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                    provider: :whatsapp, direction: :incoming, status: 'ringing', provider_call_id: provider_call_id)
+    end
+
+    it 'logs and ignores rather than treating it as outbound' do
+      allow(Rails.logger).to receive(:info)
+      allow(ActionCable.server).to receive(:broadcast)
+      params = call_payload(event: 'connect', session: { sdp: 'sdp_x', sdp_type: 'offer' })
+
+      described_class.new(inbox: inbox, params: params).perform
+
+      expect(call.reload).to have_attributes(status: 'ringing')
+      expect(Rails.logger).to have_received(:info).with(/Duplicate inbound connect/)
+      expect(ActionCable.server).not_to have_received(:broadcast)
+    end
+  end
+
+  describe 'connect arriving after terminal status' do
+    let!(:call) do
+      conversation = create(:conversation, account: account, inbox: inbox)
+      create(:call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                    provider: :whatsapp, direction: :outgoing, status: 'completed', provider_call_id: provider_call_id)
+    end
+
+    it 'does not reopen a completed outbound call' do
+      allow(ActionCable.server).to receive(:broadcast)
+      params = call_payload(event: 'connect', session: { sdp: 'late_sdp', sdp_type: 'answer' })
+
+      described_class.new(inbox: inbox, params: params).perform
+
+      expect(call.reload.status).to eq('completed')
+      expect(ActionCable.server).not_to have_received(:broadcast)
+    end
+  end
+
+  describe 'unanswered outbound call terminate' do
+    let!(:agent) { create(:user, account: account) }
+    let!(:call) do
+      conversation = create(:conversation, account: account, inbox: inbox)
+      create(:call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                    provider: :whatsapp, direction: :outgoing, status: 'ringing',
+                    accepted_by_agent: agent, provider_call_id: provider_call_id)
+    end
+
+    it 'marks the call as no_answer even though accepted_by_agent_id is set' do
+      allow(ActionCable.server).to receive(:broadcast)
+      params = call_payload(event: 'terminate', duration: 0, terminate_reason: 'no_answer')
+
+      described_class.new(inbox: inbox, params: params).perform
+
+      expect(call.reload.status).to eq('no_answer')
+    end
+  end
+
   describe 'unknown event' do
     it 'logs a warning and does not raise' do
       allow(Rails.logger).to receive(:warn)

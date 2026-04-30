@@ -21,13 +21,21 @@ class Whatsapp::IncomingCallService
 
   def handle_call_connect(call_payload)
     existing = Call.whatsapp.find_by(provider_call_id: call_payload[:id])
-    existing ? handle_outbound_connect(existing, call_payload) : handle_inbound_connect(call_payload)
+    if existing&.outgoing?
+      handle_outbound_connect(existing, call_payload)
+    elsif existing
+      Rails.logger.info "[WHATSAPP CALL] Duplicate inbound connect for #{call_payload[:id]}; ignoring"
+    else
+      handle_inbound_connect(call_payload)
+    end
   rescue ActiveRecord::RecordNotUnique
     Rails.logger.warn "[WHATSAPP CALL] Duplicate provider_call_id received: #{call_payload[:id]}"
   end
 
   def handle_outbound_connect(call, call_payload)
-    return if call.in_progress?
+    # `in_progress?` skips duplicate connect deliveries; `terminal?` stops a
+    # delayed connect from reopening an already-ended call.
+    return if call.in_progress? || call.terminal?
 
     sdp_answer = fix_sdp_setup(call_payload.dig(:session, :sdp))
     call.update!(status: 'in_progress', started_at: Time.current,
@@ -66,7 +74,9 @@ class Whatsapp::IncomingCallService
   end
 
   def answered?(call, duration)
-    call.in_progress? || duration.to_i.positive? || call.accepted_by_agent_id.present?
+    # `accepted_by_agent_id` only signals an answered call for INBOUND — outbound
+    # calls have the initiating agent set before the contact picks up.
+    call.in_progress? || duration.to_i.positive? || (call.incoming? && call.accepted_by_agent_id.present?)
   end
 
   def update_conversation_call_status(conversation, call_status, direction)
