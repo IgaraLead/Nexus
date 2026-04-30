@@ -25,7 +25,7 @@ module Captain::Conversation::V1ActionClassifier
 
   def apply_v1_action_classification(classification)
     action = classification['action']
-    unless action.in?(%w[continue handoff])
+    unless Captain::Llm::AssistantActionClassifierService::VALID_ACTIONS.include?(action)
       Rails.logger.warn(
         "[CAPTAIN][ResponseBuilderJob] V1 action classifier returned invalid action for account=#{account.id} " \
         "conversation=#{@conversation.display_id}: #{classification['error'] || classification['raw_response']}"

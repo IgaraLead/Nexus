@@ -15,8 +15,10 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   end
 
   def classify(message_history:, assistant_response:)
-    payload = classification_payload(message_history, assistant_response)
-    user_prompt = classification_user_prompt(payload)
+    user_prompt = classification_user_prompt(
+      message_history: message_history,
+      assistant_response: assistant_response
+    )
 
     response = instrument_llm_call(instrumentation_params(user_prompt)) do
       chat(model: @model, temperature: @temperature)
@@ -37,28 +39,18 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
 
   private
 
-  def classification_payload(message_history, assistant_response)
-    normalized_messages = normalize_messages(message_history)
-
-    {
-      'account_custom_instructions' => account_custom_instructions,
-      'conversation_context' => format_conversation_context(normalized_messages),
-      'assistant_response_to_classify' => assistant_response.to_s
-    }
-  end
-
-  def classification_user_prompt(payload)
+  def classification_user_prompt(message_history:, assistant_response:)
     <<~PROMPT
       <account_custom_instructions>
-      #{payload['account_custom_instructions']}
+      #{@assistant.config['instructions']}
       </account_custom_instructions>
 
       <conversation_context>
-      #{payload['conversation_context']}
+      #{format_conversation_context(message_history)}
       </conversation_context>
 
       <assistant_response_to_classify>
-      #{payload['assistant_response_to_classify']}
+      #{assistant_response}
       </assistant_response_to_classify>
     PROMPT
   end
@@ -86,7 +78,7 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   end
 
   def format_conversation_context(messages)
-    context_messages(messages).filter_map do |message|
+    normalize_messages(messages).last(MAX_CONTEXT_MESSAGES).filter_map do |message|
       content = message[:content].to_s.strip
       next if content.blank?
 
@@ -94,19 +86,11 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
     end.join("\n")
   end
 
-  def context_messages(messages)
-    messages.last(MAX_CONTEXT_MESSAGES)
-  end
-
   def role_label(role)
     return 'User' if role == 'user'
     return 'Assistant' if role == 'assistant'
 
     role.to_s.titleize
-  end
-
-  def account_custom_instructions
-    @assistant.config['instructions'].to_s
   end
 
   def parse_response(content)
