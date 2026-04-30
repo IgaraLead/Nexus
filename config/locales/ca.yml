@@ -50,6 +50,8 @@ ca:
       email_already_exists: 'Ja us heu registrat amb el compte %{email}'
       invalid_params: 'No és vàlid, comprova els paràmetres de registre i torna-ho a provar'
       failed: El registre ha fallat
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
