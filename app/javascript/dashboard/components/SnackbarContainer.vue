@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import WootSnackbar from './Snackbar.vue';
 import { emitter } from 'shared/helpers/mitt';
 import { useI18n } from 'vue-i18n';
@@ -14,6 +14,19 @@ const props = defineProps({
 const { t } = useI18n();
 
 const snackMessages = ref([]);
+const snackbarContainer = ref(null);
+
+const showPopover = () => {
+  try {
+    const el = snackbarContainer.value;
+    if (el?.matches(':popover-open')) {
+      el.hidePopover();
+    }
+    el?.showPopover();
+  } catch (e) {
+    // ignore
+  }
+};
 
 const onNewToastMessage = ({ message: originalMessage, action }) => {
   const message = action?.usei18n ? t(originalMessage) : originalMessage;
@@ -24,6 +37,8 @@ const onNewToastMessage = ({ message: originalMessage, action }) => {
     message,
     action,
   });
+
+  nextTick(showPopover);
 
   setTimeout(() => {
     snackMessages.value.shift();
@@ -40,22 +55,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed top-4 inset-x-0 z-[9999] flex flex-col items-center px-4 pointer-events-none"
-    >
-      <transition-group
-        name="toast-fade"
-        tag="div"
-        class="flex flex-col items-center gap-2 pointer-events-auto"
-      >
-        <WootSnackbar
-          v-for="snackMessage in snackMessages"
-          :key="snackMessage.key"
-          :message="snackMessage.message"
-          :action="snackMessage.action"
-        />
-      </transition-group>
-    </div>
-  </Teleport>
+  <div
+    ref="snackbarContainer"
+    popover="manual"
+    class="fixed top-4 left-1/2 -translate-x-1/2 max-w-[25rem] w-[calc(100%-2rem)] text-center bg-transparent border-0 p-0 m-0 outline-none overflow-visible"
+  >
+    <transition-group name="toast-fade" tag="div">
+      <WootSnackbar
+        v-for="snackMessage in snackMessages"
+        :key="snackMessage.key"
+        :message="snackMessage.message"
+        :action="snackMessage.action"
+      />
+    </transition-group>
+  </div>
 </template>

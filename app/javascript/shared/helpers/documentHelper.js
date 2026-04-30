@@ -18,6 +18,22 @@ export const isPdfDocument = externalLink => {
 };
 
 /**
+ * Checks if a link is safe to bind to an href attribute (http/https only).
+ * Guards against schemes like `javascript:` that would execute on click.
+ * @param {string} externalLink - The external link string
+ * @returns {boolean} True if the link uses http or https
+ */
+export const isSafeHttpLink = externalLink => {
+  if (!externalLink) return false;
+  try {
+    const { protocol } = new URL(externalLink);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
  * Formats the display link for documents
  * For PDF documents: removes 'PDF:' prefix and timestamp suffix
  * For regular URLs: strips http(s):// and www. for a denser list view

@@ -20,8 +20,7 @@ export default {
 <template>
   <div>
     <div
-      class="shadow-sm bg-n-slate-12 dark:bg-n-slate-7 rounded-lg items-center gap-3 inline-flex mb-2 max-w-[25rem] min-h-[1.875rem] min-w-[15rem] px-6 py-3"
-      :class="action ? 'text-left' : 'justify-center text-center'"
+      class="shadow-sm bg-n-slate-12 dark:bg-n-slate-7 rounded-lg items-center gap-3 inline-flex mb-2 max-w-[25rem] min-h-[1.875rem] min-w-[15rem] px-6 py-3 text-left"
     >
       <div class="text-sm font-medium text-white dark:text-white">
         {{ message }}

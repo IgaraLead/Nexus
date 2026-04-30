@@ -6,10 +6,12 @@ import { dynamicTime } from 'shared/helpers/timeHelper';
 import { usePolicy } from 'dashboard/composables/usePolicy';
 import {
   isPdfDocument,
+  isSafeHttpLink,
   formatDocumentLink,
   getDocumentDisplayPath,
 } from 'shared/helpers/documentHelper';
 
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -83,6 +85,7 @@ const modelValue = computed({
 });
 
 const isPdf = computed(() => isPdfDocument(props.externalLink));
+const hasSafeLink = computed(() => isSafeHttpLink(props.externalLink));
 const canManage = computed(() => checkPermissions(['administrator']));
 const isSyncing = computed(() => props.syncStatus === 'syncing');
 const isFailed = computed(() => props.syncStatus === 'failed');
@@ -188,11 +191,11 @@ const handleRetry = () => {
       <span
         class="flex gap-1 items-center text-sm truncate shrink-0 text-n-slate-11"
       >
-        <i class="i-woot-captain" />
+        <Icon icon="i-woot-captain" />
         {{ assistant?.name || '' }}
       </span>
       <a
-        v-if="!isPdf"
+        v-if="!isPdf && hasSafeLink"
         :href="externalLink"
         :title="externalLink"
         target="_blank"
@@ -200,15 +203,15 @@ const handleRetry = () => {
         class="flex flex-1 gap-1 justify-start items-center text-sm truncate text-n-slate-11 hover:text-n-slate-12 hover:underline"
         @click.stop
       >
-        <i :class="linkIcon" class="shrink-0" />
+        <Icon :icon="linkIcon" class="shrink-0" />
         <span class="truncate">{{ displayLink }}</span>
-        <i class="i-lucide-external-link size-3 shrink-0 opacity-70" />
+        <Icon icon="i-lucide-external-link size-3 shrink-0 opacity-70" />
       </a>
       <span
         v-else
         class="flex flex-1 gap-1 justify-start items-center text-sm truncate text-n-slate-11"
       >
-        <i :class="linkIcon" class="shrink-0" />
+        <Icon :icon="linkIcon" class="shrink-0" />
         <span class="truncate">{{ displayLink }}</span>
       </span>
       <DocumentSyncStatus

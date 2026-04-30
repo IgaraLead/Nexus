@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import Icon from 'dashboard/components-next/icon/Icon.vue';
+
 const props = defineProps({
   stats: {
     type: Object,
@@ -33,40 +35,48 @@ const emit = defineEmits(['select']);
 
 const { t } = useI18n();
 
-const items = computed(() => [
-  {
-    key: 'total',
-    filterKey: null,
-    label: t('CAPTAIN.DOCUMENTS.STATS.TOTAL'),
-    value: props.stats?.total ?? 0,
-    icon: 'i-lucide-file',
-    tone: 'slate',
-  },
-  {
-    key: 'stale',
-    filterKey: 'stale',
-    label: t('CAPTAIN.DOCUMENTS.STATS.STALE'),
-    value: props.stats?.stale ?? 0,
-    icon: 'i-lucide-alert-triangle',
-    tone: (props.stats?.stale ?? 0) > 0 ? 'amber' : 'slate',
-  },
-  {
-    key: 'syncing',
-    filterKey: 'syncing',
-    label: t('CAPTAIN.DOCUMENTS.STATS.SYNCING'),
-    value: props.stats?.syncing ?? 0,
-    icon: 'i-lucide-refresh-cw',
-    tone: (props.stats?.syncing ?? 0) > 0 ? 'amber' : 'slate',
-  },
-  {
-    key: 'synced_last_7_days',
-    filterKey: 'synced_last_7_days',
-    label: t('CAPTAIN.DOCUMENTS.STATS.SYNCED_RECENTLY'),
-    value: props.stats?.synced_last_7_days ?? 0,
-    icon: 'i-lucide-check-circle',
-    tone: 'teal',
-  },
-]);
+const items = computed(() => {
+  const {
+    total = 0,
+    stale = 0,
+    syncing = 0,
+    synced_last_7_days: syncedRecently = 0,
+  } = props.stats ?? {};
+  return [
+    {
+      key: 'total',
+      filterKey: null,
+      label: t('CAPTAIN.DOCUMENTS.STATS.TOTAL'),
+      value: total,
+      icon: 'i-lucide-file',
+      tone: 'slate',
+    },
+    {
+      key: 'stale',
+      filterKey: 'stale',
+      label: t('CAPTAIN.DOCUMENTS.STATS.STALE'),
+      value: stale,
+      icon: 'i-lucide-alert-triangle',
+      tone: stale > 0 ? 'amber' : 'slate',
+    },
+    {
+      key: 'syncing',
+      filterKey: 'syncing',
+      label: t('CAPTAIN.DOCUMENTS.STATS.SYNCING'),
+      value: syncing,
+      icon: 'i-lucide-refresh-cw',
+      tone: syncing > 0 ? 'amber' : 'slate',
+    },
+    {
+      key: 'synced_last_7_days',
+      filterKey: 'synced_last_7_days',
+      label: t('CAPTAIN.DOCUMENTS.STATS.SYNCED_RECENTLY'),
+      value: syncedRecently,
+      icon: 'i-lucide-check-circle',
+      tone: 'teal',
+    },
+  ];
+});
 
 const showPlaceholder = computed(() => props.isLoading || !props.stats);
 
@@ -84,12 +94,7 @@ const caption = computed(() => {
   return t('CAPTAIN.DOCUMENTS.STATS.CAPTION_PLAN_UNAVAILABLE');
 });
 
-const placeholderLabel = computed(() =>
-  t('CAPTAIN.DOCUMENTS.STATS.PLACEHOLDER')
-);
-
-const isActive = item =>
-  (props.activeFilter ?? null) === (item.filterKey ?? null);
+const isActive = item => props.activeFilter === item.filterKey;
 
 const isDisabled = item =>
   showPlaceholder.value ||
@@ -116,21 +121,22 @@ const handleSelect = item => {
         :key="item.key"
         type="button"
         :disabled="isDisabled(item)"
-        class="flex flex-col gap-2 px-4 py-3 rounded-xl outline -outline-offset-1 bg-n-solid-2 text-left transition-colors"
+        class="flex flex-col gap-2 px-4 py-3 rounded-xl outline -outline-offset-1 text-left transition-colors"
         :class="[
           isActive(item)
-            ? 'outline-2 outline-n-brand bg-n-solid-3'
-            : 'outline-1 outline-n-container',
+            ? 'outline-1 outline-n-brand bg-n-alpha-1'
+            : 'outline-1 outline-n-container bg-n-solid-2',
           isDisabled(item)
             ? 'cursor-not-allowed opacity-60'
-            : 'cursor-pointer hover:bg-n-solid-3',
+            : 'cursor-pointer hover:bg-n-alpha-2',
         ]"
         @click="handleSelect(item)"
       >
         <div class="flex gap-1.5 items-center">
-          <i
-            class="shrink-0"
-            :class="[item.icon, iconClass(item.tone, isActive(item))]"
+          <Icon
+            class="shrink-0 size-3"
+            :icon="item.icon"
+            :class="iconClass(item.tone, isActive(item))"
           />
           <span
             class="text-xs font-medium tracking-wide uppercase truncate text-n-slate-11"
@@ -141,7 +147,11 @@ const handleSelect = item => {
         <span
           class="text-2xl font-medium leading-none tabular-nums text-n-slate-12"
         >
-          {{ showPlaceholder ? placeholderLabel : item.value }}
+          {{
+            showPlaceholder
+              ? t('CAPTAIN.DOCUMENTS.STATS.PLACEHOLDER')
+              : item.value
+          }}
         </span>
       </button>
     </div>

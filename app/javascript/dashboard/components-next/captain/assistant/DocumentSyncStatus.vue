@@ -30,8 +30,21 @@ const STALE_AFTER_DAYS = 7;
 const VERY_STALE_AFTER_DAYS = 30;
 const SECONDS_PER_DAY = 86400;
 
-const isSyncing = computed(() => props.status === 'syncing');
-const isFailed = computed(() => props.status === 'failed');
+const SYNCING = 'syncing';
+const FAILED = 'failed';
+
+const ERROR_CODE_LABELS = {
+  not_found: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.NOT_FOUND',
+  access_denied: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.ACCESS_DENIED',
+  timeout: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.TIMEOUT',
+  content_empty: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.CONTENT_EMPTY',
+  fetch_failed: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.FETCH_FAILED',
+  sync_error: 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.SYNC_ERROR',
+};
+const DEFAULT_ERROR_LABEL = 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.DEFAULT';
+
+const isSyncing = computed(() => props.status === SYNCING);
+const isFailed = computed(() => props.status === FAILED);
 const hasBeenSynced = computed(() => Boolean(props.lastSyncedAt));
 
 const ageInDays = computed(() => {
@@ -40,28 +53,9 @@ const ageInDays = computed(() => {
   return (nowSeconds - props.lastSyncedAt) / SECONDS_PER_DAY;
 });
 
-const errorLabel = computed(() => {
-  if (props.errorCode === 'not_found') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.NOT_FOUND');
-  }
-  if (props.errorCode === 'access_denied') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.ACCESS_DENIED');
-  }
-  if (props.errorCode === 'timeout') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.TIMEOUT');
-  }
-  if (props.errorCode === 'content_empty') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.CONTENT_EMPTY');
-  }
-  if (props.errorCode === 'fetch_failed') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.FETCH_FAILED');
-  }
-  if (props.errorCode === 'sync_error') {
-    return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.SYNC_ERROR');
-  }
-
-  return t('CAPTAIN.DOCUMENTS.SYNC_ERRORS.DEFAULT');
-});
+const errorLabel = computed(() =>
+  t(ERROR_CODE_LABELS[props.errorCode] || DEFAULT_ERROR_LABEL)
+);
 
 const label = computed(() => {
   if (isSyncing.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCING');
@@ -133,10 +127,10 @@ const textClass = computed(() => {
       v-if="showRetry && isFailed"
       :label="t('CAPTAIN.DOCUMENTS.OPTIONS.RETRY_SYNC')"
       xs
-      ghost
+      link
       ruby
       icon="i-lucide-refresh-cw"
-      class="!px-1"
+      class="hover:!no-underline !gap-1 ms-1"
       @click.stop="emit('retry')"
     />
   </span>
