@@ -83,7 +83,8 @@
       "CALL_ENDED": "Arama sona erdi",
       "NOT_ANSWERED_YET": "Henüz yanıtlanmadı",
       "THEY_ANSWERED": "Onlar yanıtladı",
-      "YOU_ANSWERED": "Siz yanıtladınız"
+      "YOU_ANSWERED": "Siz yanıtladınız",
+      "AGENT_ANSWERED": "{agentName} answered"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Çözüldü",
