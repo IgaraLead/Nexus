@@ -94,7 +94,12 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     sent = conversation.inbox.channel.provider_service.send_call_permission_request(contact_phone)
     return render_could_not_create_error(I18n.t('errors.whatsapp.calls.permission_request_failed')) unless sent
 
-    attrs = (conversation.additional_attributes || {}).merge('call_permission_requested_at' => Time.current.iso8601)
+    # Record the wamid so the reply webhook can match context.id back to this
+    # exact conversation rather than guessing by recency.
+    attrs = (conversation.additional_attributes || {}).merge(
+      'call_permission_requested_at' => Time.current.iso8601,
+      'call_permission_request_message_id' => sent.dig('messages', 0, 'id')
+    )
     conversation.update!(additional_attributes: attrs)
     render json: { status: 'permission_requested' }
   end
