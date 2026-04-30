@@ -138,6 +138,20 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           expect(conversation.messages.outgoing.last.content).to eq('Hey, welcome to Captain Specs')
           expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(1)
         end
+
+        it 'skips the classifier when the conversation is no longer pending after response generation' do
+          allow(mock_llm_chat_service).to receive(:generate_response) do
+            conversation.open!
+            { 'response' => 'Hey, welcome to Captain Specs' }
+          end
+
+          expect(Captain::Llm::AssistantActionClassifierService).not_to receive(:new)
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.outgoing.count).to eq(0)
+          expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(0)
+        end
       end
 
       it 'does not send a response when the conversation is no longer pending' do

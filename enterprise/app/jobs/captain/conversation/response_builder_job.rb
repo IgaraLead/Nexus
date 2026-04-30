@@ -37,7 +37,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response = Captain::Llm::AssistantChatService.new(assistant: @assistant, conversation: @conversation).generate_response(
       message_history: message_history
     )
-    classify_v1_response_action(message_history)
+    classify_v1_response_action(message_history) if conversation_pending?
     process_response
   end
 
