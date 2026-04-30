@@ -641,11 +641,11 @@
     },
     "VOICE_CONFIGURATION": {
       "ENABLE_VOICE": {
-        "LABEL": "Enable Voice Calling",
-        "DESCRIPTION": "Enable voice calling on this inbox. Agents will be able to make and receive phone calls."
+        "LABEL": "Abilita Chiamate Vocali",
+        "DESCRIPTION": "Abilita le chiamate vocali su questa inbox. Gli operatori saranno in grado di effettuare e ricevere chiamate."
       },
       "CREDENTIALS": {
-        "DESCRIPTION": "Voice calling requires Twilio API Key credentials. These are used to generate tokens for agent voice connections."
+        "DESCRIPTION": "Le chiamate vocali richiedono credenziali API di Twilio. Queste vengono usate per generare token per le connessioni voce."
       }
     },
     "CHANNEL_PREFERENCES": "Preferenze Canali",
