@@ -50,6 +50,8 @@ zh_TW:
       email_already_exists: '您已經使用 %{email} 註冊過帳號'
       invalid_params: '參數無效，請檢查註冊資料後再試一次'
       failed: 註冊失敗。
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: 找不到分配策略
     attachments:
