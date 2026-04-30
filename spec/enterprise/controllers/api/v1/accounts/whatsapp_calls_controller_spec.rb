@@ -118,6 +118,18 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
       expect(attrs['call_permission_request_message_id']).to eq('wamid.req_xyz')
     end
 
+    it 'returns permission_request_failed when send_call_permission_request raises a transport error' do
+      allow(provider_service).to receive(:initiate_call).and_raise(Voice::CallErrors::NoCallPermission)
+      allow(provider_service).to receive(:send_call_permission_request).and_raise(Faraday::TimeoutError)
+
+      post "/api/v1/accounts/#{account.id}/whatsapp_calls/initiate",
+           params: { conversation_id: initiate_conversation.display_id, sdp_offer: 'sdp_offer' },
+           headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq(I18n.t('errors.whatsapp.calls.permission_request_failed'))
+    end
+
     it 'returns 422 when sdp_offer is missing' do
       post "/api/v1/accounts/#{account.id}/whatsapp_calls/initiate",
            params: { conversation_id: initiate_conversation.display_id },

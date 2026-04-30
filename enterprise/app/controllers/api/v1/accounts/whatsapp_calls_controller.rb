@@ -123,7 +123,7 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
         next
       end
 
-      sent = provider_service.send_call_permission_request(@conversation.contact.phone_number.delete('+'))
+      sent = send_permission_request_safely
       if sent
         record_permission_request_wamid(sent)
         status = 'permission_requested'
@@ -140,6 +140,15 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
   def permission_request_throttled?
     last_requested = @conversation.additional_attributes&.dig('call_permission_requested_at')
     last_requested.present? && Time.zone.parse(last_requested) > PERMISSION_REQUEST_THROTTLE.ago
+  end
+
+  # Treat transport errors the same as a falsy provider return so the action renders 422
+  # rather than letting Faraday/HTTParty exceptions bubble up as 500s.
+  def send_permission_request_safely
+    provider_service.send_call_permission_request(@conversation.contact.phone_number.delete('+'))
+  rescue StandardError => e
+    Rails.logger.warn "[WHATSAPP CALL] permission_request failed: #{e.class} #{e.message}"
+    nil
   end
 
   # Record the wamid so the reply webhook can match context.id back to this conversation.
