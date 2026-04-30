@@ -45,6 +45,24 @@ const shouldShowCall = ({
   return !isAssignedToAnotherAgent(assigneeId, currentUserId);
 };
 
+// Whether the current user is allowed to take over / join an existing call.
+// Mirrors the floating-widget visibility rules so the bubble's join action
+// stays in sync.
+export const canCurrentUserJoinCall = ({
+  call,
+  conversation,
+  senderId,
+  currentUserId,
+}) => {
+  if (!call) return false;
+  return shouldShowCall({
+    callDirection: call.direction === 'outgoing' ? 'outbound' : 'inbound',
+    senderId,
+    assigneeId: extractAssigneeId(conversation),
+    currentUserId,
+  });
+};
+
 function extractCallData(message) {
   const call = message?.call || {};
   return {

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { useMessageContext } from '../provider.js';
 import { VOICE_CALL_STATUS } from '../constants';
+import { useCallSession } from 'dashboard/composables/useCallSession';
+import { canCurrentUserJoinCall } from 'dashboard/helper/voice';
 
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
@@ -27,9 +29,18 @@ const BG_COLOR_MAP = {
   [VOICE_CALL_STATUS.FAILED]: 'bg-n-ruby-9',
 };
 
+const JOINABLE_STATUSES = [
+  VOICE_CALL_STATUS.RINGING,
+  VOICE_CALL_STATUS.IN_PROGRESS,
+];
+
 const { t } = useI18n();
 const store = useStore();
-const { call, conversationId, currentUserId } = useMessageContext();
+const { call, conversationId, currentUserId, inboxId, sender } =
+  useMessageContext();
+const { activeCall, isJoining, joinCall } = useCallSession({
+  manageSessionState: false,
+});
 
 const status = computed(() => call.value?.status);
 const isOutbound = computed(() => call.value?.direction === 'outgoing');
@@ -104,6 +115,52 @@ const iconName = computed(() => {
 });
 
 const bgColor = computed(() => BG_COLOR_MAP[status.value] || 'bg-n-teal-9');
+
+const callSid = computed(() => call.value?.provider_call_id);
+const isAlreadyOnThisCall = computed(
+  () => !!callSid.value && activeCall.value?.callSid === callSid.value
+);
+const resolvedInboxId = computed(() => {
+  if (inboxId?.value) return inboxId.value;
+  const conversation = store.getters.getConversationById?.(
+    conversationId?.value
+  );
+  return conversation?.inbox_id || null;
+});
+const conversationForVisibility = computed(() =>
+  store.getters.getConversationById?.(conversationId?.value)
+);
+const isVisibleToCurrentUser = computed(() =>
+  canCurrentUserJoinCall({
+    call: call.value,
+    conversation: conversationForVisibility.value,
+    senderId: sender?.value?.id,
+    currentUserId: currentUserId?.value,
+  })
+);
+const canJoin = computed(
+  () =>
+    JOINABLE_STATUSES.includes(status.value) &&
+    !!callSid.value &&
+    !!resolvedInboxId.value &&
+    !!conversationId?.value &&
+    !isAlreadyOnThisCall.value &&
+    isVisibleToCurrentUser.value
+);
+const joinLabel = computed(() =>
+  status.value === VOICE_CALL_STATUS.IN_PROGRESS && didCurrentUserAnswer.value
+    ? t('CONVERSATION.VOICE_CALL.REJOIN_CALL')
+    : t('CONVERSATION.VOICE_CALL.JOIN_CALL')
+);
+
+const handleJoinClick = async () => {
+  if (!canJoin.value || isJoining.value) return;
+  await joinCall({
+    conversationId: conversationId.value,
+    inboxId: resolvedInboxId.value,
+    callSid: callSid.value,
+  });
+};
 </script>
 
 <template>
@@ -133,6 +190,17 @@ const bgColor = computed(() => BG_COLOR_MAP[status.value] || 'bg-n-teal-9');
           </span>
         </div>
       </div>
+      <button
+        v-if="canJoin"
+        type="button"
+        :disabled="isJoining"
+        data-test-id="voice-call-join"
+        class="flex gap-2 justify-center items-center px-3 py-2 w-full text-sm font-medium border-t bg-n-alpha-1 hover:bg-n-alpha-2 text-n-teal-11 border-n-strong disabled:opacity-60"
+        @click="handleJoinClick"
+      >
+        <Icon class="size-4" icon="i-ph-phone-call" />
+        {{ joinLabel }}
+      </button>
     </div>
   </BaseBubble>
 </template>

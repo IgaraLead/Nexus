@@ -6,7 +6,11 @@ import { useCallsStore } from 'dashboard/stores/calls';
 import { useAlert } from 'dashboard/composables';
 import Timer from 'dashboard/helper/Timer';
 
-export function useCallSession() {
+// `manageSessionState: false` lets sub-consumers (like the timeline VoiceCall
+// bubble) reuse joinCall/activeCall without registering duplicate Twilio
+// listeners or running their own duration timer — only the floating widget
+// owns the session lifecycle.
+export function useCallSession({ manageSessionState = true } = {}) {
   const callsStore = useCallsStore();
   const { t } = useI18n();
   const isJoining = ref(false);
@@ -19,36 +23,38 @@ export function useCallSession() {
   const incomingCalls = computed(() => callsStore.incomingCalls);
   const hasActiveCall = computed(() => callsStore.hasActiveCall);
 
-  watch(
-    hasActiveCall,
-    active => {
-      if (active) {
-        durationTimer.start();
-      } else {
-        durationTimer.stop();
-        callDuration.value = 0;
-      }
-    },
-    { immediate: true }
-  );
-
-  onMounted(() => {
-    TwilioVoiceClient.addEventListener('call:disconnected', () =>
-      callsStore.clearActiveCall()
+  if (manageSessionState) {
+    watch(
+      hasActiveCall,
+      active => {
+        if (active) {
+          durationTimer.start();
+        } else {
+          durationTimer.stop();
+          callDuration.value = 0;
+        }
+      },
+      { immediate: true }
     );
-  });
 
-  onUnmounted(() => {
-    durationTimer.stop();
-    TwilioVoiceClient.removeEventListener('call:disconnected', () =>
-      callsStore.clearActiveCall()
-    );
-  });
+    onMounted(() => {
+      TwilioVoiceClient.addEventListener('call:disconnected', () =>
+        callsStore.clearActiveCall()
+      );
+    });
+
+    onUnmounted(() => {
+      durationTimer.stop();
+      TwilioVoiceClient.removeEventListener('call:disconnected', () =>
+        callsStore.clearActiveCall()
+      );
+    });
+  }
 
   const endCall = async ({ conversationId, inboxId, callSid }) => {
     await VoiceAPI.leaveConference({ inboxId, conversationId, callSid });
     TwilioVoiceClient.endClientCall();
-    durationTimer.stop();
+    if (manageSessionState) durationTimer.stop();
     callsStore.clearActiveCall();
   };
 
@@ -73,7 +79,7 @@ export function useCallSession() {
       });
 
       callsStore.setCallActive(callSid);
-      durationTimer.start();
+      if (manageSessionState) durationTimer.start();
 
       return { conferenceSid: joinResponse?.conference_sid };
     } catch (error) {
