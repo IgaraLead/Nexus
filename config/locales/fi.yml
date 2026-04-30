@@ -50,6 +50,8 @@ fi:
       email_already_exists: 'Olet jo rekisteröitynyt tiliin sähköpostin %{email} kanssa'
       invalid_params: 'Invalid, please check the signup paramters and try again'
       failed: Rekisteröityminen epäonnistui
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
