@@ -2,9 +2,10 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
   include Integrations::LlmInstrumentation
 
   WHISPER_MODEL = 'whisper-1'.freeze
-  # Whisper rejects payloads larger than 25 MB. Long audio (~70+ min Opus) keeps
-  # the attachment but skips transcription instead of 413-ing the OpenAI call.
-  WHISPER_BYTE_LIMIT = 25.megabytes
+  # Whisper's hard limit is 25 MB *decimal* (25_000_000), not binary (25.megabytes
+  # = 26_214_400) — using the binary form leaks the 25.0–26.2 MB range to the API
+  # as 413s. Long audio (~70+ min Opus) keeps the attachment but skips transcription.
+  WHISPER_BYTE_LIMIT = 25_000_000
 
   attr_reader :attachment, :message, :account
 
