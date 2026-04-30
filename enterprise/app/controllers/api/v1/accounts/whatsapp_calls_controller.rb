@@ -14,10 +14,14 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
 
   def reject
     @call = Whatsapp::CallService.new(call: @call, agent: Current.user).reject
+  rescue Voice::CallErrors::CallFailed => e
+    render_could_not_create_error(e.message)
   end
 
   def terminate
     @call = Whatsapp::CallService.new(call: @call, agent: Current.user).terminate
+  rescue Voice::CallErrors::CallFailed => e
+    render_could_not_create_error(e.message)
   end
 
   # Browser-supplied recording captured via MediaRecorder. Idempotent: the
@@ -62,9 +66,11 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     authorize @conversation, :show?
   end
 
+  # WhatsApp Cloud Calling specifically — Twilio voice channels also expose
+  # voice_enabled? but use a different (Voice::OutboundCallBuilder) initiation path.
   def calling_enabled?(conversation)
     channel = conversation.inbox.channel
-    channel.respond_to?(:voice_enabled?) && channel.voice_enabled?
+    channel.is_a?(Channel::Whatsapp) && channel.voice_enabled?
   end
 
   # Browser-built SDP offer is forwarded to Meta; the connect webhook later delivers Meta's answer.

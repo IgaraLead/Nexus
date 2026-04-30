@@ -15,7 +15,7 @@ class Whatsapp::CallService
     call.with_lock do
       next if call.terminal? || call.in_progress?
 
-      invoke_provider(:reject_call)
+      invoke_provider!(:reject_call)
       finalize_call('failed')
     end
     call
@@ -25,9 +25,8 @@ class Whatsapp::CallService
     call.with_lock do
       next if call.terminal?
 
-      invoke_provider(:terminate_call)
-      # An agent who hangs up before the contact picks up should mark the call no_answer,
-      # mirroring the webhook terminate path in Whatsapp::IncomingCallService.
+      invoke_provider!(:terminate_call)
+      # Agent hangs up before contact picks up → no_answer; mirrors the webhook terminate path.
       finalize_call(call.in_progress? ? 'completed' : 'no_answer')
     end
     call
@@ -56,11 +55,17 @@ class Whatsapp::CallService
     call.conversation.update!(assignee: agent) if call.conversation.assignee_id.blank?
   end
 
-  def invoke_provider(method)
+  # Raise on Meta failure (bool false or transport error) so callers bail before
+  # finalizing local state — otherwise we'd mark a still-active call as ended
+  # and broadcast voice_call.ended while Meta thinks it's live.
+  def invoke_provider!(method)
     success = call.inbox.channel.provider_service.public_send(method, call.provider_call_id)
-    Rails.logger.error "[WHATSAPP CALL] #{method} returned false for #{call.provider_call_id}" unless success
+    raise Voice::CallErrors::CallFailed, "Meta #{method} failed" unless success
+  rescue Voice::CallErrors::CallFailed
+    raise
   rescue StandardError => e
-    Rails.logger.error "[WHATSAPP CALL] #{method} failed: #{e.message}"
+    Rails.logger.error "[WHATSAPP CALL] #{method} failed: #{e.class} #{e.message}"
+    raise Voice::CallErrors::CallFailed, "Meta #{method} failed"
   end
 
   def finalize_call(status)

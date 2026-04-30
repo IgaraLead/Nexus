@@ -83,6 +83,14 @@ describe Whatsapp::CallService do
 
       expect(provider_service).not_to have_received(:reject_call)
     end
+
+    it 'raises CallFailed and leaves the call ringing when Meta rejects the request' do
+      allow(provider_service).to receive(:reject_call).and_return(false)
+
+      expect { described_class.new(call: call, agent: agent).reject }
+        .to raise_error(Voice::CallErrors::CallFailed)
+      expect(call.reload.status).to eq('ringing')
+    end
   end
 
   describe '#terminate' do

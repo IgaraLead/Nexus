@@ -136,6 +136,19 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body['error']).to eq('Meta error')
     end
+
+    it 'returns 422 when the conversation belongs to a non-WhatsApp inbox' do
+      twilio_channel = create(:channel_twilio_sms, :with_voice, account: account, phone_number: '+15551239998')
+      create(:inbox_member, user: agent, inbox: twilio_channel.inbox)
+      twilio_conversation = create(:conversation, account: account, inbox: twilio_channel.inbox)
+
+      post "/api/v1/accounts/#{account.id}/whatsapp_calls/initiate",
+           params: { conversation_id: twilio_conversation.display_id, sdp_offer: 'sdp_offer' },
+           headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq(I18n.t('errors.whatsapp.calls.not_enabled'))
+    end
   end
 
   describe 'POST /api/v1/accounts/:account_id/whatsapp_calls/:id/upload_recording' do
