@@ -12,19 +12,24 @@ class Whatsapp::CallService
   end
 
   def reject
-    call.reload
-    return call if call.terminal? || call.in_progress?
+    call.with_lock do
+      next if call.terminal? || call.in_progress?
 
-    invoke_provider(:reject_call)
-    finalize_call('failed')
+      invoke_provider(:reject_call)
+      finalize_call('failed')
+    end
     call
   end
 
   def terminate
-    return call if call.terminal?
+    call.with_lock do
+      next if call.terminal?
 
-    invoke_provider(:terminate_call)
-    finalize_call('completed')
+      invoke_provider(:terminate_call)
+      # An agent who hangs up before the contact picks up should mark the call no_answer,
+      # mirroring the webhook terminate path in Whatsapp::IncomingCallService.
+      finalize_call(call.in_progress? ? 'completed' : 'no_answer')
+    end
     call
   end
 

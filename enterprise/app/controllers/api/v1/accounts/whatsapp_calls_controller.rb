@@ -20,29 +20,34 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     @call = Whatsapp::CallService.new(call: @call, agent: Current.user).terminate
   end
 
-  # Browser-supplied recording captured via MediaRecorder during the call.
-  # Idempotent: subsequent uploads no-op once the first audio attachment exists.
+  # Browser-supplied recording captured via MediaRecorder. Idempotent: the
+  # check-and-create runs under the message row lock so the hangup-vs-pagehide
+  # race can't double-attach.
   def upload_recording
-    return render_could_not_create_error('No recording file provided') if params[:recording].blank?
-    return render_could_not_create_error('Call has no associated message') if @call.message.blank?
+    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_recording')) if params[:recording].blank?
+    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_message')) if @call.message.blank?
 
-    @upload_status = if @call.message.attachments.exists?(file_type: :audio)
-                       'already_uploaded'
-                     else
-                       @call.message.attachments.create!(account_id: @call.account_id, file_type: :audio, file: params[:recording])
-                       'uploaded'
-                     end
+    @call.message.with_lock do
+      @upload_status = if @call.message.attachments.exists?(file_type: :audio)
+                         'already_uploaded'
+                       else
+                         @call.message.attachments.create!(account_id: @call.account_id, file_type: :audio, file: params[:recording])
+                         'uploaded'
+                       end
+    end
   end
 
   def initiate
-    return render_could_not_create_error('Calling is not enabled for this inbox') unless calling_enabled?(@conversation)
-    return render_could_not_create_error('sdp_offer is required') if params[:sdp_offer].blank?
+    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.not_enabled')) unless calling_enabled?(@conversation)
+    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.sdp_offer_required')) if params[:sdp_offer].blank?
 
     @call = create_outbound_call(@conversation, params[:sdp_offer])
     @message = Voice::CallMessageBuilder.new(@call).perform!
     @call.update!(message_id: @message.id)
   rescue Voice::CallErrors::NoCallPermission
     handle_no_call_permission(@conversation)
+  rescue Voice::CallErrors::CallFailed => e
+    render_could_not_create_error(e.message)
   end
 
   private
@@ -87,7 +92,7 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
 
     contact_phone = conversation.contact.phone_number.delete('+')
     sent = conversation.inbox.channel.provider_service.send_call_permission_request(contact_phone)
-    return render_could_not_create_error('Failed to send call permission request') unless sent
+    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.permission_request_failed')) unless sent
 
     attrs = (conversation.additional_attributes || {}).merge('call_permission_requested_at' => Time.current.iso8601)
     conversation.update!(additional_attributes: attrs)

@@ -88,7 +88,7 @@ describe Whatsapp::CallService do
   describe '#terminate' do
     before { allow(provider_service).to receive(:terminate_call).and_return(true) }
 
-    it 'tells Meta to terminate and finalizes the call as completed' do
+    it 'finalizes an in-progress call as completed' do
       call.update!(status: 'in_progress')
 
       described_class.new(call: call, agent: agent).terminate
@@ -99,6 +99,12 @@ describe Whatsapp::CallService do
       expect(ActionCable.server).to have_received(:broadcast).with(
         "account_#{account.id}", hash_including(event: 'voice_call.ended')
       )
+    end
+
+    it 'finalizes a still-ringing call as no_answer when the agent hangs up before the contact picks up' do
+      described_class.new(call: call, agent: agent).terminate
+
+      expect(call.reload.status).to eq('no_answer')
     end
   end
 end

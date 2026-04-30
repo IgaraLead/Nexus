@@ -123,6 +123,17 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it 'returns 422 when Meta raises CallFailed for non-permission errors' do
+      allow(provider_service).to receive(:initiate_call).and_raise(Voice::CallErrors::CallFailed, 'Meta error')
+
+      post "/api/v1/accounts/#{account.id}/whatsapp_calls/initiate",
+           params: { conversation_id: initiate_conversation.display_id, sdp_offer: 'sdp_offer' },
+           headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('Meta error')
+    end
   end
 
   describe 'POST /api/v1/accounts/:account_id/whatsapp_calls/:id/upload_recording' do
