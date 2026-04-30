@@ -50,6 +50,8 @@ tl:
       email_already_exists: 'May account ka nang nakarehistro gamit ang %{email}'
       invalid_params: 'Invalid, please check the signup paramters and try again'
       failed: Nabigo ang pag-sign up
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Hindi matagpuan ang patakaran sa pagtatalaga
     attachments:
