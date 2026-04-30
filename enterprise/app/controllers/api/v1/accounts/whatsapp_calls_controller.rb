@@ -3,59 +3,45 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
 
   before_action :set_call, only: %i[show accept reject terminate upload_recording]
   before_action :set_conversation, only: :initiate
+  before_action :validate_recording, only: :upload_recording
+  before_action :validate_initiate, only: :initiate
+
+  rescue_from Voice::CallErrors::NotRinging,
+              Voice::CallErrors::AlreadyAccepted,
+              Voice::CallErrors::CallFailed,
+              with: :render_call_error
 
   def show; end
 
   def accept
-    @call = Whatsapp::CallService.new(call: @call, agent: Current.user, sdp_answer: params[:sdp_answer]).accept
-  rescue Voice::CallErrors::NotRinging, Voice::CallErrors::AlreadyAccepted, Voice::CallErrors::CallFailed => e
-    render_could_not_create_error(e.message)
+    @call = call_service.accept
   end
 
   def reject
-    @call = Whatsapp::CallService.new(call: @call, agent: Current.user).reject
-  rescue Voice::CallErrors::CallFailed => e
-    render_could_not_create_error(e.message)
+    @call = call_service.reject
   end
 
   def terminate
-    @call = Whatsapp::CallService.new(call: @call, agent: Current.user).terminate
-  rescue Voice::CallErrors::CallFailed => e
-    render_could_not_create_error(e.message)
+    @call = call_service.terminate
   end
 
-  # Browser-supplied recording captured via MediaRecorder. Idempotent: the
-  # check-and-create runs under the message row lock so the hangup-vs-pagehide
-  # race can't double-attach.
   def upload_recording
-    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_recording')) if params[:recording].blank?
-    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_message')) if @call.message.blank?
-
-    @call.message.with_lock do
-      @upload_status = if @call.message.attachments.exists?(file_type: :audio)
-                         'already_uploaded'
-                       else
-                         @call.message.attachments.create!(account_id: @call.account_id, file_type: :audio, file: params[:recording])
-                         'uploaded'
-                       end
-    end
+    @upload_status = @call.message.with_lock { attach_recording_idempotently }
   end
 
   def initiate
-    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.not_enabled')) unless calling_enabled?(@conversation)
-    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.sdp_offer_required')) if params[:sdp_offer].blank?
-    return render_could_not_create_error(I18n.t('errors.whatsapp.calls.contact_phone_required')) if @conversation.contact&.phone_number.blank?
-
     @call = create_outbound_call(@conversation, params[:sdp_offer])
     @message = Voice::CallMessageBuilder.new(@call).perform!
     @call.update!(message_id: @message.id)
   rescue Voice::CallErrors::NoCallPermission
     handle_no_call_permission(@conversation)
-  rescue Voice::CallErrors::CallFailed => e
-    render_could_not_create_error(e.message)
   end
 
   private
+
+  def call_service
+    @call_service ||= Whatsapp::CallService.new(call: @call, agent: Current.user, sdp_answer: params[:sdp_answer])
+  end
 
   def set_call
     @call = Current.account.calls.whatsapp.find(params[:id])
@@ -67,6 +53,19 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     authorize @conversation, :show?
   end
 
+  def validate_recording
+    render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_recording')) and return if params[:recording].blank?
+
+    render_could_not_create_error(I18n.t('errors.whatsapp.calls.no_message')) if @call.message.blank?
+  end
+
+  def validate_initiate
+    render_could_not_create_error(I18n.t('errors.whatsapp.calls.not_enabled')) and return unless calling_enabled?(@conversation)
+    render_could_not_create_error(I18n.t('errors.whatsapp.calls.sdp_offer_required')) and return if params[:sdp_offer].blank?
+
+    render_could_not_create_error(I18n.t('errors.whatsapp.calls.contact_phone_required')) if @conversation.contact&.phone_number.blank?
+  end
+
   # WhatsApp Cloud Calling specifically — Twilio voice channels also expose
   # voice_enabled? but use a different (Voice::OutboundCallBuilder) initiation path.
   def calling_enabled?(conversation)
@@ -74,8 +73,15 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     channel.is_a?(Channel::Whatsapp) && channel.voice_enabled?
   end
 
+  def attach_recording_idempotently
+    return 'already_uploaded' if @call.message.attachments.exists?(file_type: :audio)
+
+    @call.message.attachments.create!(account_id: @call.account_id, file_type: :audio, file: params[:recording])
+    'uploaded'
+  end
+
   # Browser-built SDP offer is forwarded to Meta; the connect webhook later delivers Meta's answer.
-  # Caller must validate `conversation.contact.phone_number` is present (initiate's guard does).
+  # validate_initiate ensures conversation.contact.phone_number is present.
   def create_outbound_call(conversation, sdp_offer)
     contact_phone = conversation.contact.phone_number
     result = conversation.inbox.channel.provider_service.initiate_call(contact_phone.delete('+'), sdp_offer)
@@ -108,5 +114,9 @@ class Api::V1::Accounts::WhatsappCallsController < Api::V1::Accounts::BaseContro
     )
     conversation.update!(additional_attributes: attrs)
     render json: { status: 'permission_requested' }
+  end
+
+  def render_call_error(error)
+    render_could_not_create_error(error.message)
   end
 end
