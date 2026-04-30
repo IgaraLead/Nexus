@@ -7,14 +7,11 @@ class Whatsapp::CallPermissionReplyService
     reply_data = extract_reply_data
     return unless reply_data&.dig(:accepted)
 
-    contact = find_contact(reply_data[:from_number])
-    return unless contact
-
-    conversation = find_active_conversation(contact)
+    conversation = find_requesting_conversation(reply_data[:context_id])
     return unless conversation
 
     clear_permission_flag(conversation)
-    broadcast_permission_granted(contact, conversation)
+    broadcast_permission_granted(conversation.contact, conversation)
   end
 
   private
@@ -26,28 +23,26 @@ class Whatsapp::CallPermissionReplyService
 
     accepted = reply[:response] == 'accept'
     Rails.logger.info "[WHATSAPP CALL] call_permission_reply from=#{message[:from]} accepted=#{accepted} permanent=#{reply[:is_permanent]}"
-    { from_number: message[:from], accepted: accepted }
+    { from_number: message[:from], accepted: accepted, context_id: message.dig(:context, :id) }
   end
 
-  # WhatsApp routing is anchored on contact_inboxes.source_id (the wa_id), not on
-  # contacts.phone_number — phone numbers can drift via normalization or edits.
-  def find_contact(from_number)
-    inbox.contact_inboxes.find_by(source_id: from_number)&.contact
-  end
+  # Match the reply to the conversation whose request message it actually points
+  # at (interactive replies carry context.id = our outbound wamid). Recency-based
+  # lookup would broadcast to the wrong thread when a contact has multiple
+  # parallel pending requests.
+  def find_requesting_conversation(context_id)
+    return if context_id.blank?
 
-  # Filter to threads that actually requested permission; multiple open threads otherwise hit the wrong one.
-  def find_active_conversation(contact)
     inbox.conversations
-         .where(contact: contact)
          .where.not(status: :resolved)
-         .where("additional_attributes ->> 'call_permission_requested_at' IS NOT NULL")
-         .order(:created_at)
-         .last
+         .where("additional_attributes ->> 'call_permission_request_message_id' = ?", context_id)
+         .first
   end
 
   def clear_permission_flag(conversation)
-    attrs = conversation.additional_attributes || {}
-    attrs.delete('call_permission_requested_at')
+    attrs = (conversation.additional_attributes || {}).except(
+      'call_permission_requested_at', 'call_permission_request_message_id'
+    )
     conversation.update!(additional_attributes: attrs)
   end
 
