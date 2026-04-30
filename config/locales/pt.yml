@@ -50,6 +50,8 @@ pt:
       email_already_exists: 'Já existe uma conta com o %{email}'
       invalid_params: 'Inválido, por favor, verifique os parâmetros de subscrição e tente novamente'
       failed: Falha na inscrição
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
