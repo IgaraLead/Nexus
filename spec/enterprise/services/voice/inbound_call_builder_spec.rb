@@ -86,6 +86,20 @@ RSpec.describe Voice::InboundCallBuilder do
     end
   end
 
+  context 'when a ContactInbox already exists for the source_id (different contact)' do
+    let!(:original_contact) { create(:contact, account: account, phone_number: '+15550009999') }
+    let!(:original_contact_inbox) do
+      create(:contact_inbox, contact: original_contact, inbox: inbox, source_id: from_number)
+    end
+
+    it 'reuses the existing ContactInbox instead of raising RecordNotUnique' do
+      call = perform_builder
+
+      expect(call.contact).to eq(original_contact)
+      expect(call.conversation.contact_inbox).to eq(original_contact_inbox)
+    end
+  end
+
   context 'when the inbox has lock_to_single_conversation enabled' do
     let!(:contact) { create(:contact, account: account, phone_number: from_number) }
     let!(:contact_inbox) { create(:contact_inbox, contact: contact, inbox: inbox, source_id: from_number) }

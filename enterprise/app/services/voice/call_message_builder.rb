@@ -27,7 +27,7 @@ class Voice::CallMessageBuilder
 
   def create_message!
     params = {
-      content: 'Voice Call',
+      content: I18n.t("conversations.messages.voice_call.#{call.provider}"),
       message_type: call.outgoing? ? 'outgoing' : 'incoming',
       content_type: 'voice_call',
       content_attributes: { 'data' => build_data_payload }

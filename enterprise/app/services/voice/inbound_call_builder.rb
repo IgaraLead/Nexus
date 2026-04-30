@@ -19,8 +19,8 @@ class Voice::InboundCallBuilder
     return existing if existing
 
     ActiveRecord::Base.transaction do
-      contact = ensure_contact!
-      contact_inbox = ensure_contact_inbox!(contact)
+      contact_inbox = ensure_contact_inbox!
+      contact = contact_inbox.contact
       conversation = resolve_conversation!(contact, contact_inbox)
       call = create_call!(contact, conversation)
       message = Voice::CallMessageBuilder.new(call).perform!
@@ -43,18 +43,20 @@ class Voice::InboundCallBuilder
         .find_by(provider: provider, provider_call_id: call_sid)
   end
 
+  # Always look up by (inbox, source_id) first — that pair has a UNIQUE index, so
+  # creating with a colliding source_id under a different contact would raise
+  # RecordNotUnique. Reuse the existing ContactInbox (and its contact) when found.
+  def ensure_contact_inbox!
+    sid = source_id_for_provider
+    existing = inbox.contact_inboxes.find_by(source_id: sid)
+    return existing if existing
+
+    ContactInbox.create!(contact: ensure_contact!, inbox: inbox, source_id: sid)
+  end
+
   def ensure_contact!
     account.contacts.find_or_create_by!(phone_number: from_number) do |record|
       record.name = from_number if record.name.blank?
-    end
-  end
-
-  def ensure_contact_inbox!(contact)
-    ContactInbox.find_or_create_by!(
-      contact_id: contact.id,
-      inbox_id: inbox.id
-    ) do |record|
-      record.source_id = source_id_for_provider
     end
   end
 

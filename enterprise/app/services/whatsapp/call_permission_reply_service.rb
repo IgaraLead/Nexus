@@ -29,10 +29,10 @@ class Whatsapp::CallPermissionReplyService
     { from_number: message[:from], accepted: accepted }
   end
 
+  # WhatsApp routing is anchored on contact_inboxes.source_id (the wa_id), not on
+  # contacts.phone_number — phone numbers can drift via normalization or edits.
   def find_contact(from_number)
-    inbox.contact_inboxes.joins(:contact)
-         .where(contacts: { phone_number: "+#{from_number}" })
-         .first&.contact
+    inbox.contact_inboxes.find_by(source_id: from_number)&.contact
   end
 
   # Filter to threads that actually requested permission; multiple open threads otherwise hit the wrong one.

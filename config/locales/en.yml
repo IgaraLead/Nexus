@@ -244,6 +244,9 @@ en:
       whatsapp:
         list_button_label: 'Choose an item'
         call_permission_request_body: 'We would like to call you regarding your conversation.'
+      voice_call:
+        twilio: 'Voice Call'
+        whatsapp: 'WhatsApp Call'
       delivery_status:
         error_code: 'Error code: %{error_code}'
     activity:
