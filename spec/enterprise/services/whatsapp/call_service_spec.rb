@@ -68,6 +68,14 @@ describe Whatsapp::CallService do
       expect { described_class.new(call: call, agent: agent, sdp_answer: nil).accept }
         .to raise_error(Voice::CallErrors::CallFailed, 'sdp_answer is required')
     end
+
+    it 'wraps Meta transport exceptions as CallFailed and leaves the call ringing' do
+      allow(provider_service).to receive(:pre_accept_call).and_raise(Faraday::TimeoutError)
+
+      expect { described_class.new(call: call, agent: agent, sdp_answer: sdp_answer).accept }
+        .to raise_error(Voice::CallErrors::CallFailed)
+      expect(call.reload.status).to eq('ringing')
+    end
   end
 
   describe '#reject' do

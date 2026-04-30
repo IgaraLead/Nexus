@@ -51,9 +51,8 @@ class Whatsapp::CallService
   end
 
   def forward_answer_to_meta!
-    svc = call.inbox.channel.provider_service
-    raise Voice::CallErrors::CallFailed, 'Meta pre_accept failed' unless svc.pre_accept_call(call.provider_call_id, sdp_answer)
-    raise Voice::CallErrors::CallFailed, 'Meta accept failed' unless svc.accept_call(call.provider_call_id, sdp_answer)
+    invoke_provider!(:pre_accept_call, sdp_answer)
+    invoke_provider!(:accept_call, sdp_answer)
   end
 
   # Take ownership of the conversation if no one holds it; leave assignee alone otherwise (transfer via UI).
@@ -64,8 +63,8 @@ class Whatsapp::CallService
   # Raise on Meta failure (bool false or transport error) so callers bail before
   # finalizing local state — otherwise we'd mark a still-active call as ended
   # and broadcast voice_call.ended while Meta thinks it's live.
-  def invoke_provider!(method)
-    success = call.inbox.channel.provider_service.public_send(method, call.provider_call_id)
+  def invoke_provider!(method, *)
+    success = call.inbox.channel.provider_service.public_send(method, call.provider_call_id, *)
     raise Voice::CallErrors::CallFailed, "Meta #{method} failed" unless success
   rescue Voice::CallErrors::CallFailed
     raise
