@@ -50,6 +50,8 @@ sl:
       email_already_exists: 'Ste že ustvarili račun z e-poštnim naslovom %{email}'
       invalid_params: 'Neveljavno, preverite vnešene podatke in poskusite znova'
       failed: Registracija neuspešna
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
