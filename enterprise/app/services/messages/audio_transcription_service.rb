@@ -2,6 +2,9 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
   include Integrations::LlmInstrumentation
 
   WHISPER_MODEL = 'whisper-1'.freeze
+  # Whisper rejects payloads larger than 25 MB. Long audio (~70+ min Opus) keeps
+  # the attachment but skips transcription instead of 413-ing the OpenAI call.
+  WHISPER_BYTE_LIMIT = 25.megabytes
 
   attr_reader :attachment, :message, :account
 
@@ -15,6 +18,7 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
   def perform
     return { error: 'Transcription limit exceeded' } unless can_transcribe?
     return { error: 'Message not found' } if message.blank?
+    return { error: 'Audio too large for Whisper' } if audio_too_large?
 
     transcriptions = transcribe_audio
     Rails.logger.info "Audio transcription successful: #{transcriptions}"
@@ -31,6 +35,13 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
     return false if account.audio_transcriptions.blank?
 
     account.usage_limits[:captain][:responses][:current_available].positive?
+  end
+
+  def audio_too_large?
+    blob = attachment.file&.blob
+    return false unless blob
+
+    blob.byte_size > WHISPER_BYTE_LIMIT
   end
 
   def fetch_audio_file
@@ -63,11 +74,14 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
     transcribed_text = nil
 
     File.open(temp_file_path, 'rb') do |file|
+      # temperature: 0.0 minimises Whisper's hallucinations on silence /
+      # near-silent audio; non-zero values trigger spiraling repeats like
+      # "Oh, dear. Oh, dear. Oh, dear." — well-documented Whisper behaviour.
       response = @client.audio.transcribe(
         parameters: {
           model: WHISPER_MODEL,
           file: file,
-          temperature: 0.4
+          temperature: 0.0
         }
       )
       transcribed_text = response['text']
