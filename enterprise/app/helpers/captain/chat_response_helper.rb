@@ -35,7 +35,7 @@ module Captain::ChatResponseHelper
 
   def credit_used_for_response?(parsed_response)
     response = parsed_response['response']
-    response.present? && response != 'conversation_handoff'
+    response.present? && response != 'conversation_handoff' && parsed_response['action'] != 'handoff'
   end
 
   def captain_v1_assistant?
