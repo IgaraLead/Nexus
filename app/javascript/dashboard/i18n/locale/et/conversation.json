@@ -83,7 +83,8 @@
       "CALL_ENDED": "Kõne lõppenud",
       "NOT_ANSWERED_YET": "Veel vastamata",
       "THEY_ANSWERED": "Nad vastasid",
-      "YOU_ANSWERED": "Sa vastasid"
+      "YOU_ANSWERED": "Sa vastasid",
+      "AGENT_ANSWERED": "{agentName} answered"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Lahenda",
