@@ -80,6 +80,6 @@ module Enterprise::Whatsapp::Providers::WhatsappCloudService
 
     raise Voice::CallErrors::NoCallPermission, error_msg if error_code == 138_006
 
-    raise StandardError, error_msg
+    raise Voice::CallErrors::CallFailed, error_msg
   end
 end

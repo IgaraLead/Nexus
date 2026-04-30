@@ -58,12 +58,12 @@ describe Whatsapp::Providers::WhatsappCloudService do
         .to raise_error(Voice::CallErrors::NoCallPermission, 'No call permission')
     end
 
-    it 'raises StandardError with a fallback message when the error body is non-JSON' do
+    it 'raises Voice::CallErrors::CallFailed with a fallback message when the error body is non-JSON' do
       stub_request(:post, calls_url).to_return(status: 502, body: '<html>502 Bad Gateway</html>',
                                                headers: { 'Content-Type' => 'text/html' })
 
       expect { service.initiate_call('15551234567', 'sdp_offer') }
-        .to raise_error(StandardError, 'Failed to initiate call')
+        .to raise_error(Voice::CallErrors::CallFailed, 'Failed to initiate call')
     end
   end
 end
