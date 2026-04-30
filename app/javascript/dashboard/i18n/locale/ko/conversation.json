@@ -83,7 +83,8 @@
       "CALL_ENDED": "통화 종료",
       "NOT_ANSWERED_YET": "아직 응답하지 않았습니다",
       "THEY_ANSWERED": "상대방이 응답했습니다",
-      "YOU_ANSWERED": "귀하가 응답했습니다"
+      "YOU_ANSWERED": "귀하가 응답했습니다",
+      "AGENT_ANSWERED": "{agentName} answered"
     },
     "HEADER": {
       "RESOLVE_ACTION": "해결함",
