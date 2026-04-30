@@ -67,10 +67,7 @@ class Call < ApplicationRecord
     "conf_account_#{account_id}_call_#{id}"
   end
 
-  # Browser ↔ Meta WebRTC needs at least one STUN server to discover its
-  # public srflx candidate. Configurable via VOICE_CALL_STUN_URLS (comma-
-  # separated). TURN can be added by appending turn:user@host?credential=...
-  # entries to the same env var.
+  # Browser ↔ Meta WebRTC needs at least one STUN server to discover its public srflx candidate.
   def self.default_ice_servers
     urls = ENV.fetch('VOICE_CALL_STUN_URLS', 'stun:stun.l.google.com:19302').split(',').map(&:strip).reject(&:blank?)
     [{ urls: urls }]

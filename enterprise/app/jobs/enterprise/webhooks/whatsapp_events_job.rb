@@ -22,8 +22,7 @@ module Enterprise::Webhooks::WhatsappEventsJob
   end
 
   def call_permission_reply?(params)
-    message = params.dig(:entry, 0, :changes, 0, :value, :messages, 0)
-    message&.dig(:type) == 'interactive' && message&.dig(:interactive, :type) == 'call_permission_reply'
+    params.dig(:entry, 0, :changes, 0, :value, :messages, 0, :interactive, :type) == 'call_permission_reply'
   end
 
   # Acquire a per-call_id mutex around each call payload so that connect /
