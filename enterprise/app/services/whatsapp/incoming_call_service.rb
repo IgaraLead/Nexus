@@ -20,7 +20,7 @@ class Whatsapp::IncomingCallService
   end
 
   def handle_call_connect(call_payload)
-    existing = Call.whatsapp.find_by(provider_call_id: call_payload[:id])
+    existing = find_call(call_payload)
     if existing&.outgoing?
       handle_outbound_connect(existing, call_payload)
     elsif existing
@@ -38,10 +38,9 @@ class Whatsapp::IncomingCallService
     return if call.in_progress? || call.terminal?
 
     sdp_answer = fix_sdp_setup(call_payload.dig(:session, :sdp))
-    call.update!(status: 'in_progress', started_at: Time.current,
-                 meta: (call.meta || {}).merge('sdp_answer' => sdp_answer))
-    Voice::CallMessageBuilder.update_status!(call: call, status: 'in_progress', agent: call.accepted_by_agent)
-    update_conversation_call_status(call.conversation, call.display_status, call.direction_label)
+    finalize_status!(call, 'in_progress',
+                     started_at: Time.current,
+                     meta: (call.meta || {}).merge('sdp_answer' => sdp_answer))
     broadcast(call, 'voice_call.outbound_connected', sdp_answer: sdp_answer)
   end
 
@@ -56,48 +55,63 @@ class Whatsapp::IncomingCallService
       provider: :whatsapp,
       extra_meta: { 'sdp_offer' => sdp_offer, 'ice_servers' => Call.default_ice_servers }
     )
-    update_conversation_call_status(call.conversation, call.display_status, call.direction_label)
+    update_conversation_call_status(call)
     broadcast_incoming_call(call, sdp_offer)
   end
 
   def handle_call_terminate(call_payload)
-    call = Call.whatsapp.find_by(provider_call_id: call_payload[:id])
+    call = find_call(call_payload)
     return unless call
 
     duration = call_payload[:duration]&.to_i
-    final_status = answered?(call, duration) ? 'completed' : 'no_answer'
-    call.update!(status: final_status, duration_seconds: duration, end_reason: call_payload[:terminate_reason])
-    Voice::CallMessageBuilder.update_status!(call: call, status: final_status, agent: call.accepted_by_agent,
-                                             duration_seconds: duration)
-    update_conversation_call_status(call.conversation, call.display_status, call.direction_label)
+    status = answered?(call, duration) ? 'completed' : 'no_answer'
+    finalize_status!(call, status, duration_seconds: duration, end_reason: call_payload[:terminate_reason])
     broadcast(call, 'voice_call.ended', status: call.status, duration_seconds: call.duration_seconds)
   end
 
+  def find_call(call_payload)
+    Call.whatsapp.find_by(provider_call_id: call_payload[:id])
+  end
+
+  # `accepted_by_agent_id` only signals an answered call for INBOUND — outbound
+  # calls have the initiating agent set before the contact picks up.
   def answered?(call, duration)
-    # `accepted_by_agent_id` only signals an answered call for INBOUND — outbound
-    # calls have the initiating agent set before the contact picks up.
     call.in_progress? || duration.to_i.positive? || (call.incoming? && call.accepted_by_agent_id.present?)
   end
 
-  def update_conversation_call_status(conversation, call_status, direction)
-    conversation.update!(
-      additional_attributes: (conversation.additional_attributes || {}).merge(
-        'call_status' => call_status, 'call_direction' => direction
+  # The trio that always moves together when a call's status changes:
+  # update the Call row, refresh the message bubble, and sync the
+  # conversation's `additional_attributes` for the FE.
+  def finalize_status!(call, status, **call_attrs)
+    call.update!(status: status, **call_attrs)
+    Voice::CallMessageBuilder.update_status!(call: call, status: status, agent: call.accepted_by_agent,
+                                             duration_seconds: call_attrs[:duration_seconds])
+    update_conversation_call_status(call)
+  end
+
+  def update_conversation_call_status(call)
+    call.conversation.update!(
+      additional_attributes: (call.conversation.additional_attributes || {}).merge(
+        'call_status' => call.display_status, 'call_direction' => call.direction_label
       )
     )
   end
 
-  # Ring only the conversation's assignee when assigned, account-wide otherwise
-  # so any eligible agent can pick up.
   def broadcast_incoming_call(call, sdp_offer)
     contact = call.contact
-    data = base_payload(call).merge(
+    payload = { event: 'voice_call.incoming', data: base_payload(call).merge(
       direction: call.direction_label, inbox_id: call.inbox_id,
       sdp_offer: sdp_offer, ice_servers: Call.default_ice_servers,
       caller: { name: contact.name, phone: contact.phone_number, avatar: contact.avatar_url }
-    )
-    streams = call.conversation.assignee&.pubsub_token ? [call.conversation.assignee.pubsub_token] : ["account_#{inbox.account_id}"]
-    streams.each { |s| ActionCable.server.broadcast(s, { event: 'voice_call.incoming', data: data }) }
+    ) }
+    incoming_call_streams(call).each { |s| ActionCable.server.broadcast(s, payload) }
+  end
+
+  # Ring only the conversation's assignee when assigned, account-wide otherwise
+  # so any eligible agent can pick up.
+  def incoming_call_streams(call)
+    token = call.conversation.assignee&.pubsub_token
+    token ? [token] : ["account_#{inbox.account_id}"]
   end
 
   def broadcast(call, event, **extra)
