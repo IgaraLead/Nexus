@@ -41,8 +41,12 @@ class Channel::Whatsapp < ApplicationRecord
   end
 
   # Mirrors Channel::TwilioSms#voice_enabled? so the call subsystem can duck-type across providers.
+  # Meta's Calling API is only available via the embedded-signup whatsapp_cloud flow —
+  # 360dialog (default provider) and manual whatsapp_cloud setups can't reach the call APIs.
   def voice_enabled?
-    provider_config['calling_enabled'].present?
+    provider == 'whatsapp_cloud' &&
+      provider_config['source'] == 'embedded_signup' &&
+      provider_config['calling_enabled'].present?
   end
 
   def provider_service
