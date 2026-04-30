@@ -50,6 +50,8 @@ lv:
       email_already_exists: 'Jūs jau esat reģistrējis kontu ar %{email}'
       invalid_params: 'Kļūda. Lūdzu, pārbaudiet pierakstīšanās parametrus un mēģiniet vēlreiz'
       failed: Reģistrēšanās neizdevās
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
