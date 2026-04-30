@@ -40,6 +40,13 @@ class Channel::Whatsapp < ApplicationRecord
     'Whatsapp'
   end
 
+  # Mirrors Channel::TwilioSms#voice_enabled? so the call subsystem can
+  # duck-type across providers. Backed by the JSON config rather than a column
+  # because all other WhatsApp Cloud capability flags live in `provider_config`.
+  def voice_enabled?
+    provider_config['calling_enabled'].present?
+  end
+
   def provider_service
     if provider == 'whatsapp_cloud'
       Whatsapp::Providers::WhatsappCloudService.new(whatsapp_channel: self)

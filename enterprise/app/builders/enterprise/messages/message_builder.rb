@@ -7,17 +7,10 @@ module Enterprise::Messages::MessageBuilder
     super
   end
 
+  # Voice-capable channels (Twilio voice, WhatsApp Cloud Calling) all expose
+  # `voice_enabled?`; treat any of them as eligible for the incoming voice_call
+  # bubble bypass.
   def voice_call_inbox?
-    twilio_voice_inbox? || whatsapp_call_inbox?
-  end
-
-  def twilio_voice_inbox?
-    inbox = @conversation.inbox
-    inbox.channel_type == 'Channel::TwilioSms' && inbox.channel.voice_enabled?
-  end
-
-  def whatsapp_call_inbox?
-    inbox = @conversation.inbox
-    inbox.channel_type == 'Channel::Whatsapp' && inbox.channel.provider_config['calling_enabled']
+    @conversation.inbox.channel.try(:voice_enabled?)
   end
 end

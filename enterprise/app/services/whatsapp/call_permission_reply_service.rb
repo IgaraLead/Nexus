@@ -2,7 +2,7 @@ class Whatsapp::CallPermissionReplyService
   pattr_initialize [:inbox!, :params!]
 
   def perform
-    return unless inbox.channel.provider_config['calling_enabled']
+    return unless inbox.channel.voice_enabled?
 
     reply_data = extract_reply_data
     return unless reply_data&.dig(:accepted)

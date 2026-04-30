@@ -2,7 +2,7 @@ class Whatsapp::IncomingCallService
   pattr_initialize [:inbox!, :params!]
 
   def perform
-    return unless inbox.channel.provider_config['calling_enabled']
+    return unless inbox.channel.voice_enabled?
 
     Array(params[:calls]).each { |c| handle_event(c.with_indifferent_access) }
   end
