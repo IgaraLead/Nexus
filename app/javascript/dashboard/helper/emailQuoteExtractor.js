@@ -163,13 +163,13 @@ const apply = root => {
     const bq = findEnclosingBlockquote(block, root);
     if (bq) return bq.remove();
     const cutPoint = expandToWrapper(block, root);
-    if (cutPoint !== block) {
+    if (cutPoint !== block && cutPoint.parentElement !== root) {
       return cutBlockAtMarker(
         cutPoint,
         t => HEADER_LINE.test(t) || ATTRIBUTION.test(t)
       );
     }
-    return block.remove();
+    return cutPoint.remove();
   });
   // 5. Top-level RFC `>` / header tail.
   const start = findTopLevelTailStart(root);
