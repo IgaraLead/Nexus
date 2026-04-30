@@ -50,6 +50,8 @@ ro:
       email_already_exists: 'V-ați înregistrat deja cu un cont cu %{email}'
       invalid_params: 'Invalid, please check the signup paramters and try again'
       failed: Înregistrare eșuată
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
