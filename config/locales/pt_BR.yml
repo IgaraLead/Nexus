@@ -51,7 +51,7 @@ pt_BR:
       invalid_params: 'Inválido, por favor, verifique os parâmetros de inscrição e tente novamente'
       failed: Registro falhou
     voice:
-      call_already_accepted: '%{agent_name} is already handling the call.'
+      call_already_accepted: '%{agent_name} já está atendendo a chamada.'
     assignment_policy:
       not_found: Política de atribuição não encontrada
     attachments:
