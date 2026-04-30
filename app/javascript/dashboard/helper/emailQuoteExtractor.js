@@ -137,7 +137,14 @@ const findTopLevelTailStart = root => {
       return kids.slice(i).every(c => isRfcQuoted(c) || isNeutral(c));
     if (n.nodeType !== TEXT || !n.textContent.trim()) return false;
     const t = n.textContent;
-    if (HARD_HEADERS.some(re => re.test(t)) || ATTRIBUTION.test(t)) return true;
+    if (HARD_HEADERS.some(re => re.test(t)) || ATTRIBUTION.test(t)) {
+      // No reply text above the trigger → could be bottom-posted. Mirror
+      // the RFC branch: only fire when every following node is `>`-quoted
+      // or neutral. Otherwise leave the body alone.
+      if (kids.slice(0, i).every(isNeutral))
+        return kids.slice(i + 1).every(c => isRfcQuoted(c) || isNeutral(c));
+      return true;
+    }
     return HEADER_LINE.test(t) && countHeaderLines(tailText(i)) >= 2;
   });
   return idx === -1 ? -1 : walkBack(kids, idx);
@@ -155,10 +162,10 @@ const apply = root => {
   if (root.lastElementChild?.matches?.('blockquote'))
     root.lastElementChild.remove();
   // 4. Soft headers. Match inside a <blockquote> → remove that blockquote
-  // (Apple Mail wraps attribution + body together). Match inside an outer
-  // wrapper (WordSection1 shape) → hard-cut at the wrapper. Flat layout at
-  // root → just block.remove(); body and bottom-posted reply look identical
-  // so leave following siblings alone.
+  // (Apple Mail wraps attribution + body together). Match inside a nested
+  // outer wrapper (WordSection1 shape) → hard-cut at the wrapper. Flat
+  // layout or wrapper directly under root → just block.remove(); body and
+  // bottom-posted reply look identical so leave following siblings alone.
   findBlocks(root, isSoftHeader).forEach(block => {
     const bq = findEnclosingBlockquote(block, root);
     if (bq) return bq.remove();
@@ -169,7 +176,7 @@ const apply = root => {
         t => HEADER_LINE.test(t) || ATTRIBUTION.test(t)
       );
     }
-    return cutPoint.remove();
+    return block.remove();
   });
   // 5. Top-level RFC `>` / header tail.
   const start = findTopLevelTailStart(root);
