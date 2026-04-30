@@ -50,6 +50,8 @@ fa:
       email_already_exists: 'قبلا کاربری با ایمیل %{email} ثبت‌نام کرده است'
       invalid_params: 'نامعتبر است، لطفا پارامترهای ثبت‌نام را بررسی کرده و دوباره امتحان کنید'
       failed: ثبت نام ناموفق بود
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
