@@ -83,7 +83,8 @@
       "CALL_ENDED": "ზარი დასრულდა",
       "NOT_ANSWERED_YET": "ჯერ არ უპასუხიათ",
       "THEY_ANSWERED": "მათ უპასუხეს",
-      "YOU_ANSWERED": "თქვენ უპასუხეთ"
+      "YOU_ANSWERED": "თქვენ უპასუხეთ",
+      "AGENT_ANSWERED": "{agentName} answered"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Resolve",
