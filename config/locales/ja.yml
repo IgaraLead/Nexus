@@ -50,6 +50,8 @@ ja:
       email_already_exists: 'あなたは既に %{email} でアカウントにサインアップしています'
       invalid_params: '無効な値が入力されました。確認のうえ再度お試しください。'
       failed: サインアップに失敗しました
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
