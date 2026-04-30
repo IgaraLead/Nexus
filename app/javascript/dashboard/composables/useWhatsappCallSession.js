@@ -46,6 +46,11 @@ const RECORDER_MIME_CANDIDATES = [
   'audio/ogg;codecs=opus',
 ];
 
+// Outbound calls don't get ice_servers from the backend (call doesn't exist yet
+// at offer time). Without STUN the browser only has host candidates which can't
+// reach Meta through NAT, so the browser→Meta direction silently drops media.
+const DEFAULT_OUTBOUND_ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+
 const waitForIceGatheringComplete = peer =>
   new Promise(resolve => {
     if (peer.iceGatheringState === 'complete') {
@@ -174,7 +179,7 @@ export function useWhatsappCallSession() {
   const prepareOutboundOffer = async () => {
     cleanup();
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    buildPeerConnection();
+    buildPeerConnection(DEFAULT_OUTBOUND_ICE_SERVERS);
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -260,6 +265,22 @@ export const hasActiveWhatsappCall = () => Boolean(activeCallId);
 // Used by the calls store to tear down the WebRTC session when a WhatsApp call
 // is removed by a cable end-event (the other side hung up).
 export const cleanupWhatsappSession = () => cleanup();
+
+// Mute helpers — toggle the mic track's enabled flag (instantaneous, no renegotiation).
+export const setWhatsappCallMuted = muted => {
+  if (!localStream) return false;
+  localStream.getAudioTracks().forEach(track => {
+    track.enabled = !muted;
+  });
+  return muted;
+};
+
+export const isWhatsappCallMuted = () => {
+  if (!localStream) return false;
+  const tracks = localStream.getAudioTracks();
+  if (!tracks.length) return false;
+  return !tracks[0].enabled;
+};
 
 // Best-effort terminate when the tab actually closes after the beforeunload prompt.
 export const sendWhatsappTerminateBeacon = () => {
