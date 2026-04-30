@@ -50,6 +50,8 @@ tr:
       email_already_exists: '%{email} ile zaten bir hesaba kaydoldunuz'
       invalid_params: 'Hata, lütfen kayıt olma parametrelerini kontrol edin ve tekrar deneyin'
       failed: Kayıt başarısız oldu
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
