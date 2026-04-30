@@ -50,6 +50,8 @@ hy:
       email_already_exists: 'You have already signed up for an account with %{email}'
       invalid_params: 'Սխալ տվյալներ, խնդրում ենք ստուգել գրանցման պարամետրերը և կրկին փորձել'
       failed: Գրանցումը ձախողվեց
+    voice:
+      call_already_accepted: '%{agent_name} is already handling the call.'
     assignment_policy:
       not_found: Assignment policy not found
     attachments:
