@@ -3,10 +3,16 @@ import { computed, ref, useAttrs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
-import { isVoiceCallEnabled } from 'dashboard/helper/inbox';
+import {
+  isVoiceCallEnabled,
+  getVoiceCallProvider,
+  VOICE_CALL_PROVIDERS,
+} from 'dashboard/helper/inbox';
 import { useAlert } from 'dashboard/composables';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
+import ContactAPI from 'dashboard/api/contacts';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -58,8 +64,62 @@ const navigateToConversation = conversationId => {
   }
 };
 
+const whatsappCallSession = useWhatsappCallSession();
+
+// Find the most recent open conversation for this contact in the picked inbox.
+// WhatsApp /initiate is conversation-scoped (unlike Twilio's contact-scoped path).
+const findWhatsappConversationId = async inboxId => {
+  const { data } = await ContactAPI.getConversations(props.contactId);
+  const conversations = data?.payload || [];
+  const match = conversations
+    .filter(c => c.inbox_id === inboxId)
+    .sort((a, b) => (b.last_activity_at || 0) - (a.last_activity_at || 0))[0];
+  return match?.id || null;
+};
+
+const startWhatsappCall = async inboxId => {
+  const conversationId = await findWhatsappConversationId(inboxId);
+  if (!conversationId) {
+    useAlert(t('CONTACT_PANEL.CALL_FAILED'));
+    return;
+  }
+
+  const response =
+    await whatsappCallSession.initiateOutboundCall(conversationId);
+  if (!response?.id) {
+    // Permission flow returns no id — banner already handled server-side; surface to user.
+    useAlert(t('CONTACT_PANEL.CALL_INITIATED'));
+    navigateToConversation(conversationId);
+    return;
+  }
+
+  const callsStore = useCallsStore();
+  callsStore.addCall({
+    callSid: response.call_id,
+    callId: response.id,
+    conversationId,
+    inboxId,
+    callDirection: 'outbound',
+    provider: 'whatsapp',
+  });
+  callsStore.setCallActive(response.call_id);
+
+  useAlert(t('CONTACT_PANEL.CALL_INITIATED'));
+  navigateToConversation(conversationId);
+};
+
 const startCall = async inboxId => {
   if (isInitiatingCall.value) return;
+
+  const inbox = (inboxesList.value || []).find(i => i.id === inboxId);
+  if (getVoiceCallProvider(inbox) === VOICE_CALL_PROVIDERS.WHATSAPP) {
+    try {
+      await startWhatsappCall(inboxId);
+    } catch (error) {
+      useAlert(error?.message || t('CONTACT_PANEL.CALL_FAILED'));
+    }
+    return;
+  }
 
   try {
     const response = await store.dispatch('contacts/initiateCall', {
