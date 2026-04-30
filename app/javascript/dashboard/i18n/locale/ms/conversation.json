@@ -83,7 +83,8 @@
       "CALL_ENDED": "Panggilan tamat",
       "NOT_ANSWERED_YET": "Belum dijawab",
       "THEY_ANSWERED": "Mereka menjawab",
-      "YOU_ANSWERED": "Anda menjawab"
+      "YOU_ANSWERED": "Anda menjawab",
+      "AGENT_ANSWERED": "{agentName} answered"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Selesaikan",
