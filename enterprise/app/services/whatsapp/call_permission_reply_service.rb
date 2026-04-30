@@ -20,14 +20,12 @@ class Whatsapp::CallPermissionReplyService
   private
 
   def extract_reply_data
-    value = params.dig(:entry, 0, :changes, 0, :value)
-    message = value&.dig(:messages, 0)
+    message = params.dig(:entry, 0, :changes, 0, :value, :messages, 0)
     reply = message&.dig(:interactive, :call_permission_reply)
     return unless reply
 
     accepted = reply[:response] == 'accept'
     Rails.logger.info "[WHATSAPP CALL] call_permission_reply from=#{message[:from]} accepted=#{accepted} permanent=#{reply[:is_permanent]}"
-
     { from_number: message[:from], accepted: accepted }
   end
 
