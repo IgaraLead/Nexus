@@ -9,9 +9,13 @@ describe Whatsapp::CallPermissionReplyService do
   let(:inbox) { channel.inbox }
   let(:contact) { create(:contact, account: account, phone_number: '+15550001111') }
   let!(:contact_inbox) { create(:contact_inbox, contact: contact, inbox: inbox, source_id: '15550001111') }
+  let(:request_wamid) { 'wamid.permission_request_abc' }
   let!(:conversation) do
     create(:conversation, account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox, status: :open,
-                          additional_attributes: { 'call_permission_requested_at' => Time.zone.now.to_i })
+                          additional_attributes: {
+                            'call_permission_requested_at' => Time.current.iso8601,
+                            'call_permission_request_message_id' => request_wamid
+                          })
   end
 
   before do
@@ -19,21 +23,22 @@ describe Whatsapp::CallPermissionReplyService do
     channel.save!
   end
 
-  def reply_params(response:)
-    {
-      entry: [{ changes: [{ value: { messages: [{ from: '15550001111', type: 'interactive',
-                                                  interactive: { type: 'call_permission_reply',
-                                                                 call_permission_reply: { response: response,
-                                                                                          is_permanent: false } } }] } }] }]
-    }
+  def reply_params(response:, context_id: request_wamid)
+    interactive = { type: 'call_permission_reply',
+                    call_permission_reply: { response: response, is_permanent: false } }
+    message = { from: '15550001111', type: 'interactive', interactive: interactive }
+    message[:context] = { id: context_id } if context_id
+    { entry: [{ changes: [{ value: { messages: [message] } }] }] }
   end
 
-  it 'clears the requested-at flag and broadcasts voice_call.permission_granted on accept' do
+  it 'clears both permission flags and broadcasts voice_call.permission_granted on accept' do
     allow(ActionCable.server).to receive(:broadcast)
 
     described_class.new(inbox: inbox, params: reply_params(response: 'accept')).perform
 
-    expect(conversation.reload.additional_attributes).not_to include('call_permission_requested_at')
+    attrs = conversation.reload.additional_attributes
+    expect(attrs).not_to include('call_permission_requested_at')
+    expect(attrs).not_to include('call_permission_request_message_id')
     expect(ActionCable.server).to have_received(:broadcast).with(
       "account_#{account.id}",
       hash_including(event: 'voice_call.permission_granted',
@@ -60,17 +65,33 @@ describe Whatsapp::CallPermissionReplyService do
     expect(ActionCable.server).not_to have_received(:broadcast)
   end
 
-  it 'targets the conversation that requested permission, not just any open one' do
+  it 'matches the originating conversation by context.id when the contact has multiple pending requests' do
+    other_request_wamid = 'wamid.permission_request_xyz'
     other_open = create(:conversation, account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox,
-                                       status: :open, additional_attributes: {})
+                                       status: :open,
+                                       additional_attributes: {
+                                         'call_permission_requested_at' => Time.current.iso8601,
+                                         'call_permission_request_message_id' => other_request_wamid
+                                       })
     allow(ActionCable.server).to receive(:broadcast)
 
-    described_class.new(inbox: inbox, params: reply_params(response: 'accept')).perform
+    described_class.new(inbox: inbox, params: reply_params(response: 'accept', context_id: other_request_wamid)).perform
 
-    expect(other_open.reload.additional_attributes).to eq({})
+    # The reply pointed at other_open's request — it should be the cleared one, not `conversation`
+    expect(other_open.reload.additional_attributes).not_to include('call_permission_request_message_id')
+    expect(conversation.reload.additional_attributes).to include('call_permission_request_message_id')
     expect(ActionCable.server).to have_received(:broadcast).with(
       "account_#{account.id}",
-      hash_including(data: hash_including(conversation_id: conversation.id))
+      hash_including(data: hash_including(conversation_id: other_open.id))
     )
+  end
+
+  it 'is a no-op when the reply has no context.id' do
+    allow(ActionCable.server).to receive(:broadcast)
+
+    described_class.new(inbox: inbox, params: reply_params(response: 'accept', context_id: nil)).perform
+
+    expect(conversation.reload.additional_attributes).to include('call_permission_request_message_id')
+    expect(ActionCable.server).not_to have_received(:broadcast)
   end
 end
