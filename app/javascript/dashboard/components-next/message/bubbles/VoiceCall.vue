@@ -5,6 +5,7 @@ import { VOICE_CALL_STATUS } from '../constants';
 
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
+import AudioChip from 'dashboard/components-next/message/chips/Audio.vue';
 
 const LABEL_MAP = {
   [VOICE_CALL_STATUS.IN_PROGRESS]: 'CONVERSATION.VOICE_CALL.CALL_IN_PROGRESS',
@@ -30,13 +31,29 @@ const BG_COLOR_MAP = {
   [VOICE_CALL_STATUS.FAILED]: 'bg-n-ruby-9',
 };
 
-const { call } = useMessageContext();
+const { call, attachments } = useMessageContext();
 
 const status = computed(() => call.value?.status);
 const isOutbound = computed(() => call.value?.direction === 'outgoing');
 const isFailed = computed(() =>
   [VOICE_CALL_STATUS.NO_ANSWER, VOICE_CALL_STATUS.FAILED].includes(status.value)
 );
+
+const audioAttachment = computed(() =>
+  (attachments?.value || []).find(a => a.fileType === 'audio')
+);
+
+const durationSeconds = computed(
+  () => call.value?.durationSeconds || call.value?.duration_seconds
+);
+
+const formattedDuration = computed(() => {
+  const s = Number(durationSeconds.value);
+  if (!s || Number.isNaN(s)) return '';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+});
 
 const labelKey = computed(() => {
   if (LABEL_MAP[status.value]) return LABEL_MAP[status.value];
@@ -93,9 +110,12 @@ const bgColor = computed(() => BG_COLOR_MAP[status.value] || 'bg-n-teal-9');
             {{ $t(labelKey) }}
           </span>
           <span class="text-xs text-n-slate-11">
-            {{ $t(subtextKey) }}
+            {{ formattedDuration || $t(subtextKey) }}
           </span>
         </div>
+      </div>
+      <div v-if="audioAttachment" class="px-3 pb-3 w-full">
+        <AudioChip :attachment="audioAttachment" class="text-n-slate-12" />
       </div>
     </div>
   </BaseBubble>

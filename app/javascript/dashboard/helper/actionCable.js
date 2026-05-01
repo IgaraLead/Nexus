@@ -5,7 +5,10 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { emitter } from 'shared/helpers/mitt';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
 import { useCallsStore } from 'dashboard/stores/calls';
-import { applyOutboundAnswer } from 'dashboard/composables/useWhatsappCallSession';
+import {
+  applyOutboundAnswer,
+  handleWhatsappRemoteEnd,
+} from 'dashboard/composables/useWhatsappCallSession';
 
 const { isImpersonating } = useImpersonation();
 
@@ -240,6 +243,9 @@ class ActionCableConnector extends BaseActionCableConnector {
   // eslint-disable-next-line class-methods-use-this
   onVoiceCallEnded = data => {
     if (data?.provider !== 'whatsapp') return;
+    // Upload any in-memory recording chunks before tearing down the session,
+    // so contact-initiated hangups still produce an audio attachment.
+    handleWhatsappRemoteEnd(data.id).catch(() => {});
     useCallsStore().removeCall(data.call_id);
   };
 }

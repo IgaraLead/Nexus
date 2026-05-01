@@ -262,9 +262,25 @@ export const applyOutboundAnswer = async (callId, sdpAnswer) => {
 
 export const hasActiveWhatsappCall = () => Boolean(activeCallId);
 
-// Used by the calls store to tear down the WebRTC session when a WhatsApp call
-// is removed by a cable end-event (the other side hung up).
+// Used by the calls store as a sync teardown safety net.
 export const cleanupWhatsappSession = () => cleanup();
+
+// Cable-driven end (contact hung up / call timed out). Flush any in-memory
+// recorder chunks and upload them so the resulting message bubble shows the
+// audio + transcript — without this, only agent-initiated hangups upload.
+export const handleWhatsappRemoteEnd = async callId => {
+  // Snapshot before cleanup nulls activeCallId.
+  const id = callId || activeCallId;
+  if (!id) {
+    cleanup();
+    return;
+  }
+  try {
+    await stopRecorderAndUpload(id);
+  } finally {
+    cleanup();
+  }
+};
 
 // Mute helpers — toggle the mic track's enabled flag (instantaneous, no renegotiation).
 export const setWhatsappCallMuted = muted => {
