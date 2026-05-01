@@ -241,6 +241,44 @@ describe('EmailQuoteExtractor', () => {
       expect(c.textContent).toContain('Pat');
       expect(EmailQuoteExtractor.hasQuotes(html)).toBe(false);
     });
+
+    it('cuts wrapper-level siblings when the marker is in a nested child', () => {
+      // Outlook nested shape: marker sits in an inner block, but the actual
+      // forwarded body lives in later siblings of the outer wrapper. Strategy
+      // 2 selects the outer match so the wrapper's later siblings strip too.
+      const html =
+        '<div>' +
+        '<p>My reply.</p>' +
+        '<div class="OutlookHeader"><p>-----Original Message-----</p></div>' +
+        '<p>From: Sam</p>' +
+        '<p>Old body</p>' +
+        '</div>';
+      const c = cleaned(html);
+      expect(c.textContent).toContain('My reply');
+      expect(c.textContent).not.toContain('Original Message');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(c.textContent).not.toContain('Old body');
+    });
+
+    it('treats hard markers as absolute boundaries — sibling tail is always quoted body', () => {
+      // Hard markers (`-----Original Message-----` etc.) are explicit,
+      // anchored boundaries: by convention everything after is the original.
+      // Strategy 4 (soft headers) preserves following siblings because
+      // `From:` can appear in prose; strategy 2 deliberately does not. Locks
+      // down the asymmetry against future "preserve bottom-post" rewrites.
+      const html =
+        '<p>-----Original Message-----</p>' +
+        '<p>From: Sam</p>' +
+        '<p>Old quoted body</p>' +
+        '<p>Reply pretending to be bottom-posted</p>';
+      const c = cleaned(html);
+      expect(c.textContent).not.toContain('Original Message');
+      expect(c.textContent).not.toContain('From: Sam');
+      expect(c.textContent).not.toContain('Old quoted body');
+      expect(c.textContent).not.toContain(
+        'Reply pretending to be bottom-posted'
+      );
+    });
   });
 
   describe('multi-line attribution headers (From / Sent / To)', () => {
