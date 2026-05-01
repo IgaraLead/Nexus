@@ -63,14 +63,17 @@ const countHeaderLines = t =>
 const isSoftHeader = t => ATTRIBUTION.test(t) || countHeaderLines(t) >= 2;
 const isHardHeader = t => HARD_HEADERS.some(re => re.test(t));
 
-// Find blocks matching `predicate`, then keep only the innermost — outer
-// wrappers that match via inner header text would otherwise take the user's
-// reply with them.
-const findBlocks = (root, predicate) => {
+// Find blocks matching `predicate`. Default keeps innermost so outer wrappers
+// matching via bubbled-up text don't take the user's reply with them. `outer`
+// keeps outermost — for hard markers, where forwarded body lives in the
+// wrapper's later siblings.
+const findBlocks = (root, predicate, { outer = false } = {}) => {
   const all = [...root.querySelectorAll(BLOCK_SELECTOR)].filter(el =>
     predicate(blockText(el))
   );
-  return all.filter(el => !all.some(o => o !== el && el.contains(o)));
+  return outer
+    ? all.filter(el => !all.some(o => o !== el && o.contains(el)))
+    : all.filter(el => !all.some(o => o !== el && el.contains(o)));
 };
 
 // Strip from the first child whose text matches `marker` (skipping leading
@@ -154,8 +157,9 @@ const findTopLevelTailStart = root => {
 const apply = root => {
   // 1. Strip every known quote-wrapper class.
   root.querySelectorAll(QUOTE_INDICATORS.join(',')).forEach(el => el.remove());
-  // 2. Hard markers — cut block + every following sibling.
-  findBlocks(root, isHardHeader).forEach(b =>
+  // 2. Hard markers — cut at the outer wrapper so its later siblings (the
+  // forwarded body) go with it.
+  findBlocks(root, isHardHeader, { outer: true }).forEach(b =>
     cutBlockAtMarker(b, isHardHeader)
   );
   // 3. Trailing <blockquote> as the last top-level child.
