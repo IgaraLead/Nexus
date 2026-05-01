@@ -241,11 +241,16 @@ class ActionCableConnector extends BaseActionCableConnector {
   };
 
   // eslint-disable-next-line class-methods-use-this
-  onVoiceCallEnded = data => {
+  onVoiceCallEnded = async data => {
     if (data?.provider !== 'whatsapp') return;
-    // Upload any in-memory recording chunks before tearing down the session,
-    // so contact-initiated hangups still produce an audio attachment.
-    handleWhatsappRemoteEnd(data.id).catch(() => {});
+    // Must await the upload-and-cleanup BEFORE removeCall, because the store's
+    // sync teardownByProvider -> cleanupWhatsappSession would otherwise wipe
+    // mediaRecorder + recorderChunks before any upload microtask gets to run.
+    try {
+      await handleWhatsappRemoteEnd(data.id);
+    } catch (_) {
+      /* noop — upload is best-effort */
+    }
     useCallsStore().removeCall(data.call_id);
   };
 }
