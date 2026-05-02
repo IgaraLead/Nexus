@@ -71,6 +71,7 @@ const loadNotes = async () => {
 
   const requestToken = notesRequestToken.value + 1;
   notesRequestToken.value = requestToken;
+  allCompanyContacts.value = [];
   isFetchingNotes.value = true;
 
   try {

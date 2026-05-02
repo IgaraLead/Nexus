@@ -85,6 +85,7 @@ const loadHistory = async () => {
 
   const requestToken = historyRequestToken.value + 1;
   historyRequestToken.value = requestToken;
+  allCompanyContacts.value = [];
   isFetchingHistory.value = true;
 
   try {
