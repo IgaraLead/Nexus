@@ -209,6 +209,7 @@ watch(
   companyId,
   async currentCompanyId => {
     companiesStore.resetCompanyDetailState();
+    clearSelectedCandidate();
     await fetchCompanyDetail(currentCompanyId);
   },
   { immediate: true }

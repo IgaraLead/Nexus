@@ -46,11 +46,16 @@ export const useCompanyContacts = ({ companyId, contacts, meta }) => {
       (_, index) => index + 1
     ).filter(page => page !== currentPage);
 
-    const responses = await Promise.all(
+    const responses = await Promise.allSettled(
       pagesToFetch.map(page => CompanyAPI.listContacts(unref(companyId), page))
     );
 
-    responses.forEach(({ data: { payload = [] } }) => {
+    responses.forEach(response => {
+      if (response.status !== 'fulfilled') {
+        return;
+      }
+
+      const { payload = [] } = response.value.data;
       payload
         .map(record => normalizeContactRecord(record))
         .forEach(contact => contactsById.set(contact.id, contact));

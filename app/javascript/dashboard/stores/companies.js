@@ -120,6 +120,15 @@ const buildFormData = (payload, rootKey = '') => {
   return formData;
 };
 
+const buildCompanyPayload = companyAttrs => {
+  const { avatar, ...attrsToDecamelize } = companyAttrs;
+
+  return {
+    ...snakecaseKeys(attrsToDecamelize, { deep: true }),
+    ...(avatar && { avatar }),
+  };
+};
+
 export const useCompaniesStore = defineStore('companies', {
   state: createInitialState,
 
@@ -206,7 +215,6 @@ export const useCompaniesStore = defineStore('companies', {
           data: { payload },
         } = await CompanyAPI.show(id);
         const company = normalizeCompanyRecord(payload);
-        this.upsertCompanyRecord(company);
 
         if (
           this.companyDetailRequestToken !== requestToken ||
@@ -215,6 +223,7 @@ export const useCompaniesStore = defineStore('companies', {
           return company;
         }
 
+        this.upsertCompanyRecord(company);
         this.setActiveCompanyId(company.id);
         return company;
       } catch (error) {
@@ -229,7 +238,7 @@ export const useCompaniesStore = defineStore('companies', {
     async create(companyAttrs) {
       this.setUIFlag({ creatingItem: true });
       try {
-        const payload = snakecaseKeys(companyAttrs, { deep: true });
+        const payload = buildCompanyPayload(companyAttrs);
         const requestPayload = companyAttrs.avatar
           ? buildFormData(payload, 'company')
           : { company: payload };
@@ -249,7 +258,7 @@ export const useCompaniesStore = defineStore('companies', {
     async update({ id, ...companyAttrs }) {
       this.setUIFlag({ updatingItem: true });
       try {
-        const payload = snakecaseKeys(companyAttrs, { deep: true });
+        const payload = buildCompanyPayload(companyAttrs);
         const requestPayload = companyAttrs.avatar
           ? buildFormData(payload, 'company')
           : { company: payload };
@@ -393,6 +402,11 @@ export const useCompaniesStore = defineStore('companies', {
           contact_id: contactId,
         });
         const contact = normalizeContactRecord(payload);
+
+        if (this.activeCompanyId !== Number(companyId)) {
+          return contact;
+        }
+
         this.contactSearchResults = upsertRecord(
           this.contactSearchResults,
           contact

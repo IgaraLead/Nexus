@@ -36,10 +36,11 @@ class Companies::ContactMembershipService
     return contact if old_company_id == new_company_id &&
                       contact.additional_attributes.to_h == updated_additional_attributes
 
-    contact.update!(
+    contact.assign_attributes(
       company_id: new_company_id,
       additional_attributes: updated_additional_attributes
     )
+    contact.save!(validate: false)
 
     contact
   end
