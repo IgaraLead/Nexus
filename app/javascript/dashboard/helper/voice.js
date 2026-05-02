@@ -26,6 +26,8 @@ function extractCallData(message) {
   const call = message?.call || {};
   return {
     callSid: call.provider_call_id,
+    callId: call.id,
+    provider: call.provider,
     status: call.status,
     callDirection: call.direction === 'outgoing' ? 'outbound' : 'inbound',
     conversationId: message?.conversation_id,
@@ -36,7 +38,7 @@ function extractCallData(message) {
 export function handleVoiceCallCreated(message, currentUserId) {
   if (!isVoiceCallMessage(message)) return;
 
-  const { callSid, callDirection, conversationId, senderId } =
+  const { callSid, callId, provider, callDirection, conversationId, senderId } =
     extractCallData(message);
 
   if (shouldSkipCall(callDirection, senderId, currentUserId)) return;
@@ -44,6 +46,8 @@ export function handleVoiceCallCreated(message, currentUserId) {
   const callsStore = useCallsStore();
   callsStore.addCall({
     callSid,
+    callId,
+    provider,
     conversationId,
     callDirection,
     senderId,

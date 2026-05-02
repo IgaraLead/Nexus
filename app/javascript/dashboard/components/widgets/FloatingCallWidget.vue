@@ -1,8 +1,9 @@
 <script setup>
-import { watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { useCallSession } from 'dashboard/composables/useCallSession';
+import { setWhatsappCallMuted } from 'dashboard/composables/useWhatsappCallSession';
 import WindowVisibilityHelper from 'dashboard/helper/AudioAlerts/WindowVisibilityHelper';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 
@@ -21,16 +22,40 @@ const {
   formattedCallDuration,
 } = useCallSession();
 
+// Mute is currently WhatsApp-only — Twilio calls are mediated server-side and
+// don't expose a mic track on the browser side.
+const isMuted = ref(false);
+const isWhatsappActive = computed(
+  () => activeCall.value?.provider === 'whatsapp'
+);
+
+const toggleMute = () => {
+  isMuted.value = !isMuted.value;
+  setWhatsappCallMuted(isMuted.value);
+};
+
+watch(hasActiveCall, active => {
+  if (!active) isMuted.value = false;
+});
+
 const getCallInfo = call => {
   const conversation = store.getters.getConversationById(call?.conversationId);
   const inbox = store.getters['inboxes/getInbox'](conversation?.inbox_id);
   const sender = conversation?.meta?.sender;
+  // Inbound WhatsApp calls stash caller info on the call record (from the cable
+  // payload) so the widget has something to show before the conversation lands.
+  const caller = call?.caller;
   return {
     conversation,
     inbox,
-    contactName: sender?.name || sender?.phone_number || 'Unknown caller',
+    contactName:
+      sender?.name ||
+      sender?.phone_number ||
+      caller?.name ||
+      caller?.phone ||
+      'Unknown caller',
     inboxName: inbox?.name || 'Customer support',
-    avatar: sender?.avatar || sender?.thumbnail,
+    avatar: sender?.avatar || sender?.thumbnail || caller?.avatar,
   };
 };
 
@@ -162,6 +187,30 @@ watch(
         </p>
       </div>
       <div class="flex shrink-0 gap-2">
+        <button
+          v-if="hasActiveCall && isWhatsappActive"
+          v-tooltip.top="
+            isMuted
+              ? $t('CONVERSATION.VOICE_WIDGET.UNMUTE')
+              : $t('CONVERSATION.VOICE_WIDGET.MUTE')
+          "
+          class="flex justify-center items-center w-10 h-10 rounded-full transition-colors"
+          :class="
+            isMuted
+              ? 'bg-n-amber-9 hover:bg-n-amber-10'
+              : 'bg-n-slate-3 hover:bg-n-slate-4'
+          "
+          @click="toggleMute"
+        >
+          <i
+            class="text-lg"
+            :class="
+              isMuted
+                ? 'text-white i-ph-microphone-slash-bold'
+                : 'text-n-slate-12 i-ph-microphone-bold'
+            "
+          />
+        </button>
         <button
           class="flex justify-center items-center w-10 h-10 bg-n-ruby-9 hover:bg-n-ruby-10 rounded-full transition-colors"
           @click="

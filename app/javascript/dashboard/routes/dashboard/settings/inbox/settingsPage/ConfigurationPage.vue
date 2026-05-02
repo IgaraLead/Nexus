@@ -44,6 +44,7 @@ export default {
       allowedDomains: '',
       isUpdatingAllowedDomains: false,
       isSettingDefaults: false,
+      whatsAppCallingEnabled: false,
     };
   },
   validations: {
@@ -71,6 +72,10 @@ export default {
       if (!this.isSettingDefaults && this.isAWebWidgetInbox)
         this.handleHmacFlag();
     },
+    whatsAppCallingEnabled() {
+      if (!this.isSettingDefaults && this.isEmbeddedSignupWhatsApp)
+        this.updateWhatsAppCallingEnabled();
+    },
   },
   mounted() {
     this.setDefaults();
@@ -83,6 +88,9 @@ export default {
         this.inbox.selected_feature_flags || []
       ).includes('allow_mobile_webview');
       this.allowedDomains = this.inbox.allowed_domains || '';
+      this.whatsAppCallingEnabled = Boolean(
+        this.inbox.provider_config?.calling_enabled
+      );
       this.$nextTick(() => {
         this.isSettingDefaults = false;
       });
@@ -145,6 +153,24 @@ export default {
         useAlert(this.$t('INBOX_MGMT.EDIT.API.ERROR_MESSAGE'));
       } finally {
         this.isUpdatingAllowedDomains = false;
+      }
+    },
+    async updateWhatsAppCallingEnabled() {
+      try {
+        const payload = {
+          id: this.inbox.id,
+          formData: false,
+          channel: {
+            provider_config: {
+              ...this.inbox.provider_config,
+              calling_enabled: this.whatsAppCallingEnabled,
+            },
+          },
+        };
+        await this.$store.dispatch('inboxes/updateInbox', payload);
+        useAlert(this.$t('INBOX_MGMT.EDIT.API.SUCCESS_MESSAGE'));
+      } catch (error) {
+        useAlert(this.$t('INBOX_MGMT.EDIT.API.ERROR_MESSAGE'));
       }
     },
     async updateWhatsAppInboxAPIKey() {
@@ -374,6 +400,15 @@ export default {
             </NextButton>
           </div>
         </SettingsFieldSection>
+        <SettingsToggleSection
+          v-model="whatsAppCallingEnabled"
+          :header="
+            $t('INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_CALLING_ENABLED.LABEL')
+          "
+          :description="
+            $t('INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_CALLING_ENABLED.DESCRIPTION')
+          "
+        />
       </template>
 
       <!-- Manual Setup Section -->
