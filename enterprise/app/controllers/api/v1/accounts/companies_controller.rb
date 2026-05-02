@@ -8,7 +8,6 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
 
   RESULTS_PER_PAGE = 25
 
-  before_action :ensure_enterprise!
   before_action :authorize_company_collection!, only: [:index, :search, :create]
   before_action :set_current_page, only: [:index, :search]
   before_action :fetch_company, only: [:show, :update, :destroy, :avatar]
@@ -70,10 +69,6 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
     filtrate(companies)
       .page(@current_page)
       .per(RESULTS_PER_PAGE)
-  end
-
-  def ensure_enterprise!
-    raise Pundit::NotAuthorizedError unless ChatwootApp.enterprise?
   end
 
   def authorize_company_collection!

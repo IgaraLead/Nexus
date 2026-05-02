@@ -1,7 +1,6 @@
 class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::EnterpriseAccountsController
   RESULTS_PER_PAGE = 15
 
-  before_action :ensure_enterprise!
   before_action :fetch_company
   before_action :authorize_company_read!, only: [:index, :search]
   before_action :authorize_company_update!, only: [:create, :destroy]
@@ -30,10 +29,6 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
   end
 
   private
-
-  def ensure_enterprise!
-    raise Pundit::NotAuthorizedError unless ChatwootApp.enterprise?
-  end
 
   def fetch_company
     @company = Current.account.companies.find(params[:company_id])
