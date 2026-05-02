@@ -1,6 +1,5 @@
 class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::EnterpriseAccountsController
   RESULTS_PER_PAGE = 15
-  SEARCHABLE_CONTACT_COLUMNS = [:name, :email, :phone_number, :identifier].freeze
 
   before_action :fetch_company
   before_action :authorize_company_read!, only: [:index, :search]
@@ -68,15 +67,10 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
 
   def contact_search_scope
     Current.account.contacts
-           .where(contact_search_condition)
+           .where(
+             'name ILIKE :search OR email ILIKE :search OR phone_number ILIKE :search OR contacts.identifier ILIKE :search',
+             search: "%#{params[:q].strip}%"
+           )
            .order(:name, :id)
-  end
-
-  def contact_search_condition
-    search_query = "%#{Contact.sanitize_sql_like(params[:q].strip)}%"
-
-    SEARCHABLE_CONTACT_COLUMNS
-      .map { |column| Contact.arel_table[column].matches(search_query) }
-      .reduce(&:or)
   end
 end
