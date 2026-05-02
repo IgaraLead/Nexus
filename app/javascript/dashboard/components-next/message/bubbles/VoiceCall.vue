@@ -1,19 +1,15 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useStore } from 'vuex';
 import { useMessageContext } from '../provider.js';
 import { VOICE_CALL_STATUS } from '../constants';
 
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
-import AudioChip from 'dashboard/components-next/message/chips/Audio.vue';
 
 const LABEL_MAP = {
   [VOICE_CALL_STATUS.IN_PROGRESS]: 'CONVERSATION.VOICE_CALL.CALL_IN_PROGRESS',
-  [VOICE_CALL_STATUS.COMPLETED]: 'CONVERSATION.VOICE_CALL.CALL_ENDED',
-};
-
-const SUBTEXT_MAP = {
-  [VOICE_CALL_STATUS.RINGING]: 'CONVERSATION.VOICE_CALL.NOT_ANSWERED_YET',
   [VOICE_CALL_STATUS.COMPLETED]: 'CONVERSATION.VOICE_CALL.CALL_ENDED',
 };
 
@@ -31,36 +27,39 @@ const BG_COLOR_MAP = {
   [VOICE_CALL_STATUS.FAILED]: 'bg-n-ruby-9',
 };
 
-const { call, attachments, contentAttributes } = useMessageContext();
+const { t } = useI18n();
+const store = useStore();
+const { call, conversationId, currentUserId } = useMessageContext();
 
 const status = computed(() => call.value?.status);
 const isOutbound = computed(() => call.value?.direction === 'outgoing');
 const isFailed = computed(() =>
   [VOICE_CALL_STATUS.NO_ANSWER, VOICE_CALL_STATUS.FAILED].includes(status.value)
 );
-
-const audioAttachment = computed(() =>
-  (attachments?.value || []).find(a => a.fileType === 'audio')
+const acceptedByAgentId = computed(() => call.value?.accepted_by_agent_id);
+const didCurrentUserAnswer = computed(
+  () =>
+    !!acceptedByAgentId.value && acceptedByAgentId.value === currentUserId.value
 );
-
-// Duration lives in two places depending on which payload the FE got:
-//   - call.duration_seconds / call.durationSeconds  (push_event_data shape)
-//   - content_attributes.data.duration_seconds      (message-side mirror)
-// Both can be camelCased by useTransformKeys upstream — check every variant.
-const durationSeconds = computed(() => {
-  const fromCall = call.value?.durationSeconds || call.value?.duration_seconds;
-  if (fromCall != null) return fromCall;
-
-  const data = contentAttributes?.value?.data || contentAttributes?.value?.data;
-  return data?.durationSeconds || data?.duration_seconds;
+// Pickup auto-assigns the conversation, so the assignee is a safe display proxy
+// for the answerer when the Call payload lacks accepted_by_agent_id (e.g.,
+// Twilio's call-status webhook flipped the call to in-progress before the
+// participant-join webhook claimed it).
+const conversationAssignee = computed(() => {
+  const conversation = store.getters.getConversationById?.(
+    conversationId?.value
+  );
+  return conversation?.meta?.assignee || null;
 });
-
-const formattedDuration = computed(() => {
-  const s = Number(durationSeconds.value);
-  if (!s || Number.isNaN(s)) return '';
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+const displayAgentName = computed(() => {
+  if (call.value?.accepted_by_agent_name)
+    return call.value.accepted_by_agent_name;
+  if (acceptedByAgentId.value) {
+    const agent = store.getters['agents/getAgentById'](acceptedByAgentId.value);
+    if (agent?.available_name) return agent.available_name;
+    if (agent?.name) return agent.name;
+  }
+  return conversationAssignee.value?.name || null;
 });
 
 const labelKey = computed(() => {
@@ -75,16 +74,28 @@ const labelKey = computed(() => {
     : 'CONVERSATION.VOICE_CALL.INCOMING_CALL';
 });
 
-const subtextKey = computed(() => {
-  if (SUBTEXT_MAP[status.value]) return SUBTEXT_MAP[status.value];
+const subtext = computed(() => {
+  if (status.value === VOICE_CALL_STATUS.RINGING) {
+    return t('CONVERSATION.VOICE_CALL.NOT_ANSWERED_YET');
+  }
+  if (status.value === VOICE_CALL_STATUS.COMPLETED) {
+    return t('CONVERSATION.VOICE_CALL.CALL_ENDED');
+  }
   if (status.value === VOICE_CALL_STATUS.IN_PROGRESS) {
-    return isOutbound.value
-      ? 'CONVERSATION.VOICE_CALL.THEY_ANSWERED'
-      : 'CONVERSATION.VOICE_CALL.YOU_ANSWERED';
+    if (isOutbound.value) return t('CONVERSATION.VOICE_CALL.THEY_ANSWERED');
+    if (didCurrentUserAnswer.value) {
+      return t('CONVERSATION.VOICE_CALL.YOU_ANSWERED');
+    }
+    if (displayAgentName.value) {
+      return t('CONVERSATION.VOICE_CALL.AGENT_ANSWERED', {
+        agentName: displayAgentName.value,
+      });
+    }
+    return t('CONVERSATION.VOICE_CALL.THEY_ANSWERED');
   }
   return isFailed.value
-    ? 'CONVERSATION.VOICE_CALL.NO_ANSWER'
-    : 'CONVERSATION.VOICE_CALL.NOT_ANSWERED_YET';
+    ? t('CONVERSATION.VOICE_CALL.NO_ANSWER')
+    : t('CONVERSATION.VOICE_CALL.NOT_ANSWERED_YET');
 });
 
 const iconName = computed(() => {
@@ -118,18 +129,9 @@ const bgColor = computed(() => BG_COLOR_MAP[status.value] || 'bg-n-teal-9');
             {{ $t(labelKey) }}
           </span>
           <span class="text-xs text-n-slate-11">
-            <!-- When the audio chip is rendered it already shows duration in
-                 its own player; suppress here to avoid two competing numbers. -->
-            {{
-              audioAttachment
-                ? $t(subtextKey)
-                : formattedDuration || $t(subtextKey)
-            }}
+            {{ subtext }}
           </span>
         </div>
-      </div>
-      <div v-if="audioAttachment" class="px-3 pb-3 w-full">
-        <AudioChip :attachment="audioAttachment" class="text-n-slate-12" />
       </div>
     </div>
   </BaseBubble>

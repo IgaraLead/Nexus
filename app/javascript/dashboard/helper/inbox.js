@@ -16,7 +16,6 @@ export const INBOX_TYPES = {
 // Add providers here as they gain voice capability (e.g., WhatsApp Cloud, Twilio WhatsApp)
 export const VOICE_CALL_PROVIDERS = {
   TWILIO: 'twilio',
-  WHATSAPP: 'whatsapp',
 };
 
 export const getVoiceCallProvider = inbox => {
@@ -26,11 +25,9 @@ export const getVoiceCallProvider = inbox => {
   const channelType = inbox.channel_type || inbox.channelType;
   const voiceEnabled = inbox.voice_enabled || inbox.voiceEnabled;
 
-  if (!voiceEnabled) return null;
-
-  if (channelType === INBOX_TYPES.TWILIO) return VOICE_CALL_PROVIDERS.TWILIO;
-  if (channelType === INBOX_TYPES.WHATSAPP)
-    return VOICE_CALL_PROVIDERS.WHATSAPP;
+  if (channelType === INBOX_TYPES.TWILIO && voiceEnabled) {
+    return VOICE_CALL_PROVIDERS.TWILIO;
+  }
 
   return null;
 };
