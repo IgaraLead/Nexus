@@ -23,6 +23,8 @@
 class Company < ApplicationRecord
   include Avatarable
 
+  SEARCHABLE_COLUMNS = [:name, :domain].freeze
+
   validates :account_id, presence: true
   validates :name, presence: true, length: { maximum: Limits::COMPANY_NAME_LENGTH_LIMIT }
   validates :domain, allow_blank: true, format: {
@@ -38,22 +40,24 @@ class Company < ApplicationRecord
 
   scope :ordered_by_name, -> { order(:name) }
   scope :search_by_name_or_domain, lambda { |query|
-    where('name ILIKE :search OR domain ILIKE :search', search: "%#{query.strip}%")
+    search_query = "%#{sanitize_sql_like(query.strip)}%"
+
+    where(
+      SEARCHABLE_COLUMNS
+        .map { |column| arel_table[column].matches(search_query) }
+        .reduce(&:or)
+    )
   }
 
   scope :order_on_contacts_count, lambda { |direction|
-    order(
-      Arel::Nodes::SqlLiteral.new(
-        sanitize_sql_for_order("\"companies\".\"contacts_count\" #{direction} NULLS LAST")
-      )
-    )
+    sort_direction = direction.to_s.downcase == 'asc' ? :asc : :desc
+
+    order(arel_table[:contacts_count].public_send(sort_direction).nulls_last)
   }
   scope :order_on_last_activity_at, lambda { |direction|
-    order(
-      Arel::Nodes::SqlLiteral.new(
-        sanitize_sql_for_order("\"companies\".\"last_activity_at\" #{direction} NULLS LAST")
-      )
-    )
+    sort_direction = direction.to_s.downcase == 'asc' ? :asc : :desc
+
+    order(arel_table[:last_activity_at].public_send(sort_direction).nulls_last)
   }
 
   private

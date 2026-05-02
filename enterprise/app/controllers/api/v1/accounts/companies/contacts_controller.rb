@@ -73,7 +73,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
   end
 
   def contact_search_condition
-    search_query = "%#{params[:q].strip}%"
+    search_query = "%#{Contact.sanitize_sql_like(params[:q].strip)}%"
 
     SEARCHABLE_CONTACT_COLUMNS
       .map { |column| Contact.arel_table[column].matches(search_query) }
