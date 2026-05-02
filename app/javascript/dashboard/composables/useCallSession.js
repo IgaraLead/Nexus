@@ -1,4 +1,5 @@
 import { computed, ref, watch, onUnmounted, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import VoiceAPI from 'dashboard/api/channel/voice/voiceAPIClient';
 import TwilioVoiceClient from 'dashboard/api/channel/voice/twilioVoiceClient';
 import { useCallsStore } from 'dashboard/stores/calls';
@@ -7,11 +8,13 @@ import {
   sendWhatsappTerminateBeacon,
   cleanupWhatsappSession,
 } from 'dashboard/composables/useWhatsappCallSession';
+import { handleVoiceCallCreated } from 'dashboard/helper/voice';
 import Timer from 'dashboard/helper/Timer';
 
 const isWhatsappCall = call => call?.provider === 'whatsapp';
 
 export function useCallSession() {
+  const store = useStore();
   const callsStore = useCallsStore();
   const whatsappSession = useWhatsappCallSession();
   const isJoining = ref(false);
@@ -23,6 +26,7 @@ export function useCallSession() {
   const activeCall = computed(() => callsStore.activeCall);
   const incomingCalls = computed(() => callsStore.incomingCalls);
   const hasActiveCall = computed(() => callsStore.hasActiveCall);
+  const hasIncomingCall = computed(() => callsStore.hasIncomingCall);
 
   watch(
     hasActiveCall,
@@ -39,11 +43,30 @@ export function useCallSession() {
 
   // Browser-native confirm prompt when reload/close happens mid-call. Reload
   // tears down the WebRTC session permanently for WhatsApp (no rejoin) and
-  // drops the agent leg for Twilio, so warn either way.
+  // drops the agent leg for Twilio. Also warn while a call is ringing — the
+  // cable broadcast that delivered the incoming-call event isn't replayed on
+  // refresh, so the agent loses the ability to accept it.
   const handleBeforeUnload = event => {
-    if (!hasActiveCall.value) return;
+    if (!hasActiveCall.value && !hasIncomingCall.value) return;
     event.preventDefault();
     event.returnValue = '';
+  };
+
+  // Hydrate the calls store from already-loaded conversation messages. The
+  // voice_call.incoming / message.created cable events are one-shot and aren't
+  // replayed when the page reconnects, so without this seeding a hard refresh
+  // during a ringing call would leave the FloatingCallWidget empty even though
+  // the call is still ringing on Meta's side.
+  const seedCallsFromHydratedMessages = () => {
+    const conversations = store.getters.getAllConversations || [];
+    const currentUserId = store.getters.getCurrentUserID;
+    conversations.forEach(conv => {
+      (conv.messages || []).forEach(msg => {
+        if (msg.content_type !== 'voice_call') return;
+        if (msg.call?.status !== 'ringing') return;
+        handleVoiceCallCreated(msg, currentUserId);
+      });
+    });
   };
 
   // pagehide fires after the user confirms the prompt. Let the WhatsApp session
@@ -61,7 +84,16 @@ export function useCallSession() {
     );
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handlePageHide);
+    seedCallsFromHydratedMessages();
   });
+
+  // Conversations are typically fetched after this composable mounts, so the
+  // initial seed pass runs before any messages exist. Re-seed whenever the
+  // conversation list changes — addCall is idempotent (it merges by callSid).
+  watch(
+    () => store.getters.getAllConversations?.length,
+    () => seedCallsFromHydratedMessages()
+  );
 
   onUnmounted(() => {
     durationTimer.stop();
