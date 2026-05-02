@@ -21,6 +21,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['update:name', 'update:visibility', 'submit'],
   computed: {
@@ -28,9 +32,15 @@ export default {
       return !this.canManagePublicMacros;
     },
     publicVisibilityDescription() {
-      return this.isPublicVisibilityDisabled
-        ? this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DISABLED_DESCRIPTION')
-        : this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DESCRIPTION');
+      if (this.readOnly) {
+        return this.$t('MACROS.EDIT.API.UNAUTHORIZED_PUBLIC_MESSAGE');
+      }
+
+      if (this.isPublicVisibilityDisabled) {
+        return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DISABLED_DESCRIPTION');
+      }
+
+      return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DESCRIPTION');
     },
   },
   methods: {
@@ -40,9 +50,12 @@ export default {
         : 'bg-white dark:bg-n-solid-2 border-n-weak dark:border-n-strong';
     },
     onUpdateName(value) {
+      if (this.readOnly) return;
+
       this.$emit('update:name', value);
     },
     onUpdateVisibility(value) {
+      if (this.readOnly) return;
       if (value === 'global' && this.isPublicVisibilityDisabled) return;
 
       this.$emit('update:visibility', value);
@@ -62,6 +75,7 @@ export default {
         :placeholder="$t('MACROS.ADD.FORM.NAME.PLACEHOLDER')"
         :error="v$.macro.name.$error ? $t('MACROS.ADD.FORM.NAME.ERROR') : null"
         :class="{ error: v$.macro.name.$error }"
+        :disabled="readOnly"
         @update:model-value="onUpdateName"
       />
     </div>
@@ -75,11 +89,11 @@ export default {
           class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start"
           :class="[
             isActive('global'),
-            isPublicVisibilityDisabled
+            isPublicVisibilityDisabled || readOnly
               ? 'opacity-60 cursor-not-allowed'
               : 'cursor-default',
           ]"
-          :disabled="isPublicVisibilityDisabled"
+          :disabled="isPublicVisibilityDisabled || readOnly"
           :aria-describedby="
             isPublicVisibilityDisabled ? 'macro-public-visibility-help' : null
           "
@@ -105,7 +119,11 @@ export default {
         <button
           type="button"
           class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start cursor-default"
-          :class="isActive('personal')"
+          :class="[
+            isActive('personal'),
+            { 'opacity-60 cursor-not-allowed': readOnly },
+          ]"
+          :disabled="readOnly"
           @click="onUpdateVisibility('personal')"
         >
           <div class="flex items-center gap-2 min-w-0 justify-between w-full">
@@ -141,6 +159,7 @@ export default {
         solid
         :label="$t('MACROS.HEADER_BTN_TXT_SAVE')"
         class="w-full"
+        :disabled="readOnly"
         @click="$emit('submit')"
       />
     </div>

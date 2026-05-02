@@ -35,7 +35,6 @@
         "VISIBILITY": "Visibility",
         "ACTIONS": "Actions"
       },
-      "ACTIONS_UNAVAILABLE": "Unavailable",
       "404": "No macros found"
     },
     "DELETE": {
@@ -52,6 +51,7 @@
     },
     "EDIT": {
       "TOOLTIP": "Edit macro",
+      "VIEW_TOOLTIP": "View macro",
       "API": {
         "SUCCESS_MESSAGE": "Macro updated successfully",
         "ERROR_MESSAGE": "Could not update Macro, Please try again later",

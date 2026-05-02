@@ -35,6 +35,9 @@ provide('macroActionTypes', macroActionTypes);
 
 const uiFlags = computed(() => getters['macros/getUIFlags'].value);
 const macroId = computed(() => route.params.macroId);
+const isPublicMacroReadOnly = computed(
+  () => macro.value?.visibility === 'global' && !isAdmin.value
+);
 
 const fetchDropdownData = () => {
   store.dispatch('agents/get');
@@ -82,11 +85,6 @@ const manifestMacro = async () => {
 const fetchMacro = async () => {
   mode.value = 'EDIT';
   await manifestMacro();
-
-  if (macro.value?.visibility === 'global' && !isAdmin.value) {
-    useAlert(t('MACROS.EDIT.API.UNAUTHORIZED_PUBLIC_MESSAGE'));
-    router.push({ name: 'macros_wrapper' });
-  }
 };
 
 const initNewMacro = () => {
@@ -117,6 +115,8 @@ watch(
 );
 
 const saveMacro = async macroData => {
+  if (isPublicMacroReadOnly.value) return;
+
   try {
     const action = mode.value === 'EDIT' ? 'macros/update' : 'macros/create';
     const successMessage =
@@ -144,6 +144,7 @@ const saveMacro = async macroData => {
       v-if="macro && !uiFlags.isFetchingItem"
       :macro-data="macro"
       :can-manage-public-macros="isAdmin"
+      :read-only="isPublicMacroReadOnly"
       @update:macro-data="macro = $event"
       @submit="saveMacro"
     />

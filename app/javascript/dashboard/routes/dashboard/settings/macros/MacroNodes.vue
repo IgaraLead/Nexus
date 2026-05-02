@@ -23,6 +23,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['update:modelValue', 'resetAction', 'deleteNode', 'addNewNode'],
   computed: {
@@ -56,6 +60,7 @@ export default {
     </div>
     <Draggable
       :list="actionData"
+      :disabled="readOnly"
       animation="200"
       item-key="id"
       ghost-class="ghost"
@@ -78,6 +83,7 @@ export default {
                 files
               )
             "
+            :read-only="readOnly"
             :single-node="actionData.length === 1"
             @reset-action="$emit('resetAction', i)"
             @delete-node="$emit('deleteNode', i)"
@@ -88,6 +94,7 @@ export default {
     <div class="macro__node">
       <div>
         <NextButton
+          v-if="!readOnly"
           :title="$t('MACROS.EDITOR.ADD_BTN_TOOLTIP')"
           class="shadow-sm"
           solid

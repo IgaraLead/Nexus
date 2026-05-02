@@ -40,6 +40,12 @@ const visibilityLabel = computed(() => {
 const canManageMacro = computed(
   () => props.canManagePublicMacros || props.macro.visibility !== 'global'
 );
+
+const editTooltip = computed(() =>
+  canManageMacro.value
+    ? t('MACROS.EDIT.TOOLTIP')
+    : t('MACROS.EDIT.VIEW_TOOLTIP')
+);
 </script>
 
 <template>
@@ -88,18 +94,19 @@ const canManageMacro = computed(
       </BaseTableCell>
 
       <BaseTableCell align="end" class="w-24">
-        <div v-if="canManageMacro" class="flex gap-3 justify-end flex-shrink-0">
+        <div class="flex gap-3 justify-end flex-shrink-0">
           <router-link
             :to="{ name: 'macros_edit', params: { macroId: macro.id } }"
           >
             <Button
-              v-tooltip.top="$t('MACROS.EDIT.TOOLTIP')"
+              v-tooltip.top="editTooltip"
               icon="i-woot-edit-pen"
               slate
               sm
             />
           </router-link>
           <Button
+            v-if="canManageMacro"
             v-tooltip.top="$t('MACROS.DELETE.TOOLTIP')"
             icon="i-woot-bin"
             slate
@@ -108,9 +115,6 @@ const canManageMacro = computed(
             @click="$emit('delete')"
           />
         </div>
-        <span v-else class="text-body-main text-n-slate-11">
-          {{ t('MACROS.LIST.ACTIONS_UNAVAILABLE') }}
-        </span>
       </BaseTableCell>
     </template>
   </BaseTableRow>

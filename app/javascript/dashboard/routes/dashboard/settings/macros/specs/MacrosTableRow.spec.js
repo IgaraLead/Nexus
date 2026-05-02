@@ -46,11 +46,10 @@ describe('MacrosTableRow.vue', () => {
     expect(wrapper.findAllComponents({ name: 'Button' })).toHaveLength(2);
   });
 
-  it('hides actions for public macros when public macros cannot be managed', () => {
+  it('keeps public macros viewable without delete actions when public macros cannot be managed', () => {
     const wrapper = mountComponent({ canManagePublicMacros: false });
 
-    expect(wrapper.findAllComponents({ name: 'Button' })).toHaveLength(0);
-    expect(wrapper.text()).toContain('Unavailable');
+    expect(wrapper.findAllComponents({ name: 'Button' })).toHaveLength(1);
   });
 
   it('keeps actions available for personal macros when public macros cannot be managed', () => {

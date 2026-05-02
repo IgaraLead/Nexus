@@ -20,6 +20,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['submit'],
   setup() {
@@ -71,24 +75,34 @@ export default {
       );
     },
     updateName(value) {
+      if (this.readOnly) return;
+
       this.macro.name = value;
     },
     updateVisibility(value) {
+      if (this.readOnly) return;
+
       this.macro.visibility = value;
     },
     appendNode() {
+      if (this.readOnly) return;
+
       this.macro.actions.push({
         action_name: 'assign_team',
         action_params: [],
       });
     },
     deleteNode(index) {
+      if (this.readOnly) return;
+
       // remove that index specifically
       // so that the next item does not get marked invalid
       this.errors = this.removeObjectProperty(this.errors, `action_${index}`);
       this.macro.actions.splice(index, 1);
     },
     submit() {
+      if (this.readOnly) return;
+
       this.errors = validateActions(this.macro.actions);
       if (Object.keys(this.errors).length !== 0) return;
 
@@ -98,6 +112,8 @@ export default {
       this.$emit('submit', this.macro);
     },
     resetNode(index) {
+      if (this.readOnly) return;
+
       // remove that index specifically
       // so that the next item does not get marked invalid
       this.errors = this.removeObjectProperty(this.errors, `action_${index}`);
@@ -120,6 +136,7 @@ export default {
         v-model="macro.actions"
         :files="files"
         :errors="errors"
+        :read-only="readOnly"
         @add-new-node="appendNode"
         @delete-node="deleteNode"
         @reset-action="resetNode"
@@ -130,6 +147,7 @@ export default {
         :macro-name="macro.name"
         :macro-visibility="macro.visibility"
         :can-manage-public-macros="canManagePublicMacros"
+        :read-only="readOnly"
         @update:name="updateName"
         @update:visibility="updateVisibility"
         @submit="submit"

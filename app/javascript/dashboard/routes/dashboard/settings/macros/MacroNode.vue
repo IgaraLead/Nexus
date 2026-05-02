@@ -18,6 +18,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  readOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 defineEmits(['resetAction', 'deleteNode']);
@@ -56,7 +60,7 @@ const dropdownValues = () => {
 <template>
   <div class="relative flex items-start w-full min-w-0 basis-full">
     <NextButton
-      v-if="!singleNode"
+      v-if="!singleNode && !readOnly"
       ghost
       sm
       slate
@@ -71,20 +75,22 @@ const dropdownValues = () => {
           : 'bg-n-background dark:bg-n-solid-1'
       "
     >
-      <ActionInput
-        v-model="actionData"
-        :action-types="macroActionTypes"
-        :dropdown-values="dropdownValues()"
-        :show-action-input="showActionInput"
-        :show-remove-button="false"
-        is-macro
-        :error-message="errorMessage"
-        :initial-file-name="fileName"
-        @reset-action="$emit('resetAction')"
-      />
+      <div :class="{ 'pointer-events-none': readOnly }">
+        <ActionInput
+          v-model="actionData"
+          :action-types="macroActionTypes"
+          :dropdown-values="dropdownValues()"
+          :show-action-input="showActionInput"
+          :show-remove-button="false"
+          is-macro
+          :error-message="errorMessage"
+          :initial-file-name="fileName"
+          @reset-action="$emit('resetAction')"
+        />
+      </div>
     </div>
     <NextButton
-      v-if="!singleNode"
+      v-if="!singleNode && !readOnly"
       v-tooltip="$t('MACROS.EDITOR.DELETE_BTN_TOOLTIP')"
       icon="i-lucide-trash-2"
       sm

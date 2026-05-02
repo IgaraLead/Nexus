@@ -58,4 +58,22 @@ describe('MacroProperties.vue', () => {
 
     expect(wrapper.findComponent({ name: 'Icon' }).exists()).toBe(true);
   });
+
+  it('shows existing public macros as read-only for agents', async () => {
+    const wrapper = mountComponent({
+      canManagePublicMacros: false,
+      macroVisibility: 'global',
+      readOnly: true,
+    });
+    const [publicButton, privateButton] = wrapper.findAll('button');
+
+    await privateButton.trigger('click');
+
+    expect(publicButton.attributes('disabled')).toBeDefined();
+    expect(privateButton.attributes('disabled')).toBeDefined();
+    expect(wrapper.emitted('update:visibility')).toBeUndefined();
+    expect(wrapper.text()).toContain(
+      'Only administrators can edit public macros.'
+    );
+  });
 });
