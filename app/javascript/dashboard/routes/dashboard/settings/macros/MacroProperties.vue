@@ -17,8 +17,22 @@ export default {
       type: String,
       default: 'global',
     },
+    canManagePublicMacros: {
+      type: Boolean,
+      default: true,
+    },
   },
   emits: ['update:name', 'update:visibility', 'submit'],
+  computed: {
+    isPublicVisibilityDisabled() {
+      return !this.canManagePublicMacros;
+    },
+    publicVisibilityDescription() {
+      return this.isPublicVisibilityDisabled
+        ? this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DISABLED_DESCRIPTION')
+        : this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DESCRIPTION');
+    },
+  },
   methods: {
     isActive(key) {
       return this.macroVisibility === key
@@ -29,6 +43,8 @@ export default {
       this.$emit('update:name', value);
     },
     onUpdateVisibility(value) {
+      if (value === 'global' && this.isPublicVisibilityDisabled) return;
+
       this.$emit('update:visibility', value);
     },
   },
@@ -55,8 +71,18 @@ export default {
       </p>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <button
-          class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start cursor-default"
-          :class="isActive('global')"
+          type="button"
+          class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start"
+          :class="[
+            isActive('global'),
+            isPublicVisibilityDisabled
+              ? 'opacity-60 cursor-not-allowed'
+              : 'cursor-default',
+          ]"
+          :disabled="isPublicVisibilityDisabled"
+          :aria-describedby="
+            isPublicVisibilityDisabled ? 'macro-public-visibility-help' : null
+          "
           @click="onUpdateVisibility('global')"
         >
           <div class="flex items-center gap-2 min-w-0 justify-between w-full">
@@ -69,11 +95,15 @@ export default {
               class="text-n-brand size-4"
             />
           </div>
-          <p class="text-n-slate-11 text-label-small">
-            {{ $t('MACROS.EDITOR.VISIBILITY.GLOBAL.DESCRIPTION') }}
+          <p
+            id="macro-public-visibility-help"
+            class="text-n-slate-11 text-label-small"
+          >
+            {{ publicVisibilityDescription }}
           </p>
         </button>
         <button
+          type="button"
           class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start cursor-default"
           :class="isActive('personal')"
           @click="onUpdateVisibility('personal')"

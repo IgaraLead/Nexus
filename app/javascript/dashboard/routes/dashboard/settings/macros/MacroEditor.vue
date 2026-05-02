@@ -8,6 +8,7 @@ import { MACRO_ACTION_TYPES } from './constants';
 import { useAlert } from 'dashboard/composables';
 import actionQueryGenerator from 'dashboard/helper/actionQueryGenerator.js';
 import { useMacros } from 'dashboard/composables/useMacros';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 const store = useStore();
 const getters = useStoreGetters();
@@ -18,6 +19,7 @@ const router = useRouter();
 const { t } = useI18n();
 
 const { getMacroDropdownValues } = useMacros();
+const { isAdmin } = useAdmin();
 
 const macro = ref(null);
 const mode = ref('CREATE');
@@ -92,7 +94,7 @@ const initNewMacro = () => {
         action_params: [],
       },
     ],
-    visibility: 'global',
+    visibility: isAdmin.value ? 'global' : 'personal',
   };
 };
 
@@ -136,6 +138,7 @@ const saveMacro = async macroData => {
     <MacroForm
       v-if="macro && !uiFlags.isFetchingItem"
       :macro-data="macro"
+      :can-manage-public-macros="isAdmin"
       @update:macro-data="macro = $event"
       @submit="saveMacro"
     />

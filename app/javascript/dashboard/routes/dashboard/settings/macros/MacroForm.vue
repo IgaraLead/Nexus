@@ -16,6 +16,10 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    canManagePublicMacros: {
+      type: Boolean,
+      default: true,
+    },
   },
   emits: ['submit'],
   setup() {
@@ -125,6 +129,7 @@ export default {
       <MacroProperties
         :macro-name="macro.name"
         :macro-visibility="macro.visibility"
+        :can-manage-public-macros="canManagePublicMacros"
         @update:name="updateName"
         @update:visibility="updateVisibility"
         @submit="submit"
