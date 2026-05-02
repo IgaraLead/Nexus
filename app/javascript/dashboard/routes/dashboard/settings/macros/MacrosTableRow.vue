@@ -11,6 +11,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  canManagePublicMacros: {
+    type: Boolean,
+    default: true,
+  },
 });
 defineEmits(['delete']);
 const { t } = useI18n();
@@ -32,6 +36,10 @@ const visibilityLabel = computed(() => {
       : 'MACROS.EDITOR.VISIBILITY.PERSONAL.LABEL';
   return t(i18nKey);
 });
+
+const canManageMacro = computed(
+  () => props.canManagePublicMacros || props.macro.visibility !== 'global'
+);
 </script>
 
 <template>
@@ -80,7 +88,7 @@ const visibilityLabel = computed(() => {
       </BaseTableCell>
 
       <BaseTableCell align="end" class="w-24">
-        <div class="flex gap-3 justify-end flex-shrink-0">
+        <div v-if="canManageMacro" class="flex gap-3 justify-end flex-shrink-0">
           <router-link
             :to="{ name: 'macros_edit', params: { macroId: macro.id } }"
           >
@@ -100,6 +108,9 @@ const visibilityLabel = computed(() => {
             @click="$emit('delete')"
           />
         </div>
+        <span v-else class="text-body-main text-n-slate-11">
+          {{ t('MACROS.LIST.ACTIONS_UNAVAILABLE') }}
+        </span>
       </BaseTableCell>
     </template>
   </BaseTableRow>

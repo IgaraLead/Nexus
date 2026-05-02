@@ -79,9 +79,14 @@ const manifestMacro = async () => {
   macro.value = formatMacro(singleMacro);
 };
 
-const fetchMacro = () => {
+const fetchMacro = async () => {
   mode.value = 'EDIT';
-  manifestMacro();
+  await manifestMacro();
+
+  if (macro.value?.visibility === 'global' && !isAdmin.value) {
+    useAlert(t('MACROS.EDIT.API.UNAUTHORIZED_PUBLIC_MESSAGE'));
+    router.push({ name: 'macros_wrapper' });
+  }
 };
 
 const initNewMacro = () => {

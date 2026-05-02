@@ -35,6 +35,7 @@
         "VISIBILITY": "Visibility",
         "ACTIONS": "Actions"
       },
+      "ACTIONS_UNAVAILABLE": "Unavailable",
       "404": "No macros found"
     },
     "DELETE": {
@@ -53,7 +54,8 @@
       "TOOLTIP": "Edit macro",
       "API": {
         "SUCCESS_MESSAGE": "Macro updated successfully",
-        "ERROR_MESSAGE": "Could not update Macro, Please try again later"
+        "ERROR_MESSAGE": "Could not update Macro, Please try again later",
+        "UNAUTHORIZED_PUBLIC_MESSAGE": "Only administrators can edit public macros."
       }
     },
     "EDITOR": {
