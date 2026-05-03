@@ -36,13 +36,51 @@ class Companies::ContactMembershipService
     return contact if old_company_id == new_company_id &&
                       contact.additional_attributes.to_h == updated_additional_attributes
 
-    contact.assign_attributes(
-      company_id: new_company_id,
-      additional_attributes: updated_additional_attributes
-    )
-    contact.save!(validate: false)
+    ActiveRecord::Base.transaction do
+      persist_contact_membership(contact, new_company_id, updated_additional_attributes)
+      sync_company_counters(old_company_id, new_company_id)
+    end
+
+    contact.company_id = new_company_id
+    contact.additional_attributes = updated_additional_attributes
+    contact.clear_changes_information
 
     contact
+  end
+
+  def sync_company_counters(old_company_id, new_company_id)
+    return if old_company_id == new_company_id
+
+    update_contacts_count(old_company_id, -1) if old_company_id.present?
+    update_contacts_count(new_company_id, 1) if new_company_id.present?
+  end
+
+  def persist_contact_membership(contact, company_id, additional_attributes)
+    Contact.connection.exec_update(
+      'UPDATE contacts SET company_id = $1, additional_attributes = $2, updated_at = $3 WHERE id = $4',
+      'Company contact membership sync',
+      [
+        bind_attribute(Contact, 'company_id', company_id),
+        bind_attribute(Contact, 'additional_attributes', additional_attributes),
+        bind_attribute(Contact, 'updated_at', Time.current),
+        bind_attribute(Contact, 'id', contact.id)
+      ]
+    )
+  end
+
+  def update_contacts_count(company_id, value)
+    Company.connection.exec_update(
+      'UPDATE companies SET contacts_count = COALESCE(contacts_count, 0) + $1 WHERE id = $2',
+      'Company contacts count sync',
+      [
+        bind_attribute(Company, 'contacts_count', value),
+        bind_attribute(Company, 'id', company_id)
+      ]
+    )
+  end
+
+  def bind_attribute(model, attribute, value)
+    ActiveRecord::Relation::QueryAttribute.new(attribute, value, model.type_for_attribute(attribute))
   end
 
   def synced_additional_attributes(contact, company_name)

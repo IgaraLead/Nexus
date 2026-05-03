@@ -16,5 +16,19 @@ RSpec.describe Companies::ContactMembershipService, type: :service do
       expect(contact.additional_attributes['company_name']).to eq(company.name)
       expect(company.reload.contacts_count).to eq(1)
     end
+
+    it 'does not dispatch contact update events' do
+      company = create(:company)
+      contact = create(:contact, account: company.account)
+      allow(Rails.configuration.dispatcher).to receive(:dispatch)
+
+      described_class.new(company: company).assign(contact: contact)
+
+      expect(Rails.configuration.dispatcher).not_to have_received(:dispatch).with(
+        Contact::CONTACT_UPDATED,
+        anything,
+        anything
+      )
+    end
   end
 end
