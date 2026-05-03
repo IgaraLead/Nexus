@@ -74,7 +74,22 @@ const handleEndCall = async () => {
 };
 
 const handleJoinCall = async call => {
-  if (!call || isJoining.value) return;
+  // eslint-disable-next-line no-console
+  console.log('[CW Voice] handleJoinCall', {
+    call,
+    isJoining: isJoining.value,
+    hasActiveCall: hasActiveCall.value,
+  });
+  if (!call) {
+    // eslint-disable-next-line no-console
+    console.warn('[CW Voice] handleJoinCall: no call object');
+    return;
+  }
+  if (isJoining.value) {
+    // eslint-disable-next-line no-console
+    console.warn('[CW Voice] handleJoinCall: already joining (stuck flag?)');
+    return;
+  }
   const { conversation } = getCallInfo(call);
 
   // End current active call before joining new one

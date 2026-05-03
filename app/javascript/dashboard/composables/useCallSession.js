@@ -122,22 +122,45 @@ export function useCallSession() {
   };
 
   const joinCall = async ({ conversationId, inboxId, callSid }) => {
-    if (isJoining.value) return null;
+    // eslint-disable-next-line no-console
+    console.log('[CW Voice] joinCall', { conversationId, inboxId, callSid });
+    if (isJoining.value) {
+      // eslint-disable-next-line no-console
+      console.warn('[CW Voice] joinCall: isJoining flag stuck');
+      return null;
+    }
 
     isJoining.value = true;
     try {
       const call = findCall(callSid);
+      // eslint-disable-next-line no-console
+      console.log('[CW Voice] joinCall: found call?', call);
       if (isWhatsappCall(call)) {
+        // eslint-disable-next-line no-console
+        console.log('[CW Voice] joinCall: WhatsApp branch', {
+          callId: call.callId,
+          hasSdpOffer: Boolean(call.sdpOffer),
+          hasIceServers: Boolean(call.iceServers),
+        });
         await whatsappSession.acceptIncomingCall({
           callId: call.callId,
           sdpOffer: call.sdpOffer,
           iceServers: call.iceServers,
         });
+        // eslint-disable-next-line no-console
+        console.log('[CW Voice] joinCall: WhatsApp accept POST returned OK');
         callsStore.setCallActive(callSid);
         durationTimer.start();
         return { callId: call.callId };
       }
 
+      // eslint-disable-next-line no-console
+      console.log(
+        '[CW Voice] joinCall: Twilio branch (provider not whatsapp)',
+        {
+          provider: call?.provider,
+        }
+      );
       const device = await TwilioVoiceClient.initializeDevice(inboxId);
       if (!device) return null;
 
