@@ -73,7 +73,7 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   end
 
   def ensure_companies_enabled!
-    return if ChatwootApp.enterprise? && Current.account.feature_enabled?('companies')
+    return if Current.account.feature_enabled?('companies')
 
     render json: { error: 'Companies are not enabled for this account' }, status: :forbidden
   end
