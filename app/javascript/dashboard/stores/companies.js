@@ -382,39 +382,29 @@ export const useCompaniesStore = defineStore('companies', {
       this.setUIFlag({ linkingContact: true });
       this.ensureActiveCompanyContext(companyId);
       const currentPage = this.companyContactsMeta.page || 1;
+      const numericCompanyId = Number(companyId);
+      const numericContactId = Number(contactId);
       const previousCompanyId = this.contactSearchResults.find(
-        contact => contact.id === Number(contactId)
+        contact => contact.id === numericContactId
       )?.companyId;
       try {
-        const {
-          data: { payload },
-        } = await CompanyAPI.linkContact(companyId, {
+        await CompanyAPI.linkContact(companyId, {
           contact_id: contactId,
         });
-        const contact = normalizeContactRecord(payload);
 
-        if (this.activeCompanyId !== Number(companyId)) {
-          return contact;
+        if (this.activeCompanyId !== numericCompanyId) {
+          return numericContactId;
         }
 
-        this.contactSearchResults = upsertRecord(
-          this.contactSearchResults,
-          contact
+        this.contactSearchResults = this.contactSearchResults.filter(
+          contact => contact.id !== numericContactId
         );
-        if (
-          previousCompanyId &&
-          previousCompanyId !== Number(companyId) &&
-          previousCompanyId !== contact.companyId
-        ) {
+        if (previousCompanyId && previousCompanyId !== numericCompanyId) {
           this.updateCompanyCount(previousCompanyId, -1);
         }
-        if (contact.company) {
-          this.upsertCompanyRecord(contact.company);
-        } else {
-          this.updateCompanyCount(companyId, 1);
-        }
+        this.updateCompanyCount(companyId, 1);
         await this.getCompanyContacts(companyId, currentPage);
-        return contact;
+        return numericContactId;
       } catch (error) {
         return throwErrorMessage(error);
       } finally {

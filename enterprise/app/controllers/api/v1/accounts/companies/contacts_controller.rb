@@ -21,7 +21,8 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
   end
 
   def create
-    @contact = membership_service.assign(contact: fetch_existing_contact)
+    membership_service.assign(contact: fetch_existing_contact)
+    head :ok
   end
 
   def destroy
