@@ -144,6 +144,4 @@ if resource.twilio? && resource.channel.respond_to?(:voice_enabled?)
 end
 
 ## Voice attribute for WhatsApp Cloud (only embedded-signup channels surface true)
-if resource.channel_type == 'Channel::Whatsapp' && resource.channel.respond_to?(:voice_enabled?)
-  json.voice_enabled resource.channel.voice_enabled?
-end
+json.voice_enabled resource.channel.voice_enabled? if resource.channel_type == 'Channel::Whatsapp' && resource.channel.respond_to?(:voice_enabled?)

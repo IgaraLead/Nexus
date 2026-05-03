@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { useCallSession } from 'dashboard/composables/useCallSession';
 import { setWhatsappCallMuted } from 'dashboard/composables/useWhatsappCallSession';
-import { useAlert } from 'dashboard/composables';
 import WindowVisibilityHelper from 'dashboard/helper/AudioAlerts/WindowVisibilityHelper';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 
@@ -75,15 +74,7 @@ const handleEndCall = async () => {
 };
 
 const handleJoinCall = async call => {
-  useAlert('[debug] handleJoinCall click handler fired');
-  if (!call) {
-    useAlert('[debug] handleJoinCall bailed: no call object');
-    return;
-  }
-  if (isJoining.value) {
-    useAlert('[debug] handleJoinCall bailed: already joining');
-    return;
-  }
+  if (!call || isJoining.value) return;
   const { conversation } = getCallInfo(call);
 
   // End current active call before joining new one
