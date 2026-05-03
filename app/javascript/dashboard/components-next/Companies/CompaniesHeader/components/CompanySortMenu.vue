@@ -36,10 +36,6 @@ const sortMenus = [
     value: 'created_at',
   },
   {
-    label: t('COMPANIES.SORT_BY.OPTIONS.LAST_ACTIVITY_AT'),
-    value: 'last_activity_at',
-  },
-  {
     label: t('COMPANIES.SORT_BY.OPTIONS.CONTACTS_COUNT'),
     value: 'contacts_count',
   },

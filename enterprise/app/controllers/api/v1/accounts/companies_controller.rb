@@ -3,7 +3,6 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   sort_on :name, type: :string
   sort_on :domain, type: :string
   sort_on :created_at, type: :datetime
-  sort_on :last_activity_at, internal_name: :order_on_last_activity_at, type: :scope, scope_params: [:direction]
   sort_on :contacts_count, internal_name: :order_on_contacts_count, type: :scope, scope_params: [:direction]
 
   RESULTS_PER_PAGE = 25
@@ -38,8 +37,7 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
 
   def update
     ActiveRecord::Base.transaction do
-      # TODO: Revisit company activity tracking when we add a broader activity surface.
-      @company.update!(company_params.merge(last_activity_at: Time.current))
+      @company.update!(company_params)
       sync_linked_contact_names if @company.saved_change_to_name?
     end
   end

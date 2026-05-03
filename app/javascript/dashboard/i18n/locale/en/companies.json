@@ -7,7 +7,6 @@
         "NAME": "Name",
         "DOMAIN": "Domain",
         "CREATED_AT": "Created at",
-        "LAST_ACTIVITY_AT": "Last activity",
         "CONTACTS_COUNT": "Contacts count"
       }
     },
@@ -57,7 +56,6 @@
       "PROFILE": {
         "TITLE": "Edit company details",
         "CREATED_AT": "Created {date}",
-        "LAST_ACTIVE": "Last active {date}",
         "DESCRIPTION_PLACEHOLDER": "Add a short description for this company",
         "ACTIONS": {
           "SAVE": "Update company"
