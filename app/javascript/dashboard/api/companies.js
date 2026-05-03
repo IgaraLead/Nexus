@@ -2,22 +2,11 @@
 import ApiClient from './ApiClient';
 
 const buildParams = params =>
-  Object.entries(params)
-    .filter(
+  new URLSearchParams(
+    Object.entries(params).filter(
       ([key, value]) => value !== undefined && (value !== '' || key === 'q')
     )
-    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-    .join('&');
-
-const buildCompanyParams = (page, sort) => buildParams({ page, sort });
-
-const buildSearchParams = (query, page, sort) =>
-  buildParams({ q: query, page, sort });
-
-const buildCompanyContactParams = page => buildParams({ page });
-
-const buildCompanyContactSearchParams = (query, page) =>
-  buildParams({ q: query, page });
+  ).toString();
 
 class CompanyAPI extends ApiClient {
   constructor() {
@@ -26,12 +15,12 @@ class CompanyAPI extends ApiClient {
 
   get(params = {}) {
     const { page = 1, sort = 'name' } = params;
-    const requestURL = `${this.url}?${buildCompanyParams(page, sort)}`;
+    const requestURL = `${this.url}?${buildParams({ page, sort })}`;
     return axios.get(requestURL);
   }
 
   search(query = '', page = 1, sort = 'name') {
-    const requestURL = `${this.url}/search?${buildSearchParams(query, page, sort)}`;
+    const requestURL = `${this.url}/search?${buildParams({ q: query, page, sort })}`;
     return axios.get(requestURL);
   }
 
@@ -40,17 +29,12 @@ class CompanyAPI extends ApiClient {
   }
 
   listContacts(id, page = 1) {
-    return axios.get(
-      `${this.url}/${id}/contacts?${buildCompanyContactParams(page)}`
-    );
+    return axios.get(`${this.url}/${id}/contacts?${buildParams({ page })}`);
   }
 
   searchContacts(id, query, page = 1) {
     return axios.get(
-      `${this.url}/${id}/contacts/search?${buildCompanyContactSearchParams(
-        query,
-        page
-      )}`
+      `${this.url}/${id}/contacts/search?${buildParams({ q: query, page })}`
     );
   }
 

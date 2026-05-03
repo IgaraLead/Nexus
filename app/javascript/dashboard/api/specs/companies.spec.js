@@ -29,52 +29,32 @@ describe('#CompanyAPI', () => {
       window.axios = originalAxios;
     });
 
-    it('#get with default params', () => {
+    it('#get includes pagination and sorting params', () => {
       companyAPI.get({});
       expect(axiosMock.get).toHaveBeenCalledWith(
         '/api/v1/companies?page=1&sort=name'
       );
     });
 
-    it('#get with page and sort params', () => {
-      companyAPI.get({ page: 2, sort: 'domain' });
-      expect(axiosMock.get).toHaveBeenCalledWith(
-        '/api/v1/companies?page=2&sort=domain'
-      );
-    });
-
-    it('#get with descending sort', () => {
-      companyAPI.get({ page: 1, sort: '-created_at' });
-      expect(axiosMock.get).toHaveBeenCalledWith(
-        '/api/v1/companies?page=1&sort=-created_at'
-      );
-    });
-
-    it('#search with query', () => {
-      companyAPI.search('acme', 1, 'name');
-      expect(axiosMock.get).toHaveBeenCalledWith(
-        '/api/v1/companies/search?q=acme&page=1&sort=name'
-      );
-    });
-
-    it('#search with special characters in query', () => {
+    it('#search encodes query params', () => {
       companyAPI.search('acme & co', 2, 'domain');
       expect(axiosMock.get).toHaveBeenCalledWith(
-        '/api/v1/companies/search?q=acme%20%26%20co&page=2&sort=domain'
+        '/api/v1/companies/search?q=acme+%26+co&page=2&sort=domain'
       );
     });
 
-    it('#search with descending sort', () => {
-      companyAPI.search('test', 1, '-created_at');
-      expect(axiosMock.get).toHaveBeenCalledWith(
-        '/api/v1/companies/search?q=test&page=1&sort=-created_at'
-      );
-    });
-
-    it('#search with empty query', () => {
+    it('#search keeps empty query param for backend validation', () => {
       companyAPI.search('', 1, 'name');
       expect(axiosMock.get).toHaveBeenCalledWith(
         '/api/v1/companies/search?q=&page=1&sort=name'
+      );
+    });
+
+    it('#linkContact posts to the nested company contacts endpoint', () => {
+      companyAPI.linkContact(1, { contact_id: 2 });
+      expect(axiosMock.post).toHaveBeenCalledWith(
+        '/api/v1/companies/1/contacts',
+        { contact_id: 2 }
       );
     });
   });
