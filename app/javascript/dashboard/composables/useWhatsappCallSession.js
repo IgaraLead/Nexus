@@ -329,15 +329,26 @@ export const isWhatsappCallMuted = () => {
   return !tracks[0].enabled;
 };
 
-// Best-effort terminate when the tab actually closes after the beforeunload prompt.
-export const sendWhatsappTerminateBeacon = () => {
-  if (!activeCallId || intentionallyClosing) return;
+// Best-effort terminate beacon for any WhatsApp call — the backend's terminate
+// endpoint handles both ringing and in_progress states (rejecting via terminate
+// records 'no_answer' which is the right shape for "agent left the page").
+// Browser-direct WebRTC has no rejoin path, so the only sensible thing on
+// page close is to release the call on Meta's side.
+export const sendWhatsappCallBeacon = callId => {
+  if (!callId) return;
   const accountId = window.location.pathname.split('/')[3];
   if (!accountId) return;
-  const url = `/api/v1/accounts/${accountId}/whatsapp_calls/${activeCallId}/terminate`;
+  const url = `/api/v1/accounts/${accountId}/whatsapp_calls/${callId}/terminate`;
   try {
     navigator.sendBeacon(url);
   } catch (_) {
     /* noop */
   }
+};
+
+// Backward-compat wrapper for the active-call case — guarded by
+// intentionallyClosing so we don't double-terminate after an explicit hangup.
+export const sendWhatsappTerminateBeacon = () => {
+  if (!activeCallId || intentionallyClosing) return;
+  sendWhatsappCallBeacon(activeCallId);
 };

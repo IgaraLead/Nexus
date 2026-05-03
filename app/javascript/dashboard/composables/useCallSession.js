@@ -6,6 +6,7 @@ import { useCallsStore } from 'dashboard/stores/calls';
 import {
   useWhatsappCallSession,
   sendWhatsappTerminateBeacon,
+  sendWhatsappCallBeacon,
   cleanupWhatsappSession,
 } from 'dashboard/composables/useWhatsappCallSession';
 import { handleVoiceCallCreated } from 'dashboard/helper/voice';
@@ -69,10 +70,15 @@ export function useCallSession() {
     });
   };
 
-  // pagehide fires after the user confirms the prompt. Let the WhatsApp session
-  // best-effort sendBeacon a terminate so the server doesn't keep the call open.
+  // pagehide fires after the user confirms the prompt. Beacon a terminate for
+  // every WhatsApp call in the store — active OR ringing — since browser-direct
+  // WebRTC has no rejoin path, so any call that survives the close becomes
+  // permanently orphaned on Meta's side.
   const handlePageHide = () => {
     sendWhatsappTerminateBeacon();
+    callsStore.calls
+      .filter(c => c.provider === 'whatsapp' && !c.isActive && c.callId)
+      .forEach(c => sendWhatsappCallBeacon(c.callId));
   };
 
   const handleTwilioDisconnected = () => callsStore.clearActiveCall();
