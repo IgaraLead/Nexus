@@ -79,7 +79,7 @@ class Imap::BaseFetchEmailService
     Rails.logger.info "[IMAP::FETCH_EMAIL_SERVICE] Fetching mails from #{channel.email}, found #{seq_nums.length}."
 
     message_ids_with_seq = []
-    seq_nums.each_slice(500).each do |batch|
+    seq_nums.each_slice(1000).each do |batch|
       append_message_ids_for_batch(batch, message_ids_with_seq)
       if message_ids_with_seq.length >= MAX_MESSAGES_PER_SYNC
         Rails.logger.info "[IMAP::FETCH_EMAIL_SERVICE] Reached MAX_MESSAGES_PER_SYNC=#{MAX_MESSAGES_PER_SYNC} for #{channel.email}, stopping sync."
