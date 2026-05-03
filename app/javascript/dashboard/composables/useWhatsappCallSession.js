@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import Cookies from 'js-cookie';
 import WhatsappCallsAPI from 'dashboard/api/channel/whatsapp/whatsappCallsAPI';
 
 // Browser ↔ Meta WebRTC is a singleton — only one PeerConnection at a time can
@@ -329,18 +330,51 @@ export const isWhatsappCallMuted = () => {
   return !tracks[0].enabled;
 };
 
+// devise-token-auth requires access-token / client / uid headers on every
+// request — navigator.sendBeacon can't set custom headers, so the dashboard
+// stashes the auth payload in the cw_d_session_info cookie at login and we
+// rehydrate it here for unload-time requests.
+const getDeviseAuthHeaders = () => {
+  try {
+    const raw = Cookies.get('cw_d_session_info');
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return {
+      'access-token': session['access-token'] || '',
+      client: session.client || '',
+      uid: session.uid || '',
+      expiry: session.expiry || '',
+      'token-type': session['token-type'] || 'Bearer',
+    };
+  } catch (_) {
+    return null;
+  }
+};
+
 // Best-effort terminate beacon for any WhatsApp call — the backend's terminate
-// endpoint handles both ringing and in_progress states (rejecting via terminate
+// endpoint handles both ringing and in_progress states (terminate while ringing
 // records 'no_answer' which is the right shape for "agent left the page").
-// Browser-direct WebRTC has no rejoin path, so the only sensible thing on
-// page close is to release the call on Meta's side.
+// Browser-direct WebRTC has no rejoin path, so the only sensible thing on page
+// close is to release the call on Meta's side.
+//
+// Uses fetch+keepalive instead of navigator.sendBeacon so we can attach the
+// devise-token-auth headers — without them the request 401s and the call
+// stays open on Meta until the carrier-side timeout (~60s).
 export const sendWhatsappCallBeacon = callId => {
   if (!callId) return;
   const accountId = window.location.pathname.split('/')[3];
   if (!accountId) return;
+  const headers = getDeviseAuthHeaders();
+  if (!headers) return;
   const url = `/api/v1/accounts/${accountId}/whatsapp_calls/${callId}/terminate`;
   try {
-    navigator.sendBeacon(url);
+    fetch(url, {
+      method: 'POST',
+      keepalive: true,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: '{}',
+    }).catch(() => {});
   } catch (_) {
     /* noop */
   }
