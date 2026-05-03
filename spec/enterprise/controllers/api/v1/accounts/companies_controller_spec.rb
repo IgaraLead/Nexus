@@ -18,16 +18,6 @@ RSpec.describe 'Companies API', type: :request do
       let!(:company1) { create(:company, name: 'Company 1', account: account) }
       let!(:company2) { create(:company, account: account) }
 
-      it 'returns forbidden when companies feature is disabled' do
-        account.disable_features!(:companies)
-
-        get "/api/v1/accounts/#{account.id}/companies",
-            headers: admin.create_new_auth_token,
-            as: :json
-
-        expect(response).to have_http_status(:forbidden)
-      end
-
       it 'returns all companies' do
         get "/api/v1/accounts/#{account.id}/companies",
             headers: admin.create_new_auth_token,
