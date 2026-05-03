@@ -77,44 +77,31 @@ const updateContactInCollection = (contacts, contactId, updater) =>
     contact.id === Number(contactId) ? updater(contact) : contact
   );
 
-const buildFormData = (payload, rootKey = '') => {
+const appendFormDataValue = (formData, key, value) => {
+  if (value === undefined || value === null || value === '') {
+    return;
+  }
+
+  if (value instanceof File || value instanceof Blob) {
+    formData.append(key, value);
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+      appendFormDataValue(formData, `${key}[${nestedKey}]`, nestedValue);
+    });
+    return;
+  }
+
+  formData.append(key, value);
+};
+
+const buildCompanyFormData = payload => {
   const formData = new FormData();
 
-  const appendFormDataValue = (key, value) => {
-    if (value === undefined || value === null || value === '') {
-      return;
-    }
-
-    if (value instanceof File || value instanceof Blob) {
-      formData.append(key, value);
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        formData.append(key, '[]');
-        return;
-      }
-
-      value.forEach((item, index) => {
-        appendFormDataValue(`${key}[${index}]`, item);
-      });
-      return;
-    }
-
-    if (typeof value === 'object') {
-      Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-        appendFormDataValue(`${key}[${nestedKey}]`, nestedValue);
-      });
-      return;
-    }
-
-    formData.append(key, value);
-  };
-
   Object.entries(payload).forEach(([key, value]) => {
-    const formKey = rootKey ? `${rootKey}[${key}]` : key;
-    appendFormDataValue(formKey, value);
+    appendFormDataValue(formData, `company[${key}]`, value);
   });
 
   return formData;
@@ -127,6 +114,14 @@ const buildCompanyPayload = companyAttrs => {
     ...snakecaseKeys(attrsToDecamelize, { deep: true }),
     ...(avatar && { avatar }),
   };
+};
+
+const buildCompanyRequestPayload = companyAttrs => {
+  const payload = buildCompanyPayload(companyAttrs);
+
+  return companyAttrs.avatar
+    ? buildCompanyFormData(payload)
+    : { company: payload };
 };
 
 export const useCompaniesStore = defineStore('companies', {
@@ -238,13 +233,9 @@ export const useCompaniesStore = defineStore('companies', {
     async create(companyAttrs) {
       this.setUIFlag({ creatingItem: true });
       try {
-        const payload = buildCompanyPayload(companyAttrs);
-        const requestPayload = companyAttrs.avatar
-          ? buildFormData(payload, 'company')
-          : { company: payload };
         const {
           data: { payload: createdPayload },
-        } = await CompanyAPI.create(requestPayload);
+        } = await CompanyAPI.create(buildCompanyRequestPayload(companyAttrs));
         const company = normalizeCompanyRecord(createdPayload);
         this.upsertCompanyRecord(company);
         return company;
@@ -258,13 +249,12 @@ export const useCompaniesStore = defineStore('companies', {
     async update({ id, ...companyAttrs }) {
       this.setUIFlag({ updatingItem: true });
       try {
-        const payload = buildCompanyPayload(companyAttrs);
-        const requestPayload = companyAttrs.avatar
-          ? buildFormData(payload, 'company')
-          : { company: payload };
         const {
           data: { payload: updatedPayload },
-        } = await CompanyAPI.update(id, requestPayload);
+        } = await CompanyAPI.update(
+          id,
+          buildCompanyRequestPayload(companyAttrs)
+        );
         const company = normalizeCompanyRecord(updatedPayload);
         this.upsertCompanyRecord(company);
         return company;

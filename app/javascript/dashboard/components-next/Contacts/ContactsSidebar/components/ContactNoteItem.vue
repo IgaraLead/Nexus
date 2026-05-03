@@ -24,10 +24,6 @@ const props = defineProps({
     type: String,
     default: '',
   },
-  metadataLabel: {
-    type: String,
-    default: '',
-  },
   metadataPrefix: {
     type: String,
     default: '',
@@ -73,7 +69,6 @@ const displayAvatarSrc = computed(() => {
     ? props.note?.user?.thumbnail
     : '/assets/images/chatwoot_bot.png';
 });
-const hasMetadata = computed(() => props.metadataLabel || props.metadataValue);
 
 const handleDelete = () => {
   emit('delete', props.note.id);
@@ -120,23 +115,20 @@ onMounted(() => {
           <span v-else class="font-medium leading-4 text-n-slate-12">
             {{ writtenBy }}
           </span>
-          <template v-if="hasMetadata">
+          <template v-if="metadataValue">
             <span class="text-n-slate-10">
               {{ ` ${noteMetaSeparator} ` }}
             </span>
-            <template v-if="metadataValue">
-              <span v-if="metadataPrefix"> {{ metadataPrefix }}{{ ' ' }} </span>
-              <button
-                v-if="metadataValueClickable"
-                type="button"
-                class="reset-base inline !p-0 !m-0 leading-4 align-baseline hover:text-n-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-n-brand rounded-sm"
-                @click.stop="handleMetadataClick"
-              >
-                {{ metadataValue }}
-              </button>
-              <span v-else>{{ metadataValue }}</span>
-            </template>
-            <span v-else>{{ metadataLabel }}</span>
+            <span v-if="metadataPrefix"> {{ metadataPrefix }}{{ ' ' }} </span>
+            <button
+              v-if="metadataValueClickable"
+              type="button"
+              class="reset-base inline !p-0 !m-0 leading-4 align-baseline hover:text-n-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-n-brand rounded-sm"
+              @click.stop="handleMetadataClick"
+            >
+              {{ metadataValue }}
+            </button>
+            <span v-else>{{ metadataValue }}</span>
             <span class="text-n-slate-10">
               {{ ` ${noteMetaSeparator} ` }}
             </span>

@@ -5,14 +5,10 @@ import { vOnClickOutside } from '@vueuse/components';
 import Breadcrumb from 'dashboard/components-next/breadcrumb/Breadcrumb.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 
-const props = defineProps({
+defineProps({
   breadcrumbItems: {
     type: Array,
     default: () => [],
-  },
-  wide: {
-    type: Boolean,
-    default: false,
   },
 });
 
@@ -42,26 +38,17 @@ const closeMobileSidebar = () => {
       class="flex flex-col w-full h-full transition-all duration-300 ltr:2xl:ml-56 rtl:2xl:mr-56"
     >
       <header class="sticky top-0 z-10 px-6 3xl:px-0">
-        <div
-          class="w-full mx-auto"
-          :class="props.wide ? 'max-w-[48rem]' : 'max-w-[40.625rem]'"
-        >
+        <div class="w-full mx-auto max-w-[40.625rem]">
           <div
             class="flex flex-col xs:flex-row items-start xs:items-center justify-between w-full py-7 gap-2"
           >
             <Breadcrumb :items="breadcrumbItems" @click="emit('back')" />
-            <div v-if="slots.actions" class="flex flex-wrap items-center gap-2">
-              <slot name="actions" />
-            </div>
           </div>
         </div>
       </header>
 
       <main class="flex-1 px-6 overflow-y-auto 3xl:px-px">
-        <div
-          class="w-full py-4 mx-auto"
-          :class="props.wide ? 'max-w-[48rem]' : 'max-w-[40.625rem]'"
-        >
+        <div class="w-full py-4 mx-auto max-w-[40.625rem]">
           <slot />
         </div>
       </main>
