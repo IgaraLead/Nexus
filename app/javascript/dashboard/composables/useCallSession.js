@@ -9,6 +9,7 @@ import {
   cleanupWhatsappSession,
 } from 'dashboard/composables/useWhatsappCallSession';
 import { handleVoiceCallCreated } from 'dashboard/helper/voice';
+import { useAlert } from 'dashboard/composables';
 import Timer from 'dashboard/helper/Timer';
 
 const isWhatsappCall = call => call?.provider === 'whatsapp';
@@ -122,44 +123,33 @@ export function useCallSession() {
   };
 
   const joinCall = async ({ conversationId, inboxId, callSid }) => {
-    // eslint-disable-next-line no-console
-    console.log('[CW Voice] joinCall', { conversationId, inboxId, callSid });
+    useAlert(`[debug] joinCall: callSid=${callSid} inboxId=${inboxId}`);
     if (isJoining.value) {
-      // eslint-disable-next-line no-console
-      console.warn('[CW Voice] joinCall: isJoining flag stuck');
+      useAlert('[debug] joinCall bailed: isJoining flag stuck');
       return null;
     }
 
     isJoining.value = true;
     try {
       const call = findCall(callSid);
-      // eslint-disable-next-line no-console
-      console.log('[CW Voice] joinCall: found call?', call);
+      useAlert(
+        `[debug] found call? provider=${call?.provider} callId=${call?.callId} hasSdpOffer=${Boolean(call?.sdpOffer)}`
+      );
       if (isWhatsappCall(call)) {
-        // eslint-disable-next-line no-console
-        console.log('[CW Voice] joinCall: WhatsApp branch', {
-          callId: call.callId,
-          hasSdpOffer: Boolean(call.sdpOffer),
-          hasIceServers: Boolean(call.iceServers),
-        });
+        useAlert('[debug] taking WhatsApp accept path');
         await whatsappSession.acceptIncomingCall({
           callId: call.callId,
           sdpOffer: call.sdpOffer,
           iceServers: call.iceServers,
         });
-        // eslint-disable-next-line no-console
-        console.log('[CW Voice] joinCall: WhatsApp accept POST returned OK');
+        useAlert('[debug] /accept POST succeeded');
         callsStore.setCallActive(callSid);
         durationTimer.start();
         return { callId: call.callId };
       }
 
-      // eslint-disable-next-line no-console
-      console.log(
-        '[CW Voice] joinCall: Twilio branch (provider not whatsapp)',
-        {
-          provider: call?.provider,
-        }
+      useAlert(
+        `[debug] taking Twilio path — provider mismatch: ${call?.provider}`
       );
       const device = await TwilioVoiceClient.initializeDevice(inboxId);
       if (!device) return null;
@@ -181,6 +171,7 @@ export function useCallSession() {
 
       return { conferenceSid: joinResponse?.conference_sid };
     } catch (error) {
+      useAlert(`[debug] joinCall threw: ${error?.message || error}`);
       // eslint-disable-next-line no-console
       console.error('Failed to join call:', error);
       // Tear down any half-built WebRTC state so the user's next click starts

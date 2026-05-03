@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { useCallSession } from 'dashboard/composables/useCallSession';
 import { setWhatsappCallMuted } from 'dashboard/composables/useWhatsappCallSession';
+import { useAlert } from 'dashboard/composables';
 import WindowVisibilityHelper from 'dashboard/helper/AudioAlerts/WindowVisibilityHelper';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 
@@ -74,20 +75,13 @@ const handleEndCall = async () => {
 };
 
 const handleJoinCall = async call => {
-  // eslint-disable-next-line no-console
-  console.log('[CW Voice] handleJoinCall', {
-    call,
-    isJoining: isJoining.value,
-    hasActiveCall: hasActiveCall.value,
-  });
+  useAlert('[debug] handleJoinCall click handler fired');
   if (!call) {
-    // eslint-disable-next-line no-console
-    console.warn('[CW Voice] handleJoinCall: no call object');
+    useAlert('[debug] handleJoinCall bailed: no call object');
     return;
   }
   if (isJoining.value) {
-    // eslint-disable-next-line no-console
-    console.warn('[CW Voice] handleJoinCall: already joining (stuck flag?)');
+    useAlert('[debug] handleJoinCall bailed: already joining');
     return;
   }
   const { conversation } = getCallInfo(call);
