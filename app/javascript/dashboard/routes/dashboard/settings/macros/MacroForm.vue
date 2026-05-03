@@ -75,34 +75,24 @@ export default {
       );
     },
     updateName(value) {
-      if (this.readOnly) return;
-
       this.macro.name = value;
     },
     updateVisibility(value) {
-      if (this.readOnly) return;
-
       this.macro.visibility = value;
     },
     appendNode() {
-      if (this.readOnly) return;
-
       this.macro.actions.push({
         action_name: 'assign_team',
         action_params: [],
       });
     },
     deleteNode(index) {
-      if (this.readOnly) return;
-
       // remove that index specifically
       // so that the next item does not get marked invalid
       this.errors = this.removeObjectProperty(this.errors, `action_${index}`);
       this.macro.actions.splice(index, 1);
     },
     submit() {
-      if (this.readOnly) return;
-
       this.errors = validateActions(this.macro.actions);
       if (Object.keys(this.errors).length !== 0) return;
 
@@ -112,8 +102,6 @@ export default {
       this.$emit('submit', this.macro);
     },
     resetNode(index) {
-      if (this.readOnly) return;
-
       // remove that index specifically
       // so that the next item does not get marked invalid
       this.errors = this.removeObjectProperty(this.errors, `action_${index}`);
@@ -132,15 +120,16 @@ export default {
     <div
       class="flex-1 w-full h-full max-h-full ltr:pl-12 ltr:pr-6 rtl:pl-6 rtl:pr-12 py-4 overflow-y-auto lg:w-auto macro-gradient-radial dark:macro-dark-gradient-radial macro-gradient-radial-size"
     >
-      <MacroNodes
-        v-model="macro.actions"
-        :files="files"
-        :errors="errors"
-        :read-only="readOnly"
-        @add-new-node="appendNode"
-        @delete-node="deleteNode"
-        @reset-action="resetNode"
-      />
+      <div :class="{ 'pointer-events-none opacity-75': readOnly }">
+        <MacroNodes
+          v-model="macro.actions"
+          :files="files"
+          :errors="errors"
+          @add-new-node="appendNode"
+          @delete-node="deleteNode"
+          @reset-action="resetNode"
+        />
+      </div>
     </div>
     <div class="w-full lg:w-1/3 pb-4">
       <MacroProperties
