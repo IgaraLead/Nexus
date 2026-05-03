@@ -8,7 +8,7 @@ defineProps({
   showSearch: { type: Boolean, default: true },
   searchValue: { type: String, default: '' },
   headerTitle: { type: String, required: true },
-  activeSort: { type: String, default: 'name' },
+  activeSort: { type: String, default: 'last_activity_at' },
   activeOrdering: { type: String, default: '' },
 });
 

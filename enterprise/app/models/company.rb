@@ -4,6 +4,7 @@
 #
 #  additional_attributes :jsonb
 #  custom_attributes     :jsonb
+#  last_activity_at      :datetime
 #  id             :bigint           not null, primary key
 #  contacts_count :integer
 #  description    :text
@@ -44,6 +45,13 @@ class Company < ApplicationRecord
     order(
       Arel::Nodes::SqlLiteral.new(
         sanitize_sql_for_order("\"companies\".\"contacts_count\" #{direction} NULLS LAST")
+      )
+    )
+  }
+  scope :order_on_last_activity_at, lambda { |direction|
+    order(
+      Arel::Nodes::SqlLiteral.new(
+        sanitize_sql_for_order("\"companies\".\"last_activity_at\" #{direction} NULLS LAST")
       )
     )
   }

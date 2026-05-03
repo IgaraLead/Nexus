@@ -115,8 +115,14 @@ const summaryItems = computed(() => {
   const createdAt = props.company?.createdAt
     ? dynamicTime(props.company.createdAt)
     : '';
+  const lastActiveAt = props.company?.lastActivityAt
+    ? dynamicTime(props.company.lastActivityAt)
+    : '';
 
-  return [t('COMPANIES.DETAIL.PROFILE.CREATED_AT', { date: createdAt })];
+  return [
+    t('COMPANIES.DETAIL.PROFILE.CREATED_AT', { date: createdAt }),
+    t('COMPANIES.DETAIL.PROFILE.LAST_ACTIVE', { date: lastActiveAt }),
+  ];
 });
 
 const handleAvatarUpload = async ({ file, url }) => {
