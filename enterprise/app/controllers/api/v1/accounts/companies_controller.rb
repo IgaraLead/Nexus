@@ -8,6 +8,7 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
 
   RESULTS_PER_PAGE = 25
 
+  before_action :ensure_companies_enabled!
   before_action :authorize_company_collection!, only: [:index, :search, :create]
   before_action :set_current_page, only: [:index, :search]
   before_action :fetch_company, only: [:show, :update, :destroy, :avatar]
@@ -69,6 +70,12 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
     filtrate(companies)
       .page(@current_page)
       .per(RESULTS_PER_PAGE)
+  end
+
+  def ensure_companies_enabled!
+    return if ChatwootApp.enterprise? && Current.account.feature_enabled?('companies')
+
+    render json: { error: 'Companies are not enabled for this account' }, status: :forbidden
   end
 
   def authorize_company_collection!

@@ -3,6 +3,8 @@ require 'rails_helper'
 RSpec.describe 'Companies API', type: :request do
   let(:account) { create(:account) }
 
+  before { account.enable_features!(:companies) }
+
   describe 'GET /api/v1/accounts/{account.id}/companies' do
     context 'when it is an unauthenticated user' do
       it 'returns unauthorized' do
@@ -15,6 +17,16 @@ RSpec.describe 'Companies API', type: :request do
       let(:admin) { create(:user, account: account, role: :administrator) }
       let!(:company1) { create(:company, name: 'Company 1', account: account) }
       let!(:company2) { create(:company, account: account) }
+
+      it 'returns forbidden when companies feature is disabled' do
+        account.disable_features!(:companies)
+
+        get "/api/v1/accounts/#{account.id}/companies",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:forbidden)
+      end
 
       it 'returns all companies' do
         get "/api/v1/accounts/#{account.id}/companies",
@@ -339,6 +351,24 @@ RSpec.describe 'Companies API', type: :request do
                as: :json
         expect(response).to have_http_status(:unauthorized)
       end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/companies/{company.id}/contacts' do
+    let(:admin) { create(:user, account: account, role: :administrator) }
+    let(:company) { create(:company, account: account) }
+    let(:contact) { create(:contact, account: account) }
+
+    it 'returns forbidden when companies feature is disabled' do
+      account.disable_features!(:companies)
+
+      post "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts",
+           params: { contact_id: contact.id },
+           headers: admin.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(contact.reload.company_id).to be_nil
     end
   end
 end
