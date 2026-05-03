@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Companies::ContactMembershipService, type: :service do
   describe '#assign' do
-    it 'links legacy invalid contacts without running full contact validations' do
+    it 'updates company membership for legacy contacts with invalid attributes' do
       account = create(:account)
       company = create(:company, account: account)
       contact = create(:contact, account: account, email: 'legacy@example.com')
