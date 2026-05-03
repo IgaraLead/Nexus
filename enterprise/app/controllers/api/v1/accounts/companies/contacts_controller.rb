@@ -74,6 +74,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
 
   def contact_search_scope
     Current.account.contacts
+           .where.not(id: @company.contacts.select(:id))
            .where(
              'name ILIKE :search OR email ILIKE :search OR phone_number ILIKE :search OR contacts.identifier ILIKE :search',
              search: "%#{params[:q].strip}%"

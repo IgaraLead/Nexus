@@ -371,4 +371,24 @@ RSpec.describe 'Companies API', type: :request do
       expect(contact.reload.company_id).to be_nil
     end
   end
+
+  describe 'GET /api/v1/accounts/{account.id}/companies/{company.id}/contacts/search' do
+    let(:admin) { create(:user, account: account, role: :administrator) }
+    let(:company) { create(:company, account: account) }
+
+    it 'excludes contacts already linked to the company before pagination' do
+      16.times do |index|
+        create(:contact, account: account, company: company, name: "Candidate #{index}")
+      end
+      contact = create(:contact, account: account, name: 'Candidate available')
+
+      get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts/search",
+          params: { q: 'Candidate' },
+          headers: admin.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['payload'].pluck('id')).to eq([contact.id])
+    end
+  end
 end
