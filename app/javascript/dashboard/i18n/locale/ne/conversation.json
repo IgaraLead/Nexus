@@ -84,7 +84,8 @@
       "NOT_ANSWERED_YET": "अझै जवाफ दिइएको छैन",
       "THEY_ANSWERED": "उनीहरूले जवाफ दिए",
       "YOU_ANSWERED": "तपाईंले जवाफ दिनुभयो",
-      "AGENT_ANSWERED": "{agentName} answered"
+      "AGENT_ANSWERED": "{agentName} answered",
+      "JOIN_CALL": "कलमा सामेल हुनुहोस्"
     },
     "HEADER": {
       "RESOLVE_ACTION": "समाधान गर्नुहोस्",
