@@ -12,12 +12,7 @@ defineProps({
   showPaginationFooter: { type: Boolean, default: true },
 });
 
-const emit = defineEmits([
-  'update:currentPage',
-  'update:sort',
-  'search',
-  'add',
-]);
+const emit = defineEmits(['update:currentPage', 'update:sort', 'search']);
 
 const updateCurrentPage = page => {
   emit('update:currentPage', page);
@@ -34,7 +29,6 @@ const updateCurrentPage = page => {
         :header-title="headerTitle"
         :active-sort="activeSort"
         :active-ordering="activeOrdering"
-        @add="emit('add')"
         @search="emit('search', $event)"
         @update:sort="emit('update:sort', $event)"
       />

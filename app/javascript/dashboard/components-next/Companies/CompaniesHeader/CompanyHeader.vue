@@ -2,7 +2,6 @@
 import Input from 'dashboard/components-next/input/Input.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import CompanySortMenu from './components/CompanySortMenu.vue';
-import CompanyMoreActions from './components/CompanyMoreActions.vue';
 
 defineProps({
   showSearch: { type: Boolean, default: true },
@@ -12,7 +11,7 @@ defineProps({
   activeOrdering: { type: String, default: '' },
 });
 
-const emit = defineEmits(['search', 'update:sort', 'add']);
+const emit = defineEmits(['search', 'update:sort']);
 </script>
 
 <template>
@@ -49,7 +48,6 @@ const emit = defineEmits(['search', 'update:sort', 'add']);
             :active-ordering="activeOrdering"
             @update:sort="emit('update:sort', $event)"
           />
-          <CompanyMoreActions @add="emit('add')" />
         </div>
       </div>
     </div>

@@ -8,7 +8,6 @@ import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
-import SocialProfileFields from 'dashboard/components-next/Contacts/ContactsForm/SocialProfileFields.vue';
 import { useCompaniesStore } from 'dashboard/stores/companies';
 
 const props = defineProps({
@@ -25,20 +24,9 @@ const props = defineProps({
 const { t } = useI18n();
 const companiesStore = useCompaniesStore();
 
-const SOCIAL_PROFILE_KEYS = [
-  'linkedin',
-  'facebook',
-  'instagram',
-  'telegram',
-  'tiktok',
-  'twitter',
-  'github',
-];
-
 const editableName = ref('');
 const editableDomain = ref('');
 const editableDescription = ref('');
-const editableSocialProfiles = ref({});
 const avatarPreviewUrl = ref('');
 const isUploadingAvatar = ref(false);
 
@@ -58,41 +46,19 @@ const displayName = computed(
 const avatarSource = computed(
   () => avatarPreviewUrl.value || props.company?.avatarUrl || ''
 );
-const socialProfiles = computed(
-  () => props.company?.additionalAttributes?.socialProfiles || {}
-);
 const isFormInvalid = computed(() => !editableName.value.trim());
-const normalizeSocialProfiles = profiles => ({
-  ...Object.fromEntries(SOCIAL_PROFILE_KEYS.map(key => [key, ''])),
-  ...(profiles || {}),
-});
-const hasChanges = computed(() => {
-  const currentSocialProfiles = normalizeSocialProfiles(socialProfiles.value);
-  const nextSocialProfiles = normalizeSocialProfiles(
-    editableSocialProfiles.value
-  );
-
-  return (
+const hasChanges = computed(
+  () =>
     editableName.value.trim() !== `${props.company?.name || ''}`.trim() ||
     editableDomain.value.trim() !== `${props.company?.domain || ''}`.trim() ||
     editableDescription.value.trim() !==
-      `${props.company?.description || ''}`.trim() ||
-    Object.keys(nextSocialProfiles).some(
-      key =>
-        `${nextSocialProfiles[key] || ''}`.trim() !==
-        `${currentSocialProfiles[key] || ''}`.trim()
-    )
-  );
-});
+      `${props.company?.description || ''}`.trim()
+);
 
 const syncEditableFields = company => {
-  const companySocialProfiles =
-    company?.additionalAttributes?.socialProfiles || {};
-
   editableName.value = company?.name || '';
   editableDomain.value = company?.domain || '';
   editableDescription.value = company?.description || '';
-  editableSocialProfiles.value = normalizeSocialProfiles(companySocialProfiles);
 };
 
 watch(
@@ -101,7 +67,6 @@ watch(
     props.company?.name,
     props.company?.domain,
     props.company?.description,
-    props.company?.additionalAttributes,
     props.company?.avatarUrl,
   ],
   () => {
@@ -172,10 +137,6 @@ const handleUpdateCompany = async () => {
       name: editableName.value.trim(),
       domain: editableDomain.value.trim() || null,
       description: editableDescription.value.trim() || null,
-      additionalAttributes: {
-        ...(props.company?.additionalAttributes || {}),
-        socialProfiles: normalizeSocialProfiles(editableSocialProfiles.value),
-      },
     });
     syncEditableFields(updatedCompany);
     useAlert(t('COMPANIES.DETAIL.PROFILE.MESSAGES.UPDATE_SUCCESS'));
@@ -252,12 +213,6 @@ const handleUpdateCompany = async () => {
           auto-height
         />
       </div>
-
-      <SocialProfileFields
-        v-model="editableSocialProfiles"
-        is-details-view
-        :disabled="isUpdating"
-      />
 
       <div class="flex items-center">
         <Button

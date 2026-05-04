@@ -6,7 +6,6 @@ describe('#CompanyAPI', () => {
     expect(companyAPI).toBeInstanceOf(ApiClient);
     expect(companyAPI).toHaveProperty('get');
     expect(companyAPI).toHaveProperty('show');
-    expect(companyAPI).toHaveProperty('create');
     expect(companyAPI).toHaveProperty('update');
     expect(companyAPI).toHaveProperty('delete');
     expect(companyAPI).toHaveProperty('search');
@@ -50,11 +49,10 @@ describe('#CompanyAPI', () => {
       );
     });
 
-    it('#linkContact posts to the nested company contacts endpoint', () => {
-      companyAPI.linkContact(1, { contact_id: 2 });
-      expect(axiosMock.post).toHaveBeenCalledWith(
-        '/api/v1/companies/1/contacts',
-        { contact_id: 2 }
+    it('#destroyAvatar deletes the company avatar endpoint', () => {
+      companyAPI.destroyAvatar(1);
+      expect(axiosMock.delete).toHaveBeenCalledWith(
+        '/api/v1/companies/1/avatar'
       );
     });
   });

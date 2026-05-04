@@ -22,25 +22,6 @@
     "LOADING": "Loading companies...",
     "UNNAMED": "Unnamed Company",
     "CONTACTS_COUNT": "{n} contact | {n} contacts",
-    "CREATE": {
-      "TITLE": "Create company",
-      "DESCRIPTION": "Add a company so you can link contacts and keep related context together.",
-      "BUTTON": "Create company",
-      "FIELDS": {
-        "NAME": "Name",
-        "DOMAIN": "Domain",
-        "DESCRIPTION": "Description"
-      },
-      "PLACEHOLDERS": {
-        "NAME": "Acme Inc",
-        "DOMAIN": "acme.com",
-        "DESCRIPTION": "Add a short summary for this company"
-      },
-      "MESSAGES": {
-        "SUCCESS": "Company created.",
-        "ERROR": "Could not create the company."
-      }
-    },
     "DETAIL": {
       "LOADING": "Loading company details...",
       "EMPTY_STATE": {
@@ -70,54 +51,6 @@
           "NAME": "Name",
           "DOMAIN": "Domain"
         }
-      },
-      "SIDEBAR": {
-        "TABS": {
-          "NOTES": "Notes",
-          "HISTORY": "History",
-          "CONTACTS": "Contacts"
-        }
-      },
-      "CONTACTS": {
-        "LOADING": "Loading contacts...",
-        "EMPTY": "No contacts are linked to this company yet.",
-        "UNNAMED_CONTACT": "Unnamed contact",
-        "ACTIONS": {
-          "ADD": "Link contact",
-          "REMOVE": "Remove contact"
-        },
-        "DIALOGS": {
-          "ADD": {
-            "DESCRIPTION": "Search contacts in this account and link them to this company.",
-            "SEARCH_PLACEHOLDER": "Search by name, email, phone, or identifier",
-            "INITIAL": "Start typing to search contacts in this account.",
-            "EMPTY": "No contacts matched that search.",
-            "ADD": "Link contact",
-            "CANCEL": "Cancel",
-            "CONFIRM_TITLE": "Confirm contact link",
-            "CONFIRM_DESCRIPTION": "Review the contact and company before linking.",
-            "CONTACT_LABEL": "Contact",
-            "COMPANY_LABEL": "Company",
-            "CURRENT_COMPANY": "Linked to {companyName}"
-          }
-        },
-        "MESSAGES": {
-          "ADD_SUCCESS": "Contact linked to company.",
-          "ADD_ERROR": "Could not link the contact to this company.",
-          "REASSIGN_SUCCESS": "Contact reassigned to company.",
-          "REASSIGN_ERROR": "Could not reassign the contact.",
-          "REMOVE_SUCCESS": "Contact removed from company.",
-          "REMOVE_ERROR": "Could not remove the contact from this company."
-        }
-      },
-      "NOTES": {
-        "ADDED_BY": "Added by",
-        "EMPTY": "No notes found for contacts yet.",
-        "CONTACT_FALLBACK": "Contact"
-      },
-      "HISTORY": {
-        "EMPTY": "No recent conversations found for contacts yet.",
-        "CONTACT_FALLBACK": "Contact"
       },
       "DELETE": {
         "SECTION_TITLE": "Danger zone",

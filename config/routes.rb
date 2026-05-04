@@ -180,13 +180,6 @@ Rails.application.routes.draw do
             member do
               delete :avatar
             end
-            scope module: :companies do
-              resources :contacts, only: [:index, :create, :destroy] do
-                collection do
-                  get :search
-                end
-              end
-            end
           end
           resources :contacts, only: [:index, :show, :update, :create, :destroy] do
             collection do

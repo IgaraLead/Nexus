@@ -24,28 +24,6 @@ class CompanyAPI extends ApiClient {
     return axios.get(requestURL);
   }
 
-  create(payload) {
-    return axios.post(this.url, payload);
-  }
-
-  listContacts(id, page = 1) {
-    return axios.get(`${this.url}/${id}/contacts?${buildParams({ page })}`);
-  }
-
-  searchContacts(id, query, page = 1) {
-    return axios.get(
-      `${this.url}/${id}/contacts/search?${buildParams({ q: query, page })}`
-    );
-  }
-
-  linkContact(id, payload) {
-    return axios.post(`${this.url}/${id}/contacts`, payload);
-  }
-
-  removeContact(id, contactId) {
-    return axios.delete(`${this.url}/${id}/contacts/${contactId}`);
-  }
-
   destroyAvatar(id) {
     return axios.delete(`${this.url}/${id}/avatar`);
   }

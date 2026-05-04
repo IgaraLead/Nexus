@@ -2,12 +2,10 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { debounce } from '@chatwoot/utils';
 import { useCompaniesStore } from 'dashboard/stores/companies';
 
-import CreateCompanyDialog from 'dashboard/components-next/Companies/CreateCompanyDialog.vue';
 import CompaniesListLayout from 'dashboard/components-next/Companies/CompaniesListLayout.vue';
 import CompaniesCard from 'dashboard/components-next/Companies/CompaniesCard/CompaniesCard.vue';
 
@@ -21,7 +19,6 @@ const router = useRouter();
 const { t } = useI18n();
 
 const { updateUISettings, uiSettings } = useUISettings();
-const createCompanyDialogRef = ref(null);
 
 const companies = computed(() => companiesStore.getCompaniesList);
 const meta = computed(() => companiesStore.getMeta);
@@ -54,7 +51,6 @@ const activeSort = computed(() => sortState.activeSort);
 const activeOrdering = computed(() => sortState.activeOrdering);
 
 const isFetchingList = computed(() => uiFlags.value.fetchingList);
-const isCreatingCompany = computed(() => uiFlags.value.creatingItem);
 
 const buildSortAttr = () =>
   `${sortState.activeOrdering}${sortState.activeSort}`;
@@ -135,27 +131,6 @@ const handleSort = async ({ sort, order }) => {
   fetchCompanies(1, searchValue.value, buildSortAttr());
 };
 
-const openCreateCompanyDialog = () => {
-  createCompanyDialogRef.value?.dialogRef.open();
-};
-
-const handleCreateCompany = async attrs => {
-  try {
-    const company = await companiesStore.create(attrs);
-    useAlert(t('COMPANIES.CREATE.MESSAGES.SUCCESS'));
-    createCompanyDialogRef.value?.onSuccess();
-    router.push({
-      name: 'companies_dashboard_show',
-      params: {
-        accountId: route.params.accountId,
-        companyId: company.id,
-      },
-    });
-  } catch {
-    useAlert(t('COMPANIES.CREATE.MESSAGES.ERROR'));
-  }
-};
-
 onMounted(() => {
   searchValue.value = searchQuery.value;
   fetchCompanies();
@@ -172,7 +147,6 @@ onMounted(() => {
     :active-ordering="activeOrdering"
     :is-fetching-list="isFetchingList"
     :show-pagination-footer="!!companies.length"
-    @add="openCreateCompanyDialog"
     @update:current-page="onPageChange"
     @update:sort="handleSort"
     @search="onSearch"
@@ -204,9 +178,4 @@ onMounted(() => {
       />
     </div>
   </CompaniesListLayout>
-  <CreateCompanyDialog
-    ref="createCompanyDialogRef"
-    :is-loading="isCreatingCompany"
-    @create="handleCreateCompany"
-  />
 </template>

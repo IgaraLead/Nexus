@@ -37,17 +37,11 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   end
 
   def update
-    ActiveRecord::Base.transaction do
-      @company.update!(company_params)
-      sync_linked_contact_names if @company.saved_change_to_name?
-    end
+    @company.update!(company_params)
   end
 
   def destroy
-    ActiveRecord::Base.transaction do
-      membership_service.cleanup_on_company_delete
-      @company.destroy!
-    end
+    @company.destroy!
     head :ok
   end
 
@@ -91,9 +85,7 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
       :name,
       :domain,
       :description,
-      :avatar,
-      additional_attributes: {},
-      custom_attributes: {}
+      :avatar
     )
   end
 
@@ -101,13 +93,5 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
     return :update? if action_name == 'avatar'
 
     :"#{action_name}?"
-  end
-
-  def membership_service
-    @membership_service ||= Companies::ContactMembershipService.new(company: @company)
-  end
-
-  def sync_linked_contact_names
-    membership_service.sync_company_name
   end
 end
