@@ -345,12 +345,15 @@ const syncFrequencyLabel = computed(() => {
   });
 });
 
-watch(selectedAssistantId, () => {
+watch(selectedAssistantId, async () => {
   activeFilter.value = null;
   bulkSelectedIds.value = new Set();
   stats.value = null;
   stopSyncPolling();
-  fetchDocuments(1);
+  await fetchDocuments(1);
+  if (hasSyncingDocuments.value) {
+    scheduleSyncPoll();
+  }
 });
 
 onMounted(async () => {
