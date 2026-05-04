@@ -5,6 +5,7 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
   let(:assistant) { create(:captain_assistant, account: account) }
 
   before do
+    create(:installation_config, name: 'CAPTAIN_DOCUMENT_AUTO_SYNC_INTERVALS', value: { business: 24, hacker: nil }.to_json)
     account.enable_features!('captain_document_auto_sync')
     clear_enqueued_jobs
   end
@@ -62,17 +63,17 @@ RSpec.describe Captain::Documents::ScheduleSyncsJob, type: :job do
     end
 
     it 'marks the due document as syncing before queueing' do
-      document = create(
-        :captain_document,
-        assistant: assistant,
-        account: account,
-        status: :available,
-        sync_status: :synced,
-        last_synced_at: 3.days.ago
-      )
-      clear_enqueued_jobs
-
       travel_to Time.zone.local(2026, 4, 27, 10, 0, 0) do
+        document = create(
+          :captain_document,
+          assistant: assistant,
+          account: account,
+          status: :available,
+          sync_status: :synced,
+          last_synced_at: 3.days.ago
+        )
+        clear_enqueued_jobs
+
         described_class.new.perform
 
         expect(document.reload).to have_attributes(
