@@ -1,7 +1,6 @@
 class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 
-  PROMPT_VERSION = 'v1_custom_xml_precedence'.freeze
   MAX_CONTEXT_MESSAGES = 10
 
   def initialize(assistant:, conversation:)
@@ -31,7 +30,7 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
     Rails.logger.warn(
       "[CAPTAIN][AssistantActionClassifier] Failed for conversation #{@conversation.display_id}: #{e.class.name}: #{e.message}"
     )
-    { 'action' => nil, 'action_reason' => nil, 'error' => e.message, 'model' => @model, 'prompt_version' => PROMPT_VERSION }
+    { 'action' => nil, 'action_reason' => nil, 'error' => e.message, 'model' => @model }
   end
 
   private
@@ -107,8 +106,7 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
       'action' => action,
       'action_reason' => reason.presence,
       'raw_response' => raw_content,
-      'model' => @model,
-      'prompt_version' => PROMPT_VERSION
+      'model' => @model
     }
   end
 
@@ -118,8 +116,7 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
       'action_reason' => nil,
       'raw_response' => raw_content,
       'error' => 'invalid_classifier_response',
-      'model' => @model,
-      'prompt_version' => PROMPT_VERSION
+      'model' => @model
     }
   end
 
@@ -138,7 +135,6 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
       metadata: {
         assistant_id: @assistant.id,
         channel_type: @conversation.inbox&.channel_type,
-        prompt_version: PROMPT_VERSION,
         source: 'v1_response_builder'
       }
     }

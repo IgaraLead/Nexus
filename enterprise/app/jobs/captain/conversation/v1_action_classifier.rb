@@ -31,8 +31,7 @@ module Captain::Conversation::V1ActionClassifier
       'action' => action,
       'action_reason' => classification['action_reason'],
       'action_source' => 'classifier',
-      'action_classifier_model' => classification['model'],
-      'action_classifier_prompt_version' => classification['prompt_version']
+      'action_classifier_model' => classification['model']
     )
 
     log_v1_action_classification(action, classification)
@@ -41,8 +40,7 @@ module Captain::Conversation::V1ActionClassifier
   def log_v1_action_classification(action, classification)
     Rails.logger.info(
       "[CAPTAIN][ResponseBuilderJob] V1 action classifier account=#{account.id} conversation=#{@conversation.display_id} " \
-      "action=#{action} reason=#{classification['action_reason']} model=#{classification['model']} " \
-      "prompt_version=#{classification['prompt_version']}"
+      "action=#{action} reason=#{classification['action_reason']} model=#{classification['model']}"
     )
   end
 

@@ -62,8 +62,7 @@ RSpec.describe Captain::Llm::AssistantActionClassifierService do
 
       expect(result).to include(
         'action' => 'handoff',
-        'action_reason' => 'human_offer_accepted',
-        'prompt_version' => 'v1_custom_xml_precedence'
+        'action_reason' => 'human_offer_accepted'
       )
     end
 

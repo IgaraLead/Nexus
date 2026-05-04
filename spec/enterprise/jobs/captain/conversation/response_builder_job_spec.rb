@@ -77,8 +77,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           ).and_return({
                          'action' => 'continue',
                          'action_reason' => 'general_product_question',
-                         'model' => 'gpt-4.1',
-                         'prompt_version' => 'v1'
+                         'model' => 'gpt-4.1'
                        })
 
           described_class.perform_now(conversation, assistant)
@@ -92,8 +91,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           allow(mock_action_classifier_service).to receive(:classify).and_return({
                                                                                    'action' => 'handoff',
                                                                                    'action_reason' => 'explicit_human_request',
-                                                                                   'model' => 'gpt-4.1',
-                                                                                   'prompt_version' => 'v1'
+                                                                                   'model' => 'gpt-4.1'
                                                                                  })
 
           described_class.perform_now(conversation, assistant)
