@@ -2,14 +2,12 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 
   PROMPT_VERSION = 'v1_custom_xml_precedence'.freeze
-  DEFAULT_MODEL = 'gpt-4.1'.freeze
   MAX_CONTEXT_MESSAGES = 10
 
   def initialize(assistant:, conversation:)
     super()
     @assistant = assistant
     @conversation = conversation
-    @model = DEFAULT_MODEL
     @temperature = 0.0
   end
 

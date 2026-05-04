@@ -67,6 +67,17 @@ RSpec.describe Captain::Llm::AssistantActionClassifierService do
       )
     end
 
+    it 'uses the configured Captain model from the base LLM service' do
+      create(:installation_config, name: 'CAPTAIN_OPEN_AI_MODEL', value: 'provider/custom-model')
+
+      expect(RubyLLM).to receive(:chat).with(model: 'provider/custom-model').and_return(mock_chat)
+      allow(mock_chat).to receive(:ask).and_return(mock_response)
+
+      result = service.classify(message_history: message_history, assistant_response: 'Would you like to talk to support?')
+
+      expect(result).to include('model' => 'provider/custom-model')
+    end
+
     context 'when the assistant has no custom instructions' do
       before do
         assistant.update!(config: assistant.config.except('instructions'))
