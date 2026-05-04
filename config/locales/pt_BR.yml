@@ -231,7 +231,7 @@ pt_BR:
       deleted: Esta mensagem foi excluída
       whatsapp:
         list_button_label: 'Escolha um item'
-        call_permission_request_body: 'We would like to call you regarding your conversation.'
+        call_permission_request_body: 'Gostaríamos de ligar para você em relação à sua conversa.'
       delivery_status:
         error_code: 'Código de erro: %{error_code}'
     activity:
