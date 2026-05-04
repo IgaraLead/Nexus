@@ -29,9 +29,7 @@
 #  index_calls_on_provider_and_provider_call_id   (provider,provider_call_id) UNIQUE
 #
 class Call < ApplicationRecord
-  # All valid call statuses
   STATUSES = %w[ringing in_progress completed no_answer failed].freeze
-  # Statuses where the call is finished and won't change again
   TERMINAL_STATUSES = %w[completed no_answer failed].freeze
 
   store_accessor :meta, :conference_sid, :recording_sid, :parent_call_sid, :initiated_at, :ended_at

@@ -50,7 +50,10 @@ class Whatsapp::IncomingCallService
   end
 
   def handle_terminate(payload)
-    call = Call.whatsapp.find_by(provider_call_id: payload[:id])
+    # Webhooks can arrive out of order (terminate before connect under tunnel/network
+    # delays). Materialise a missed-call record so the contact's "called and hung up"
+    # still surfaces in the dashboard instead of being silently dropped.
+    call = Call.whatsapp.find_by(provider_call_id: payload[:id]) || build_missed_inbound_call(payload)
     return unless call
 
     duration = payload[:duration]&.to_i
@@ -58,6 +61,18 @@ class Whatsapp::IncomingCallService
     meta = (call.meta || {}).merge('ended_at' => Time.zone.now.to_i)
     update_call!(call, status, duration_seconds: duration, end_reason: payload[:terminate_reason], meta: meta)
     broadcast(call, 'voice_call.ended', status: call.display_status, duration_seconds: call.duration_seconds)
+  end
+
+  # No connect was ever processed (webhook reordering or never delivered) — build a
+  # bare Call+Message for the contact so the UI shows the missed-call bubble.
+  def build_missed_inbound_call(payload)
+    Voice::InboundCallBuilder.perform!(
+      inbox: inbox, from_number: "+#{payload[:from]}", call_sid: payload[:id],
+      provider: :whatsapp,
+      extra_meta: { 'ice_servers' => Call.default_ice_servers }
+    )
+  rescue ActiveRecord::RecordNotUnique
+    Call.whatsapp.find_by(provider_call_id: payload[:id])
   end
 
   # accepted_by_agent_id is the initiating agent on outbound calls, so it only signals "answered" for inbound.

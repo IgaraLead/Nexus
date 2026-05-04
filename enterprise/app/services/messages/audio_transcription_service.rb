@@ -67,7 +67,9 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
         parameters: {
           model: WHISPER_MODEL,
           file: file,
-          temperature: 0.4
+          # 0.0 minimises Whisper's hallucinations on silence / sub-vocal segments —
+          # higher temperatures produce phantom phrases that look like real transcripts.
+          temperature: 0.0
         }
       )
       transcribed_text = response['text']
