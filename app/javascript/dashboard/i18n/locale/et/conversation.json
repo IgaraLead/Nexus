@@ -84,7 +84,8 @@
       "NOT_ANSWERED_YET": "Veel vastamata",
       "THEY_ANSWERED": "Nad vastasid",
       "YOU_ANSWERED": "Sa vastasid",
-      "AGENT_ANSWERED": "{agentName} answered"
+      "AGENT_ANSWERED": "{agentName} answered",
+      "JOIN_CALL": "Liitu kõnega"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Lahenda",
