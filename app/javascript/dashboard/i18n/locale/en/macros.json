@@ -70,8 +70,8 @@
         "GLOBAL": {
           "LABEL": "Public",
           "DESCRIPTION": "This macro is available publicly for all agents in this account.",
-          "DISABLED_DESCRIPTION": "Only administrators can create public macros.",
-          "READ_ONLY_DESCRIPTION": "Only administrators can edit public macros."
+          "CREATE_DISABLED_DESCRIPTION": "Only administrators can create public macros.",
+          "EDIT_DISABLED_DESCRIPTION": "Only administrators can edit public macros."
         },
         "PERSONAL": {
           "LABEL": "Private",

@@ -33,11 +33,15 @@ export default {
     },
     publicVisibilityDescription() {
       if (this.readOnly) {
-        return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.READ_ONLY_DESCRIPTION');
+        return this.$t(
+          'MACROS.EDITOR.VISIBILITY.GLOBAL.EDIT_DISABLED_DESCRIPTION'
+        );
       }
 
       if (this.isPublicVisibilityDisabled) {
-        return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DISABLED_DESCRIPTION');
+        return this.$t(
+          'MACROS.EDITOR.VISIBILITY.GLOBAL.CREATE_DISABLED_DESCRIPTION'
+        );
       }
 
       return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.DESCRIPTION');
