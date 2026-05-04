@@ -234,8 +234,9 @@ const handleRetry = () => {
         :status="syncStatus"
         :last-synced-at="lastSyncedAt"
         :error-code="lastSyncErrorCode"
+        :sync-in-progress="syncInProgress"
         :stale-after-hours="syncStaleAfterHours"
-        :show-retry="canSync && isFailed"
+        :show-retry="canSync && isRetryableSync"
         @retry="handleRetry"
       />
       <div v-else class="text-sm shrink-0 text-n-slate-11 line-clamp-1">

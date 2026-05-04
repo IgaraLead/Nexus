@@ -18,6 +18,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  syncInProgress: {
+    type: Boolean,
+    default: false,
+  },
   staleAfterHours: {
     type: Number,
     default: null,
@@ -46,8 +50,15 @@ const ERROR_CODE_LABELS = {
 };
 const DEFAULT_ERROR_LABEL = 'CAPTAIN.DOCUMENTS.SYNC_ERRORS.DEFAULT';
 
-const isSyncing = computed(() => props.status === SYNCING);
+const hasSyncingStatus = computed(() => props.status === SYNCING);
+const isSyncing = computed(
+  () => hasSyncingStatus.value && props.syncInProgress
+);
+const isStaleSync = computed(
+  () => hasSyncingStatus.value && !props.syncInProgress
+);
 const isFailed = computed(() => props.status === FAILED);
+const canRetry = computed(() => isFailed.value || isStaleSync.value);
 const hasBeenSynced = computed(() => Boolean(props.lastSyncedAt));
 
 const ageInHours = computed(() => {
@@ -73,6 +84,7 @@ const errorLabel = computed(() =>
 
 const label = computed(() => {
   if (isSyncing.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCING');
+  if (isStaleSync.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.STALE_SYNC');
   if (isFailed.value)
     return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.FAILED', {
       error: errorLabel.value,
@@ -86,6 +98,7 @@ const label = computed(() => {
 
 const fullLabel = computed(() => {
   if (isSyncing.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.SYNCING');
+  if (isStaleSync.value) return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.STALE_SYNC');
   if (isFailed.value)
     return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.FAILED', {
       error: errorLabel.value,
@@ -99,6 +112,7 @@ const fullLabel = computed(() => {
 
 const tone = computed(() => {
   if (isSyncing.value) return 'amber';
+  if (isStaleSync.value) return 'amber';
   if (isFailed.value) return 'ruby';
   if (!hasBeenSynced.value) return 'slate';
   if (isStale.value) return 'amber';
@@ -134,7 +148,7 @@ const textClass = computed(() => {
     />
     <span class="truncate">{{ label }}</span>
     <Button
-      v-if="showRetry && isFailed"
+      v-if="showRetry && canRetry"
       :label="t('CAPTAIN.DOCUMENTS.OPTIONS.RETRY_SYNC')"
       xs
       link

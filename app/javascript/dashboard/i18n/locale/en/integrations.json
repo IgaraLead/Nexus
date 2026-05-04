@@ -780,6 +780,7 @@
       "SYNC_STATUS": {
         "SYNCED": "Synced {time}",
         "SYNCING": "Syncing…",
+        "STALE_SYNC": "Sync stalled",
         "FAILED": "Failed — {error}",
         "NEVER_SYNCED": "Not yet synced"
       },
