@@ -84,7 +84,8 @@
       "NOT_ANSWERED_YET": "עדיין לא נענה",
       "THEY_ANSWERED": "הם ענו",
       "YOU_ANSWERED": "אתה ענית",
-      "AGENT_ANSWERED": "{agentName} answered"
+      "AGENT_ANSWERED": "{agentName} answered",
+      "JOIN_CALL": "Join call"
     },
     "HEADER": {
       "RESOLVE_ACTION": "פתרון",
