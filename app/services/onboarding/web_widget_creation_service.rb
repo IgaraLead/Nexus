@@ -22,8 +22,10 @@ class Onboarding::WebWidgetCreationService
       return nil
     end
 
+    attrs = channel_attributes
+
     ActiveRecord::Base.transaction do
-      channel = build_channel
+      channel = @account.web_widgets.create!(attrs)
       inbox = @account.inboxes.create!(name: @account.name, channel: channel)
       InboxMember.find_or_create_by!(inbox: inbox, user: @user)
       inbox
@@ -39,13 +41,13 @@ class Onboarding::WebWidgetCreationService
     @account.inboxes.find_by(channel_type: 'Channel::WebWidget')
   end
 
-  def build_channel
-    @account.web_widgets.create!(
+  def channel_attributes
+    {
       website_url: website_url,
       widget_color: widget_color,
       welcome_title: welcome_title,
       welcome_tagline: welcome_tagline_text&.truncate(WELCOME_TAGLINE_MAX_LENGTH)
-    )
+    }
   end
 
   def brand_info
