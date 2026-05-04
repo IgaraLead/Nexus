@@ -84,7 +84,8 @@
       "NOT_ANSWERED_YET": "尚未接聽",
       "THEY_ANSWERED": "對方已接聽",
       "YOU_ANSWERED": "您已接聽",
-      "AGENT_ANSWERED": "{agentName} answered"
+      "AGENT_ANSWERED": "{agentName} answered",
+      "JOIN_CALL": "加入通話"
     },
     "HEADER": {
       "RESOLVE_ACTION": "解決",
