@@ -106,7 +106,11 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def v1_handoff_requested?
-    @response['action'] == 'handoff' || legacy_v1_handoff_token?
+    legacy_v1_handoff_token? || classifier_v1_handoff_requested?
+  end
+
+  def classifier_v1_handoff_requested?
+    @response['action'] == 'handoff'
   end
 
   def legacy_v1_handoff_token?
@@ -179,13 +183,19 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
   def handle_error(error)
     log_error(error)
-    @response ||= { 'action_source' => 'error', 'action_reason' => 'response_builder_error' }
+    @response ||= {}
+    @response['action_source'] ||= 'error'
+    @response['action_reason'] ||= error_action_reason(error)
     process_v1_handoff if conversation_pending?
     true
   end
 
   def log_error(error)
     ChatwootExceptionTracker.new(error, account: account).capture_exception
+  end
+
+  def error_action_reason(error)
+    error.class.name.underscore.tr('/', '_')
   end
 
   def captain_v2_enabled?

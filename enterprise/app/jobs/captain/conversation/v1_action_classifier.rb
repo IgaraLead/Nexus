@@ -25,13 +25,7 @@ module Captain::Conversation::V1ActionClassifier
 
   def apply_v1_action_classification(classification)
     action = classification['action']
-    unless action.in?(%w[continue handoff])
-      Rails.logger.warn(
-        "[CAPTAIN][ResponseBuilderJob] V1 action classifier returned invalid action for account=#{account.id} " \
-        "conversation=#{@conversation.display_id}: #{classification['error'] || classification['raw_response']}"
-      )
-      return
-    end
+    return log_invalid_v1_action_classification(classification) unless valid_v1_action_classification?(action)
 
     @response.merge!(
       'action' => action,
@@ -49,6 +43,17 @@ module Captain::Conversation::V1ActionClassifier
       "[CAPTAIN][ResponseBuilderJob] V1 action classifier account=#{account.id} conversation=#{@conversation.display_id} " \
       "action=#{action} reason=#{classification['action_reason']} model=#{classification['model']} " \
       "prompt_version=#{classification['prompt_version']}"
+    )
+  end
+
+  def valid_v1_action_classification?(action)
+    Captain::AssistantActionSchema::ACTIONS.include?(action)
+  end
+
+  def log_invalid_v1_action_classification(classification)
+    Rails.logger.warn(
+      '[CAPTAIN][ResponseBuilderJob] V1 action classifier returned invalid action; falling back to assistant response ' \
+      "for account=#{account.id} conversation=#{@conversation.display_id}: #{classification['error'] || classification['raw_response']}"
     )
   end
 end

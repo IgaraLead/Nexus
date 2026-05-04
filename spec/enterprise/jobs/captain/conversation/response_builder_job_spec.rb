@@ -398,9 +398,11 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
       it 'handles API errors and triggers handoff' do
         allow(mock_llm_chat_service).to receive(:generate_response)
           .and_raise(Faraday::BadRequestError, 'Bad request to image service')
+        allow(Rails.logger).to receive(:info).and_call_original
 
         described_class.perform_now(conversation, assistant)
         expect(conversation.reload.status).to eq('open')
+        expect(Rails.logger).to have_received(:info).with(include('source=error reason=faraday_bad_request_error'))
       end
 
       it 'succeeds when no error occurs' do
