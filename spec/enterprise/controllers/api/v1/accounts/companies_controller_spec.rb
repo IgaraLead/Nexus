@@ -360,6 +360,48 @@ RSpec.describe 'Companies API', type: :request do
       expect(response).to have_http_status(:forbidden)
       expect(contact.reload.company_id).to be_nil
     end
+
+    it 'links an existing contact to the company' do
+      post "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts",
+           params: { contact_id: contact.id },
+           headers: admin.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(contact.reload.company).to eq(company)
+      expect(company.reload.contacts_count).to eq(1)
+    end
+
+    it 'reassigns a contact from another company' do
+      old_company = create(:company, account: account)
+      contact.update!(company: old_company)
+
+      post "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts",
+           params: { contact_id: contact.id },
+           headers: admin.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(contact.reload.company).to eq(company)
+      expect(old_company.reload.contacts_count).to eq(0)
+      expect(company.reload.contacts_count).to eq(1)
+    end
+  end
+
+  describe 'DELETE /api/v1/accounts/{account.id}/companies/{company.id}/contacts/{id}' do
+    let(:admin) { create(:user, account: account, role: :administrator) }
+    let(:company) { create(:company, account: account) }
+    let(:contact) { create(:contact, account: account, company: company) }
+
+    it 'unlinks a contact from the company' do
+      delete "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts/#{contact.id}",
+             headers: admin.create_new_auth_token,
+             as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(contact.reload.company_id).to be_nil
+      expect(company.reload.contacts_count).to eq(0)
+    end
   end
 
   describe 'GET /api/v1/accounts/{account.id}/companies/{company.id}/contacts/search' do

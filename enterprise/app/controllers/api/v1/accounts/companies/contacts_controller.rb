@@ -18,6 +18,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Ente
 
     @contacts = paginated_contacts(contact_search_scope)
     @contacts_count = @contacts.total_count
+    render :index
   end
 
   def create

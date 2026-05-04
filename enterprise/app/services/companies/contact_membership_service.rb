@@ -5,45 +5,69 @@ class Companies::ContactMembershipService
     @company = company
   end
 
-  def assign(contact:)
-    sync_contact(contact, new_company_id: company.id, new_company_name: company.name)
+  def assign(contact:, run_callbacks: true)
+    sync_contact(contact, new_company_id: company.id, new_company_name: company.name, run_callbacks: run_callbacks)
   end
 
   def remove(contact:)
-    sync_contact(contact, new_company_id: nil, new_company_name: nil)
+    sync_contact(contact, new_company_id: nil, new_company_name: nil, run_callbacks: true)
   end
 
   def sync_company_name
-    sync_contacts(company.contacts, new_company_id: company.id, new_company_name: company.name)
+    Contact.connection.exec_update(
+      <<~SQL.squish,
+        UPDATE contacts
+        SET additional_attributes = jsonb_set(COALESCE(additional_attributes, '{}'::jsonb), '{company_name}', to_jsonb($1::text), true),
+            updated_at = $2
+        WHERE company_id = $3
+      SQL
+      'Company contact company_name sync',
+      [
+        bind_attribute(Company, 'name', company.name),
+        bind_attribute(Contact, 'updated_at', Time.current),
+        bind_attribute(Contact, 'company_id', company.id)
+      ]
+    )
   end
 
   def cleanup_on_company_delete
-    sync_contacts(company.contacts, new_company_id: nil, new_company_name: nil)
+    Contact.connection.exec_update(
+      <<~SQL.squish,
+        UPDATE contacts
+        SET additional_attributes = COALESCE(additional_attributes, '{}'::jsonb) - 'company_name',
+            updated_at = $1
+        WHERE company_id = $2
+      SQL
+      'Company contact company_name cleanup',
+      [
+        bind_attribute(Contact, 'updated_at', Time.current),
+        bind_attribute(Contact, 'company_id', company.id)
+      ]
+    )
   end
 
   private
 
-  def sync_contacts(scope, new_company_id:, new_company_name:)
-    scope.find_each do |contact|
-      sync_contact(contact, new_company_id: new_company_id, new_company_name: new_company_name)
-    end
-  end
-
-  def sync_contact(contact, new_company_id:, new_company_name:)
+  def sync_contact(contact, new_company_id:, new_company_name:, run_callbacks:)
     old_company_id = contact.company_id
     updated_additional_attributes = synced_additional_attributes(contact, new_company_name)
 
     return contact if old_company_id == new_company_id &&
                       contact.additional_attributes.to_h == updated_additional_attributes
 
-    ActiveRecord::Base.transaction do
-      persist_contact_membership(contact, new_company_id, updated_additional_attributes)
-      sync_company_counters(old_company_id, new_company_id)
-    end
+    if run_callbacks
+      contact.assign_attributes(company_id: new_company_id, additional_attributes: updated_additional_attributes)
+      contact.save!(validate: false)
+    else
+      ActiveRecord::Base.transaction do
+        persist_contact_membership(contact, new_company_id, updated_additional_attributes)
+        sync_company_counters(old_company_id, new_company_id)
+      end
 
-    contact.company_id = new_company_id
-    contact.additional_attributes = updated_additional_attributes
-    contact.clear_changes_information
+      contact.company_id = new_company_id
+      contact.additional_attributes = updated_additional_attributes
+      contact.clear_changes_information
+    end
 
     contact
   end

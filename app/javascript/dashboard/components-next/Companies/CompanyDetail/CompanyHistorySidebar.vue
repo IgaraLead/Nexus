@@ -35,19 +35,12 @@ const getContactConversations = useMapGetter(
 const stateInbox = useMapGetter('inboxes/getInboxById');
 const accountLabels = useMapGetter('labels/getLabels');
 
-const companyId = computed(() => props.companyId);
 const companyContacts = computed(() => props.contacts);
-const meta = computed(() => props.meta);
 const isFetchingHistory = ref(false);
 const historyRequestToken = ref(0);
 const accountLabelsValue = computed(() => accountLabels.value);
-const {
-  allCompanyContacts,
-  companyContactsById,
-  contactSignature,
-  fetchAllCompanyContacts,
-  totalContacts,
-} = useCompanyContacts({ companyId, contacts: companyContacts, meta });
+const { allCompanyContacts, companyContactsById, contactSignature } =
+  useCompanyContacts({ contacts: companyContacts });
 
 const aggregatedConversations = computed(() => {
   const uniqueConversations = new Map();
@@ -85,17 +78,14 @@ const loadHistory = async () => {
 
   const requestToken = historyRequestToken.value + 1;
   historyRequestToken.value = requestToken;
-  allCompanyContacts.value = [];
   isFetchingHistory.value = true;
 
   try {
-    const contacts = await fetchAllCompanyContacts();
+    const contacts = allCompanyContacts.value;
 
     if (historyRequestToken.value !== requestToken) {
       return;
     }
-
-    allCompanyContacts.value = contacts;
 
     await Promise.allSettled(
       contacts.map(contact =>
@@ -110,8 +100,7 @@ const loadHistory = async () => {
 };
 
 watch(
-  () =>
-    `${props.companyId}:${props.meta?.page || 1}:${totalContacts.value}:${contactSignature.value}`,
+  () => `${props.companyId}:${props.meta?.page || 1}:${contactSignature.value}`,
   () => {
     loadHistory();
   },

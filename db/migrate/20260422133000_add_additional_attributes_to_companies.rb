@@ -1,7 +1,9 @@
 class AddAdditionalAttributesToCompanies < ActiveRecord::Migration[7.1]
   def change
-    add_column :companies, :additional_attributes, :jsonb, default: {}
-    add_column :companies, :custom_attributes, :jsonb, default: {}
-    add_column :companies, :last_activity_at, :datetime, precision: nil
+    change_table :companies, bulk: true do |t|
+      t.jsonb :additional_attributes, default: {}
+      t.jsonb :custom_attributes, default: {}
+      t.datetime :last_activity_at, precision: nil
+    end
   end
 end

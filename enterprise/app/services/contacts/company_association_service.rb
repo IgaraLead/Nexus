@@ -3,7 +3,7 @@ class Contacts::CompanyAssociationService
     return nil if skip_association?(contact)
 
     company = find_or_create_company(contact)
-    Companies::ContactMembershipService.new(company: company).assign(contact: contact) if company
+    Companies::ContactMembershipService.new(company: company).assign(contact: contact, run_callbacks: false) if company
     company
   end
 

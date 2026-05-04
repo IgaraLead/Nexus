@@ -171,7 +171,7 @@ const handleUpdateCompany = async () => {
       id: props.company.id,
       name: editableName.value.trim(),
       domain: editableDomain.value.trim() || null,
-      description: editableDescription.value.trim(),
+      description: editableDescription.value.trim() || null,
       additionalAttributes: {
         ...(props.company?.additionalAttributes || {}),
         socialProfiles: normalizeSocialProfiles(editableSocialProfiles.value),

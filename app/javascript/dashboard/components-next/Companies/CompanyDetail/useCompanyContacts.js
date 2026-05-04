@@ -1,9 +1,5 @@
-import { computed, ref, unref } from 'vue';
+import { computed, unref } from 'vue';
 import camelcaseKeys from 'camelcase-keys';
-
-import CompanyAPI from 'dashboard/api/companies';
-
-const RESULTS_PER_PAGE = 15;
 
 const normalizeContactRecord = record =>
   camelcaseKeys(record || {}, {
@@ -11,15 +7,13 @@ const normalizeContactRecord = record =>
     stopPaths: ['custom_attributes'],
   });
 
-export const useCompanyContacts = ({ companyId, contacts, meta }) => {
-  const allCompanyContacts = ref([]);
-
-  const totalContacts = computed(() =>
-    Number(unref(meta)?.totalCount || unref(contacts).length || 0)
+export const useCompanyContacts = ({ contacts }) => {
+  const allCompanyContacts = computed(() =>
+    unref(contacts).map(contact => normalizeContactRecord(contact))
   );
 
   const contactSignature = computed(() => {
-    return unref(contacts)
+    return allCompanyContacts.value
       .map(contact => contact.id)
       .sort((a, b) => a - b)
       .join(',');
@@ -32,43 +26,9 @@ export const useCompanyContacts = ({ companyId, contacts, meta }) => {
     }, {});
   });
 
-  const fetchAllCompanyContacts = async () => {
-    const currentPage = Number(unref(meta)?.page || 1);
-    const totalPages = Math.max(
-      1,
-      Math.ceil(totalContacts.value / RESULTS_PER_PAGE)
-    );
-    const contactsById = new Map(
-      unref(contacts).map(contact => [contact.id, contact])
-    );
-    const pagesToFetch = Array.from(
-      { length: totalPages },
-      (_, index) => index + 1
-    ).filter(page => page !== currentPage);
-
-    const responses = await Promise.allSettled(
-      pagesToFetch.map(page => CompanyAPI.listContacts(unref(companyId), page))
-    );
-
-    responses.forEach(response => {
-      if (response.status !== 'fulfilled') {
-        return;
-      }
-
-      const { payload = [] } = response.value.data;
-      payload
-        .map(record => normalizeContactRecord(record))
-        .forEach(contact => contactsById.set(contact.id, contact));
-    });
-
-    return [...contactsById.values()];
-  };
-
   return {
     allCompanyContacts,
     companyContactsById,
     contactSignature,
-    fetchAllCompanyContacts,
-    totalContacts,
   };
 };

@@ -31,18 +31,11 @@ const store = useStore();
 const notesByContactId = useMapGetter('contactNotes/getAllNotesByContactId');
 const currentUser = useMapGetter('getCurrentUser');
 
-const companyId = computed(() => props.companyId);
 const companyContacts = computed(() => props.contacts);
-const meta = computed(() => props.meta);
 const isFetchingNotes = ref(false);
 const notesRequestToken = ref(0);
-const {
-  allCompanyContacts,
-  companyContactsById,
-  contactSignature,
-  fetchAllCompanyContacts,
-  totalContacts,
-} = useCompanyContacts({ companyId, contacts: companyContacts, meta });
+const { allCompanyContacts, companyContactsById, contactSignature } =
+  useCompanyContacts({ contacts: companyContacts });
 
 const aggregatedNotes = computed(() => {
   const allNotes = [];
@@ -71,17 +64,14 @@ const loadNotes = async () => {
 
   const requestToken = notesRequestToken.value + 1;
   notesRequestToken.value = requestToken;
-  allCompanyContacts.value = [];
   isFetchingNotes.value = true;
 
   try {
-    const contacts = await fetchAllCompanyContacts();
+    const contacts = allCompanyContacts.value;
 
     if (notesRequestToken.value !== requestToken) {
       return;
     }
-
-    allCompanyContacts.value = contacts;
 
     await Promise.allSettled(
       contacts.map(contact =>
@@ -96,8 +86,7 @@ const loadNotes = async () => {
 };
 
 watch(
-  () =>
-    `${props.companyId}:${props.meta?.page || 1}:${totalContacts.value}:${contactSignature.value}`,
+  () => `${props.companyId}:${props.meta?.page || 1}:${contactSignature.value}`,
   () => {
     loadNotes();
   },
