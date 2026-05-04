@@ -178,6 +178,7 @@ const handleSync = async id => {
   try {
     await store.dispatch('captainDocuments/sync', id);
     useAlert(t('CAPTAIN.DOCUMENTS.SYNC.QUEUED_MESSAGE'));
+    await fetchStats();
     scheduleSyncPoll();
   } catch (error) {
     useAlert(t('CAPTAIN.DOCUMENTS.SYNC.ERROR_MESSAGE'));
@@ -212,6 +213,8 @@ const onPageChange = page => {
 const onDeleteSuccess = () => {
   if (documents.value?.length === 0 && documentsMeta.value?.page > 1) {
     onPageChange(documentsMeta.value.page - 1);
+  } else {
+    fetchStats();
   }
 };
 
@@ -302,6 +305,7 @@ const handleBulkSync = async () => {
 
     useAlert(message);
     bulkSelectedIds.value = new Set();
+    await fetchStats();
     if (queuedCount > 0) {
       scheduleSyncPoll();
     }
@@ -482,6 +486,7 @@ onUnmounted(() => {
       v-if="showCreateDialog"
       ref="createDocumentDialog"
       :assistant-id="selectedAssistantId"
+      @create-success="fetchStats"
       @close="handleCreateDialogClose"
     />
     <DeleteDialog
