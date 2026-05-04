@@ -24,7 +24,7 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
     @stats = {
       total: base_query.count,
       stale: stale_documents(base_query).count,
-      syncing: base_query.sync_syncing.count,
+      syncing: base_query.sync_in_progress.count,
       synced_recently: synced_recently_documents(base_query).count,
       sync_interval_hours: current_sync_interval&.in_hours&.to_i
     }
@@ -83,7 +83,7 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
   def apply_filter(scope, filter)
     case filter
     when 'stale' then stale_documents(scope)
-    when 'syncing' then scope.sync_syncing
+    when 'syncing' then scope.sync_in_progress
     when 'synced_recently' then synced_recently_documents(scope)
     else scope
     end

@@ -65,6 +65,7 @@ class Captain::Document < ApplicationRecord
   scope :for_account, ->(account_id) { where(account_id: account_id) }
   scope :for_assistant, ->(assistant_id) { where(assistant_id: assistant_id) }
   scope :syncable, -> { where("external_link NOT LIKE 'PDF:%' AND external_link NOT LIKE '%.pdf'") }
+  scope :sync_in_progress, -> { sync_syncing.where(arel_table[:last_sync_attempted_at].gteq(SYNC_STALE_TIMEOUT.ago)) }
   scope :stale, lambda { |stale_before|
     sync_failed.or(sync_synced.where(arel_table[:last_synced_at].lt(stale_before)))
   }
