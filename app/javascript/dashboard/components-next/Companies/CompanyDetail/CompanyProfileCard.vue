@@ -170,7 +170,7 @@ const handleUpdateCompany = async () => {
     const updatedCompany = await companiesStore.update({
       id: props.company.id,
       name: editableName.value.trim(),
-      domain: editableDomain.value.trim(),
+      domain: editableDomain.value.trim() || null,
       description: editableDescription.value.trim(),
       additionalAttributes: {
         ...(props.company?.additionalAttributes || {}),

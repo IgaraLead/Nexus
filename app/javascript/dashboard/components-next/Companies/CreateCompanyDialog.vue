@@ -49,7 +49,7 @@ const handleDialogConfirm = () => {
 
   emit('create', {
     name: state.name.trim(),
-    domain: state.domain.trim(),
+    domain: state.domain.trim() || null,
     description: state.description.trim(),
   });
 };
