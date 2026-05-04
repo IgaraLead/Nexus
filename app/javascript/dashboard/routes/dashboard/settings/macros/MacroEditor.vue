@@ -82,9 +82,9 @@ const manifestMacro = async () => {
   macro.value = formatMacro(singleMacro);
 };
 
-const fetchMacro = async () => {
+const fetchMacro = () => {
   mode.value = 'EDIT';
-  await manifestMacro();
+  manifestMacro();
 };
 
 const initNewMacro = () => {
