@@ -118,10 +118,10 @@ export default {
         </button>
         <button
           type="button"
-          class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start cursor-default"
+          class="p-2 relative rounded-md border border-solid justify-between items-start gap-2 flex flex-col text-start"
           :class="[
             isActive('personal'),
-            { 'opacity-60 cursor-not-allowed': readOnly },
+            readOnly ? 'opacity-60 cursor-not-allowed' : 'cursor-default',
           ]"
           :disabled="readOnly"
           @click="onUpdateVisibility('personal')"
