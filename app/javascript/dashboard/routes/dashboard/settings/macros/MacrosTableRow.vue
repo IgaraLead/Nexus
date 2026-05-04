@@ -42,9 +42,7 @@ const canManageMacro = computed(
 );
 
 const editTooltip = computed(() =>
-  canManageMacro.value
-    ? t('MACROS.EDIT.TOOLTIP')
-    : t('MACROS.EDIT.VIEW_TOOLTIP')
+  canManageMacro.value ? t('MACROS.EDIT.TOOLTIP') : t('MACROS.VIEW.TOOLTIP')
 );
 </script>
 

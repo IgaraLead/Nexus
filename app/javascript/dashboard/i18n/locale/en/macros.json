@@ -49,13 +49,14 @@
         "ERROR_MESSAGE": "There was an error deleting the macro. Please try again later"
       }
     },
+    "VIEW": {
+      "TOOLTIP": "View macro"
+    },
     "EDIT": {
       "TOOLTIP": "Edit macro",
-      "VIEW_TOOLTIP": "View macro",
       "API": {
         "SUCCESS_MESSAGE": "Macro updated successfully",
-        "ERROR_MESSAGE": "Could not update Macro, Please try again later",
-        "UNAUTHORIZED_PUBLIC_MESSAGE": "Only administrators can edit public macros."
+        "ERROR_MESSAGE": "Could not update Macro, Please try again later"
       }
     },
     "EDITOR": {
@@ -69,7 +70,8 @@
         "GLOBAL": {
           "LABEL": "Public",
           "DESCRIPTION": "This macro is available publicly for all agents in this account.",
-          "DISABLED_DESCRIPTION": "Only administrators can create public macros."
+          "DISABLED_DESCRIPTION": "Only administrators can create public macros.",
+          "READ_ONLY_DESCRIPTION": "Only administrators can edit public macros."
         },
         "PERSONAL": {
           "LABEL": "Private",

@@ -33,7 +33,7 @@ export default {
     },
     publicVisibilityDescription() {
       if (this.readOnly) {
-        return this.$t('MACROS.EDIT.API.UNAUTHORIZED_PUBLIC_MESSAGE');
+        return this.$t('MACROS.EDITOR.VISIBILITY.GLOBAL.READ_ONLY_DESCRIPTION');
       }
 
       if (this.isPublicVisibilityDisabled) {
