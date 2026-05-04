@@ -84,7 +84,8 @@
       "NOT_ANSWERED_YET": "Noch nicht beantwortet",
       "THEY_ANSWERED": "Sie antworteten",
       "YOU_ANSWERED": "Sie haben beantwortet",
-      "AGENT_ANSWERED": "{agentName} answered"
+      "AGENT_ANSWERED": "{agentName} answered",
+      "JOIN_CALL": "Join call"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Fall schließen",
