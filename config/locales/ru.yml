@@ -231,6 +231,7 @@ ru:
       deleted: Это сообщение было удалено
       whatsapp:
         list_button_label: 'Выберите элемент'
+        call_permission_request_body: 'We would like to call you regarding your conversation.'
       delivery_status:
         error_code: 'Код ошибки: %{error_code}'
     activity:
