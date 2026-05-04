@@ -19,6 +19,10 @@ class CompanyPolicy < ApplicationPolicy
     true
   end
 
+  def avatar?
+    update?
+  end
+
   def destroy?
     @account_user.administrator?
   end

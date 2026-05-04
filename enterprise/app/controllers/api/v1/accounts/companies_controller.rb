@@ -9,7 +9,7 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
   RESULTS_PER_PAGE = 25
 
   before_action :ensure_companies_enabled!
-  before_action :authorize_company_collection!, only: [:index, :search, :create]
+  before_action :check_authorization
   before_action :set_current_page, only: [:index, :search]
   before_action :fetch_company, only: [:show, :update, :destroy, :avatar]
 
@@ -71,13 +71,8 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
     render json: { error: 'Companies are not enabled for this account' }, status: :forbidden
   end
 
-  def authorize_company_collection!
-    authorize Company, :"#{action_name}?"
-  end
-
   def fetch_company
     @company = Current.account.companies.find(params[:id])
-    authorize @company, company_policy_action
   end
 
   def company_params
@@ -87,11 +82,5 @@ class Api::V1::Accounts::CompaniesController < Api::V1::Accounts::EnterpriseAcco
       :description,
       :avatar
     )
-  end
-
-  def company_policy_action
-    return :update? if action_name == 'avatar'
-
-    :"#{action_name}?"
   end
 end
