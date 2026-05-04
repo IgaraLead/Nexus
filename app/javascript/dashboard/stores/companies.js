@@ -256,6 +256,8 @@ export const useCompaniesStore = defineStore('companies', {
       this.companyDetailRequestToken += 1;
       this.setUIFlag({
         fetchingItem: false,
+        updatingItem: false,
+        deletingItem: false,
         deletingAvatar: false,
       });
     },
