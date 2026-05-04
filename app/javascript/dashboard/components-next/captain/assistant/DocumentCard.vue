@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 import { usePolicy } from 'dashboard/composables/usePolicy';
 import {
-  isPdfDocument,
   isSafeHttpLink,
   formatDocumentLink,
   getDocumentDisplayPath,
@@ -34,6 +33,10 @@ const props = defineProps({
   externalLink: {
     type: String,
     required: true,
+  },
+  pdfDocument: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Number,
@@ -88,7 +91,7 @@ const modelValue = computed({
   set: () => emit('select', props.id),
 });
 
-const isPdf = computed(() => isPdfDocument(props.externalLink));
+const isPdf = computed(() => props.pdfDocument);
 const hasSafeLink = computed(() => isSafeHttpLink(props.externalLink));
 const canManage = computed(() => checkPermissions(['administrator']));
 const isSyncing = computed(() => props.syncStatus === 'syncing');

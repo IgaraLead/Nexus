@@ -22,7 +22,6 @@ import CreateDocumentDialog from 'dashboard/components-next/captain/pageComponen
 import DocumentPageEmptyState from 'dashboard/components-next/captain/pageComponents/emptyStates/DocumentPageEmptyState.vue';
 import FeatureSpotlightPopover from 'dashboard/components-next/feature-spotlight/FeatureSpotlightPopover.vue';
 import LimitBanner from 'dashboard/components-next/captain/pageComponents/document/LimitBanner.vue';
-import { isPdfDocument } from 'shared/helpers/documentHelper';
 import CaptainDocumentAPI from 'dashboard/api/captain/document';
 import { useI18n } from 'vue-i18n';
 
@@ -271,10 +270,7 @@ const onBulkDeleteSuccess = () => {
 const syncableSelectedIds = computed(() => {
   if (!bulkSelectedIds.value.size) return [];
   return (documents.value || [])
-    .filter(
-      doc =>
-        bulkSelectedIds.value.has(doc.id) && !isPdfDocument(doc.external_link)
-    )
+    .filter(doc => bulkSelectedIds.value.has(doc.id) && !doc.pdf_document)
     .map(doc => doc.id);
 });
 
@@ -448,6 +444,7 @@ onUnmounted(() => {
           :key="doc.id"
           :name="doc.name || doc.external_link"
           :external-link="doc.external_link"
+          :pdf-document="doc.pdf_document"
           :assistant="doc.assistant"
           :created-at="doc.created_at"
           :sync-status="doc.sync_status"

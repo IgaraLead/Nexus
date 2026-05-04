@@ -8,6 +8,7 @@ json.created_at resource.created_at.to_i
 json.external_link resource.external_link
 json.display_url resource.display_url
 json.file_size resource.file_size
+json.pdf_document resource.pdf_document?
 json.id resource.id
 json.name resource.name
 json.status resource.status
