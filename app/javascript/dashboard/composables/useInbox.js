@@ -20,6 +20,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -28,6 +29,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -123,6 +125,10 @@ export const useInbox = (inboxId = null) => {
     );
   });
 
+  const isABaileysWhatsAppChannel = computed(() => {
+    return channelType.value === INBOX_TYPES.BAILEYS_WHATSAPP;
+  });
+
   const isAWhatsAppChannel = computed(() => {
     return (
       channelType.value === INBOX_TYPES.WHATSAPP ||
@@ -157,6 +163,7 @@ export const useInbox = (inboxId = null) => {
     isATwilioWhatsAppChannel,
     isAWhatsAppCloudChannel,
     is360DialogWhatsAppChannel,
+    isABaileysWhatsAppChannel,
     isAnEmailChannel,
     isAnInstagramChannel,
     isATiktokChannel,

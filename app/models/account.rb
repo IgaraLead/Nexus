@@ -14,6 +14,8 @@
 #  settings              :jsonb
 #  status                :integer          default("active")
 #  support_email         :string(100)
+#  max_agents            :integer
+#  max_inboxes           :integer
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
@@ -39,6 +41,8 @@ class Account < ApplicationRecord
 
   validates :name, presence: true
   validates :domain, length: { maximum: 100 }
+  validates :max_agents, numericality: { only_integer: true, greater_than: 0, allow_nil: true }
+  validates :max_inboxes, numericality: { only_integer: true, greater_than: 0, allow_nil: true }
   validates_with JsonSchemaValidator,
                  schema: SETTINGS_PARAMS_SCHEMA,
                  attribute_resolver: ->(record) { record.settings }
@@ -95,6 +99,7 @@ class Account < ApplicationRecord
   has_many :web_widgets, dependent: :destroy_async, class_name: '::Channel::WebWidget'
   has_many :webhooks, dependent: :destroy_async
   has_many :whatsapp_channels, dependent: :destroy_async, class_name: '::Channel::Whatsapp'
+  has_many :baileys_whatsapp_channels, dependent: :destroy_async, class_name: '::Channel::BaileysWhatsapp'
   has_many :working_hours, dependent: :destroy_async
 
   has_one_attached :contacts_export
@@ -104,6 +109,7 @@ class Account < ApplicationRecord
 
   scope :with_auto_resolve, -> { where("(settings ->> 'auto_resolve_after')::int IS NOT NULL") }
 
+  before_validation :normalize_usage_slot_limits
   before_validation :validate_limit_keys
   after_create_commit :notify_creation
   after_destroy :remove_account_sequences
@@ -143,9 +149,10 @@ class Account < ApplicationRecord
   end
 
   def usage_limits
+    fallback = ChatwootApp.max_limit.to_i
     {
-      agents: ChatwootApp.max_limit.to_i,
-      inboxes: ChatwootApp.max_limit.to_i
+      agents: max_agents.present? && max_agents.positive? ? max_agents : fallback,
+      inboxes: max_inboxes.present? && max_inboxes.positive? ? max_inboxes : fallback
     }
   end
 
@@ -177,6 +184,11 @@ class Account < ApplicationRecord
 
   trigger.name('camp_dpid_before_insert').after(:insert).for_each(:row) do
     "execute format('create sequence IF NOT EXISTS camp_dpid_seq_%s', NEW.id);"
+  end
+
+  def normalize_usage_slot_limits
+    self.max_agents = nil if max_agents.blank? || max_agents.to_i <= 0
+    self.max_inboxes = nil if max_inboxes.blank? || max_inboxes.to_i <= 0
   end
 
   def validate_limit_keys

@@ -1,6 +1,10 @@
 module ApplicationHelper
   def available_locales_with_name
-    LANGUAGES_CONFIG.map { |_key, val| val.slice(:name, :iso_639_1_code) }
+    allowed_locales = %w[en pt_BR]
+
+    LANGUAGES_CONFIG
+      .map { |_key, val| val.slice(:name, :iso_639_1_code) }
+      .select { |locale| allowed_locales.include?(locale[:iso_639_1_code]) }
   end
 
   def feature_help_urls

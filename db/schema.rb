@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_28_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_04_101000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -73,6 +73,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_28_120000) do
     t.integer "status", default: 0
     t.jsonb "internal_attributes", default: {}, null: false
     t.jsonb "settings", default: {}
+    t.integer "max_agents"
+    t.integer "max_inboxes"
     t.index ["status"], name: "index_accounts_on_status"
   end
 
@@ -381,11 +383,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_28_120000) do
     t.integer "sync_status"
     t.datetime "last_synced_at"
     t.datetime "last_sync_attempted_at"
+    t.index ["account_id", "sync_status"], name: "index_captain_documents_on_account_id_and_sync_status"
     t.index ["account_id"], name: "index_captain_documents_on_account_id"
     t.index ["assistant_id", "external_link"], name: "index_captain_documents_on_assistant_id_and_external_link", unique: true
     t.index ["assistant_id"], name: "index_captain_documents_on_assistant_id"
     t.index ["status"], name: "index_captain_documents_on_status"
-    t.index ["account_id", "sync_status"], name: "index_captain_documents_on_account_id_and_sync_status"
   end
 
   create_table "captain_inboxes", force: :cascade do |t|
@@ -446,6 +448,20 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_28_120000) do
     t.string "secret"
     t.index ["hmac_token"], name: "index_channel_api_on_hmac_token", unique: true
     t.index ["identifier"], name: "index_channel_api_on_identifier", unique: true
+  end
+
+  create_table "channel_baileys_whatsapp", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.string "phone_number"
+    t.string "session_id", null: false
+    t.string "session_status", default: "disconnected"
+    t.jsonb "provider_config", default: {}
+    t.datetime "last_connected_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_channel_baileys_whatsapp_on_account_id"
+    t.index ["phone_number"], name: "index_channel_baileys_whatsapp_on_phone_number"
+    t.index ["session_id"], name: "index_channel_baileys_whatsapp_on_session_id", unique: true
   end
 
   create_table "channel_email", force: :cascade do |t|

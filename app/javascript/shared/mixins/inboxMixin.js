@@ -13,6 +13,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -21,6 +22,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -67,6 +69,9 @@ export default {
     },
     isATelegramChannel() {
       return this.channelType === INBOX_TYPES.TELEGRAM;
+    },
+    isABaileysWhatsAppChannel() {
+      return this.channelType === INBOX_TYPES.BAILEYS_WHATSAPP;
     },
     isATwilioSMSChannel() {
       const { medium: medium = '' } = this.inbox;
@@ -115,6 +120,8 @@ export default {
         badgeKey = this.facebookBadge;
       } else if (this.isATwilioChannel) {
         badgeKey = this.twilioBadge;
+      } else if (this.isABaileysWhatsAppChannel) {
+        badgeKey = 'whatsapp';
       } else if (this.isAWhatsAppChannel) {
         badgeKey = 'whatsapp';
       } else if (this.isATiktokChannel) {

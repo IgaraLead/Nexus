@@ -92,7 +92,7 @@
 
   {% assign brand_name = global_config['BRAND_NAME'] %}
   {% if brand_name == nil %}
-    {% assign brand_name = 'Chatwoot' %}
+    {% assign brand_name = 'Nexus' %}
   {% endif %}
   {% assign brand_url = global_config['BRAND_URL'] %}
 
@@ -126,6 +126,7 @@
                   {% else %}
                     <span style="color: #0F172A; font-weight: 600;">{{ brand_name }}</span>.
                   {% endif %}
+                  Created by <a href="https://igaralead.com.br" style="color: #2781F6; font-weight: 600; text-decoration: none;">IgaraLead</a>.
                 </td>
               </tr>
             {% endif %}

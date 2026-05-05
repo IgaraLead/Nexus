@@ -10,6 +10,9 @@
       "AGENT": "Agente"
     },
     "COUNT": "{n} agente | {n} agentes",
+    "SLOTS_COUNT": "{used}/{total}",
+    "AVAILABLE_SLOTS": "({n} disponíveis)",
+    "MAX_REACHED": "Máximo atingido",
     "LIST": {
       "404": "Não existem agentes associados a esta conta",
       "TITLE": "Gerenciar agentes de seu time",

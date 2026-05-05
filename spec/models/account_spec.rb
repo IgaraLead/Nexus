@@ -48,6 +48,12 @@ RSpec.describe Account do
       expect(account.usage_limits[:agents]).to eq(ChatwootApp.max_limit)
       expect(account.usage_limits[:inboxes]).to eq(ChatwootApp.max_limit)
     end
+
+    it 'returns configured slot limits when set' do
+      account.update!(max_agents: 5, max_inboxes: 3)
+      expect(account.usage_limits[:agents]).to eq(5)
+      expect(account.usage_limits[:inboxes]).to eq(3)
+    end
   end
 
   describe 'inbound_email_domain' do

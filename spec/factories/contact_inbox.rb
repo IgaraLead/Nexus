@@ -17,6 +17,8 @@ def generate_source_id(contact_inbox)
     "#{SecureRandom.uuid}@acme.inc"
   when 'Channel::Whatsapp'
     Faker::PhoneNumber.cell_phone_in_e164.delete('+')
+  when 'Channel::BaileysWhatsapp'
+    "#{Faker::Number.number(digits: 12)}@s.whatsapp.net"
   else
     SecureRandom.uuid
   end

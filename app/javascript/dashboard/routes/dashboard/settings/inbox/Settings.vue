@@ -99,7 +99,6 @@ export default {
       selectedFeatureFlags: [],
       replyTime: '',
       selectedTabIndex: 0,
-      selectedPortalSlug: '',
       showBusinessNameInput: false,
       healthData: null,
       isLoadingHealth: false,
@@ -108,6 +107,11 @@ export default {
       widgetBubblePosition: 'right',
       widgetBubbleType: 'standard',
       widgetBubbleLauncherTitle: '',
+      baileysSession: null,
+      isLoadingBaileysSession: false,
+      isRequestingBaileysQr: false,
+      baileysStatusPollTimer: null,
+      baileysStatusPollAttempts: 0,
     };
   },
   computed: {
@@ -116,7 +120,6 @@ export default {
       isFeatureEnabledonAccount: 'accounts/isFeatureEnabledonAccount',
       isOnChatwootCloud: 'globalConfig/isOnChatwootCloud',
       uiFlags: 'inboxes/getUIFlags',
-      portals: 'portals/allPortals',
     }),
     isInboundEmailEnabled() {
       return this.isFeatureEnabledonAccount(
@@ -376,6 +379,28 @@ export default {
     widgetBuilderStorageKey() {
       return `${LOCAL_STORAGE_KEYS.WIDGET_BUILDER}${this.inbox.id}`;
     },
+    baileysSessionStatus() {
+      const status =
+        this.baileysSession?.session_status || this.inbox?.session_status;
+      return (status || 'disconnected').toLowerCase();
+    },
+    isBaileysConnected() {
+      return ['connected', 'open'].includes(this.baileysSessionStatus);
+    },
+    baileysConnectButtonLabel() {
+      if (this.isRequestingBaileysQr) {
+        return this.$t(
+          'INBOX_MGMT.SETTINGS_POPUP.BAILEYS_GENERATING_QR_BUTTON'
+        );
+      }
+      return this.$t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_RECONNECT_BUTTON');
+    },
+    baileysQrCodeSrc() {
+      const qrCode = this.baileysSession?.qr_code;
+      if (!qrCode) return '';
+      if (qrCode.startsWith('data:image/')) return qrCode;
+      return `data:image/png;base64,${qrCode}`;
+    },
   },
   watch: {
     $route(to, from) {
@@ -392,6 +417,7 @@ export default {
         if (newInbox?.id !== oldInbox?.id) {
           this.syncInboxData();
           this.fetchHealthData();
+          this.fetchBaileysSessionStatus();
           this.$nextTick(() => {
             this.setTabFromRouteParam();
           });
@@ -404,6 +430,10 @@ export default {
   },
   mounted() {
     this.fetchSharedData();
+    this.fetchBaileysSessionStatus();
+  },
+  beforeUnmount() {
+    this.stopBaileysStatusPolling();
   },
   methods: {
     async copyWebhookSecret(value) {
@@ -437,7 +467,6 @@ export default {
       this.$store.dispatch('agents/get');
       this.$store.dispatch('teams/get');
       this.$store.dispatch('labels/get');
-      this.$store.dispatch('portals/index');
     },
     syncInboxData() {
       if (!this.inbox || !this.inbox.id) return;
@@ -459,9 +488,6 @@ export default {
       this.selectedFeatureFlags = this.inbox.selected_feature_flags || [];
       this.replyTime = this.inbox.reply_time;
       this.locktoSingleConversation = this.inbox.lock_to_single_conversation;
-      this.selectedPortalSlug = this.inbox.help_center
-        ? this.inbox.help_center.slug
-        : '';
 
       const savedBubbleSettings = LocalStorage.get(
         this.widgetBuilderStorageKey
@@ -493,6 +519,72 @@ export default {
         this.healthError = error.message || 'Failed to fetch health data';
       } finally {
         this.isLoadingHealth = false;
+      }
+    },
+    async fetchBaileysSessionStatus() {
+      if (!this.isABaileysWhatsAppChannel || !this.inbox?.id) return;
+      this.isLoadingBaileysSession = true;
+      try {
+        const { accountId } = this.$route.params;
+        const response = await window.axios.get(
+          `/api/v1/accounts/${accountId}/inboxes/${this.inbox.id}/baileys_status`
+        );
+        this.baileysSession = response.data;
+      } catch (error) {
+        useAlert(
+          this.$t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_STATUS_LOAD_ERROR')
+        );
+      } finally {
+        this.isLoadingBaileysSession = false;
+      }
+    },
+    stopBaileysStatusPolling() {
+      if (!this.baileysStatusPollTimer) return;
+      clearInterval(this.baileysStatusPollTimer);
+      this.baileysStatusPollTimer = null;
+      this.baileysStatusPollAttempts = 0;
+    },
+    startBaileysStatusPolling() {
+      this.stopBaileysStatusPolling();
+      this.baileysStatusPollAttempts = 0;
+
+      this.baileysStatusPollTimer = setInterval(async () => {
+        this.baileysStatusPollAttempts += 1;
+        await this.fetchBaileysSessionStatus();
+
+        const hasQrCode = Boolean(this.baileysSession?.qr_code);
+        const isConnected = this.isBaileysConnected;
+        const reachedMaxAttempts = this.baileysStatusPollAttempts >= 20;
+
+        if (hasQrCode || isConnected || reachedMaxAttempts) {
+          this.stopBaileysStatusPolling();
+        }
+      }, 1500);
+    },
+    async handleBaileysReconnect() {
+      if (!this.isABaileysWhatsAppChannel || !this.inbox?.id) return;
+      this.isRequestingBaileysQr = true;
+      try {
+        const { accountId } = this.$route.params;
+        const response = await window.axios.post(
+          `/api/v1/accounts/${accountId}/inboxes/${this.inbox.id}/baileys_qr_code`,
+          {
+            force: false,
+            sync_full_history:
+              this.inbox.provider_config?.sync_full_history !== false,
+            import_groups: false,
+          }
+        );
+        this.baileysSession = { ...this.baileysSession, ...response.data };
+        useAlert(this.$t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_QR_SUCCESS'));
+        await this.fetchBaileysSessionStatus();
+        if (!this.baileysSession?.qr_code && !this.isBaileysConnected) {
+          this.startBaileysStatusPolling();
+        }
+      } catch (error) {
+        useAlert(this.$t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_QR_ERROR'));
+      } finally {
+        this.isRequestingBaileysQr = false;
       }
     },
     async registerWebhook() {
@@ -567,11 +659,6 @@ export default {
           allow_messages_after_resolved: this.allowMessagesAfterResolved,
           greeting_enabled: this.greetingEnabled,
           greeting_message: this.greetingMessage || '',
-          portal_id: this.selectedPortalSlug
-            ? this.portals.find(
-                portal => portal.slug === this.selectedPortalSlug
-              )?.id || null
-            : null,
           lock_to_single_conversation: this.locktoSingleConversation,
           sender_name_type: this.senderNameType,
           business_name: this.businessName || null,
@@ -827,19 +914,54 @@ export default {
                 class="!mb-0"
               />
             </SettingsFieldSection>
-
             <SettingsFieldSection
-              :label="$t('INBOX_MGMT.HELP_CENTER.LABEL')"
-              :help-text="$t('INBOX_MGMT.HELP_CENTER.SUB_TEXT')"
+              v-if="isABaileysWhatsAppChannel"
+              :label="$t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_CONNECTION_TITLE')"
+              :help-text="
+                $t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_CONNECTION_SUBTITLE')
+              "
             >
-              <SelectInput
-                v-model="selectedPortalSlug"
-                :placeholder="$t('INBOX_MGMT.HELP_CENTER.PLACEHOLDER')"
-                :options="[
-                  { value: '', label: $t('INBOX_MGMT.HELP_CENTER.NONE') },
-                  ...portals.map(p => ({ value: p.slug, label: p.name })),
-                ]"
-              />
+              <div class="flex flex-col gap-3">
+                <div
+                  v-if="baileysQrCodeSrc"
+                  class="p-3 rounded-xl border border-n-weak bg-white w-fit"
+                >
+                  <img
+                    :src="baileysQrCodeSrc"
+                    alt="Baileys QR code"
+                    class="block w-56 h-56"
+                  />
+                </div>
+                <p class="text-sm text-n-slate-11 mb-0">
+                  {{
+                    isBaileysConnected
+                      ? $t('INBOX_MGMT.SETTINGS_POPUP.BAILEYS_CONNECTED_STATE')
+                      : $t(
+                          'INBOX_MGMT.SETTINGS_POPUP.BAILEYS_DISCONNECTED_STATE'
+                        )
+                  }}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <NextButton
+                    v-if="!isBaileysConnected"
+                    :disabled="isRequestingBaileysQr || isLoadingBaileysSession"
+                    @click="handleBaileysReconnect"
+                  >
+                    {{ baileysConnectButtonLabel }}
+                  </NextButton>
+                  <NextButton
+                    color="slate"
+                    :disabled="isLoadingBaileysSession"
+                    @click="fetchBaileysSessionStatus"
+                  >
+                    {{
+                      $t(
+                        'INBOX_MGMT.SETTINGS_POPUP.BAILEYS_REFRESH_STATUS_BUTTON'
+                      )
+                    }}
+                  </NextButton>
+                </div>
+              </div>
             </SettingsFieldSection>
 
             <SettingsFieldSection

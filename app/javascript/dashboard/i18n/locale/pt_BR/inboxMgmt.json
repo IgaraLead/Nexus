@@ -4,6 +4,9 @@
     "DESCRIPTION": "Um canal é o modo de comunicação que seu cliente escolhe para interagir com você. Uma caixa de entrada é onde você gerencia interações para um canal específico. Pode incluir comunicações de várias fontes, como e-mail, chat ao vivo e mídia social.",
     "LEARN_MORE": "Saiba mais sobre as caixas de entrada",
     "COUNT": "{n} caixa de entrada | {n} caixas de entrada",
+    "SLOTS_COUNT": "{used}/{total}",
+    "AVAILABLE_SLOTS": "({n} disponíveis)",
+    "MAX_REACHED": "Máximo atingido",
     "SEARCH_PLACEHOLDER": "Pesquisar caixas de entrada...",
     "NO_RESULTS": "Nenhuma caixa de entrada encontrada correspondente à sua busca",
     "RECONNECTION_REQUIRED": "Sua caixa de entrada está desconectada. Você não receberá novas mensagens até reautorizar.",
@@ -16,7 +19,7 @@
     "CREATE_FLOW": {
       "CHANNEL": {
         "TITLE": "Escolha o Canal",
-        "BODY": "Escolha o provedor que você deseja integrar com o Chatwoot."
+        "BODY": "Escolha o provedor que você deseja integrar com o Nexus."
       },
       "INBOX": {
         "TITLE": "Criar Caixa de Entrada",
@@ -42,7 +45,7 @@
         "PLACEHOLDER": "Informe o nome do seu site (por exemplo: Acme Inc)"
       },
       "FB": {
-        "HELP": "Obs: ao fazer login, apenas temos acesso às mensagens da sua página. Suas mensagens privadas nunca podem ser acessadas pelo Chatwoot.",
+        "HELP": "Obs: ao fazer login, apenas temos acesso às mensagens da sua página. Suas mensagens privadas nunca podem ser acessadas pelo Nexus.",
         "CHOOSE_PAGE": "Escolher Página",
         "CHOOSE_PLACEHOLDER": "Selecione uma página da lista",
         "INBOX_NAME": "Nome da Caixa de Entrada",
@@ -449,7 +452,7 @@
       },
       "AUTH": {
         "TITLE": "Escolha um canal",
-        "DESC": "O Chatwoot suporta widgets de chats ao vivo, Facebook Messenger, perfis do Twitter, WhatsApp, E-mails, etc., como canais. Se você quiser criar um canal personalizado, você pode criá-lo usando o canal API. Para começar, escolha um dos canais abaixo.",
+        "DESC": "O Nexus suporta widgets de chats ao vivo, Facebook Messenger, perfis do Twitter, WhatsApp, E-mails, etc., como canais. Se você quiser criar um canal personalizado, você pode criá-lo usando o canal API. Para começar, escolha um dos canais abaixo.",
         "TITLE_NEXT": "Concluir a configuração",
         "TITLE_FINISH": "Então!",
         "CHANNEL": {
@@ -507,11 +510,11 @@
       },
       "DETAILS": {
         "TITLE": "Detalhes da Caixa de Entrada",
-        "DESC": "No menu abaixo, selecione a Página do Facebook que você deseja se conectar ao Chatwoot. Você também pode dar um nome personalizado para sua caixa de entrada para uma melhor identificação."
+        "DESC": "No menu abaixo, selecione a Página do Facebook que você deseja se conectar ao Nexus. Você também pode dar um nome personalizado para sua caixa de entrada para uma melhor identificação."
       },
       "FINISH": {
         "TITLE": "Tudo funcionando. Deu certo!",
-        "DESC": "Você concluiu a integração da sua página do Facebook com o Chatwoot. Na próxima vez que um cliente enviar uma mensagem para sua página, a conversa aparecerá automaticamente na sua caixa de entrada. <br> Também estamos fornecendo um script de widget que você pode adicionar facilmente ao seu site. Assim que estiver disponível no seu site, os clientes poderão enviar mensagens diretamente do seu site, sem a ajuda de nenhuma ferramenta externa, e a conversa aparecerá aqui, no Chatwoot. Legal, hein? Com certeza estamos tentamos ser :)"
+        "DESC": "Você concluiu a integração da sua página do Facebook com o Nexus. Na próxima vez que um cliente enviar uma mensagem para sua página, a conversa aparecerá automaticamente na sua caixa de entrada. <br> Também estamos fornecendo um script de widget que você pode adicionar facilmente ao seu site. Assim que estiver disponível no seu site, os clientes poderão enviar mensagens diretamente do seu site, sem a ajuda de nenhuma ferramenta externa, e a conversa aparecerá aqui, no Nexus. Legal, hein? Com certeza estamos tentamos ser :)"
       },
       "EMAIL_PROVIDER": {
         "TITLE": "Selecione seu provedor de e-mail",
@@ -747,6 +750,16 @@
       "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "As conversas continuarão sobre o e-mail se o endereço de e-mail de contato estiver disponível.",
       "LOCK_TO_SINGLE_CONVERSATION": "Roteamento de Conversa",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Configurar a criação de conversas para contatos existentes",
+      "BAILEYS_CONNECTION_TITLE": "Conexão WhatsApp Web",
+      "BAILEYS_CONNECTION_SUBTITLE": "Gerencie a conexão do WhatsApp Web e gere um QR code quando necessário.",
+      "BAILEYS_CONNECTED_STATE": "Conectado. Se precisar, você pode conectar outro número.",
+      "BAILEYS_DISCONNECTED_STATE": "Desconectado. Reconecte para voltar a enviar e receber mensagens.",
+      "BAILEYS_RECONNECT_BUTTON": "Reconectar",
+      "BAILEYS_CONNECT_OTHER_NUMBER": "Conectar outro número",
+      "BAILEYS_GENERATING_QR_BUTTON": "Gerando QR code...",
+      "BAILEYS_QR_SUCCESS": "QR code do Baileys gerado com sucesso.",
+      "BAILEYS_QR_ERROR": "Não foi possível gerar o QR code do Baileys.",
+      "BAILEYS_STATUS_LOAD_ERROR": "Não foi possível carregar o status da sessão do Baileys.",
       "INBOX_UPDATE_TITLE": "Configurações da Caixa de Entrada",
       "INBOX_UPDATE_SUB_TEXT": "Atualize suas configurações de caixa de entrada",
       "AUTO_ASSIGNMENT_SUB_TEXT": "Ativar ou desativar a atribuição automática de novas conversas aos agentes adicionados a essa caixa de entrada.",
@@ -1123,7 +1136,7 @@
         "USER_MESSAGE": "Oi",
         "AGENT_MESSAGE": "Olá"
       },
-      "BRANDING_TEXT": "Desenvolvido por Chatwoot",
+      "BRANDING_TEXT": "Desenvolvido por Nexus",
       "SCRIPT_SETTINGS": "\n      window.chatwootSettings = {options};"
     },
     "EMAIL_PROVIDERS": {

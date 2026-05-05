@@ -38,6 +38,31 @@ const filteredInboxesList = computed(() => {
 });
 
 const uiFlags = computed(() => getters['inboxes/getUIFlags'].value);
+const currentAccount = computed(() => store.getters.getCurrentAccount || {});
+const inboxSlots = computed(() => {
+  const maxInboxes =
+    currentAccount.value.max_inboxes ||
+    currentAccount.value.usage_limits?.inboxes;
+  return Number(maxInboxes) > 0 ? Number(maxInboxes) : null;
+});
+const isInboxLimitReached = computed(() => {
+  if (!inboxSlots.value) return false;
+  return inboxesList.value.length >= inboxSlots.value;
+});
+const inboxCountLabel = computed(() => {
+  if (!inboxSlots.value) {
+    return t('INBOX_MGMT.COUNT', { n: inboxesList.value.length });
+  }
+  return t('INBOX_MGMT.SLOTS_COUNT', {
+    used: inboxesList.value.length,
+    total: inboxSlots.value,
+  });
+});
+const availableInboxSlotsLabel = computed(() => {
+  if (!inboxSlots.value) return '';
+  const available = Math.max(inboxSlots.value - inboxesList.value.length, 0);
+  return t('INBOX_MGMT.AVAILABLE_SLOTS', { n: available });
+});
 
 const deleteConfirmText = computed(
   () => `${t('INBOX_MGMT.DELETE.CONFIRM.YES')} ${selectedInbox.value.name}`
@@ -95,15 +120,30 @@ const openDelete = inbox => {
         :search-placeholder="$t('INBOX_MGMT.SEARCH_PLACEHOLDER')"
         feature-name="inboxes"
       >
-        <template v-if="inboxesList?.length" #count>
+        <template #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('INBOX_MGMT.COUNT', { n: inboxesList.length }) }}
+            {{ inboxCountLabel }}
+          </span>
+          <span
+            v-if="availableInboxSlotsLabel"
+            class="text-body-main text-n-slate-10 ml-2"
+          >
+            {{ availableInboxSlotsLabel }}
           </span>
         </template>
         <template #actions>
-          <router-link v-if="isAdmin" :to="{ name: 'settings_inbox_new' }">
+          <router-link
+            v-if="isAdmin && !isInboxLimitReached"
+            :to="{ name: 'settings_inbox_new' }"
+          >
             <Button :label="$t('SETTINGS.INBOXES.NEW_INBOX')" size="sm" />
           </router-link>
+          <Button
+            v-else-if="isAdmin"
+            :label="$t('INBOX_MGMT.MAX_REACHED')"
+            size="sm"
+            disabled
+          />
         </template>
       </BaseSettingsHeader>
     </template>

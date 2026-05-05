@@ -30,6 +30,10 @@ export default {
     };
   },
   computed: {
+    poweredByLabel() {
+      const resolvedBrandName = this.globalConfig.brandName || 'Nexus';
+      return `Powered by ${resolvedBrandName}`;
+    },
     brandRedirectURL() {
       try {
         const referrerHost = this.$store.getters['appConfig/getReferrerHost'];
@@ -68,7 +72,7 @@ export default {
         :src="globalConfig.logoThumbnail"
       />
       <span>
-        {{ replaceInstallationName($t('POWERED_BY')) }}
+        {{ poweredByLabel }}
       </span>
     </a>
   </div>
