@@ -12,7 +12,7 @@ class Contacts::ContactableInboxesService
     case inbox.channel_type
     when 'Channel::TwilioSms'
       twilio_contactable_inbox(inbox)
-    when 'Channel::Whatsapp'
+    when 'Channel::Whatsapp', 'Channel::BaileysWhatsapp'
       whatsapp_contactable_inbox(inbox)
     when 'Channel::Sms'
       sms_contactable_inbox(inbox)

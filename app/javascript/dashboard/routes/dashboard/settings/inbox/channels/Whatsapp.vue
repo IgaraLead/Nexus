@@ -6,14 +6,19 @@ import Twilio from './Twilio.vue';
 import ThreeSixtyDialogWhatsapp from './360DialogWhatsapp.vue';
 import CloudWhatsapp from './CloudWhatsapp.vue';
 import WhatsappEmbeddedSignup from './WhatsappEmbeddedSignup.vue';
+import BaileysWhatsapp from './BaileysWhatsapp.vue';
 import ChannelSelector from 'dashboard/components/ChannelSelector.vue';
+import { useProductSurface } from 'dashboard/composables/useProductSurface';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
+const productSurface = useProductSurface();
+
 const PROVIDER_TYPES = {
   WHATSAPP: 'whatsapp',
+  BAILEYS: 'baileys',
   TWILIO: 'twilio',
   WHATSAPP_CLOUD: 'whatsapp_cloud',
   WHATSAPP_EMBEDDED: 'whatsapp_embedded',
@@ -34,20 +39,38 @@ const showProviderSelection = computed(() => !selectedProvider.value);
 
 const showConfiguration = computed(() => Boolean(selectedProvider.value));
 
-const availableProviders = computed(() => [
-  {
-    key: PROVIDER_TYPES.WHATSAPP,
-    title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.WHATSAPP_CLOUD'),
-    description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.WHATSAPP_CLOUD_DESC'),
-    icon: 'i-woot-whatsapp',
-  },
-  {
-    key: PROVIDER_TYPES.TWILIO,
-    title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO'),
-    description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO_DESC'),
-    icon: 'i-woot-twilio',
-  },
-]);
+const availableProviders = computed(() => {
+  const providers = [];
+
+  if (productSurface.whatsappCloud) {
+    providers.push({
+      key: PROVIDER_TYPES.WHATSAPP,
+      title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.WHATSAPP_CLOUD'),
+      description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.WHATSAPP_CLOUD_DESC'),
+      icon: 'i-woot-whatsapp',
+    });
+  }
+
+  if (productSurface.whatsappBaileys) {
+    providers.push({
+      key: PROVIDER_TYPES.BAILEYS,
+      title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.QR_CODE'),
+      description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.QR_CODE_DESC'),
+      icon: 'i-lucide-qr-code',
+    });
+  }
+
+  if (productSurface.twilioWhatsapp) {
+    providers.push({
+      key: PROVIDER_TYPES.TWILIO,
+      title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO'),
+      description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO_DESC'),
+      icon: 'i-woot-twilio',
+    });
+  }
+
+  return providers;
+});
 
 const selectProvider = providerValue => {
   router.push({
@@ -95,7 +118,6 @@ const handleManualLinkClick = () => {
 
     <div v-else-if="showConfiguration">
       <div class="px-6 py-5 rounded-2xl border border-n-weak">
-        <!-- Show embedded signup if app ID is configured -->
         <div
           v-if="
             hasWhatsappAppId && selectedProvider === PROVIDER_TYPES.WHATSAPP
@@ -103,7 +125,6 @@ const handleManualLinkClick = () => {
         >
           <WhatsappEmbeddedSignup />
 
-          <!-- Manual setup fallback option -->
           <div class="pt-6 mt-6 border-t border-n-weak">
             <I18nT
               keypath="INBOX_MGMT.ADD.WHATSAPP.EMBEDDED_SIGNUP.MANUAL_FALLBACK"
@@ -127,10 +148,12 @@ const handleManualLinkClick = () => {
           </div>
         </div>
 
-        <!-- Show manual setup -->
         <CloudWhatsapp v-else-if="shouldShowCloudWhatsapp(selectedProvider)" />
 
-        <!-- Other providers -->
+        <BaileysWhatsapp
+          v-else-if="selectedProvider === PROVIDER_TYPES.BAILEYS"
+        />
+
         <Twilio
           v-else-if="selectedProvider === PROVIDER_TYPES.TWILIO"
           type="whatsapp"

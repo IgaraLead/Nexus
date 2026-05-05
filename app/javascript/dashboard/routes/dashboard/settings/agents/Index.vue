@@ -39,6 +39,31 @@ const deleteMessage = computed(() => {
 });
 
 const agentList = computed(() => getters['agents/getAgents'].value);
+const currentAccount = computed(() => store.getters.getCurrentAccount || {});
+const agentSlots = computed(() => {
+  const maxAgents =
+    currentAccount.value.max_agents ||
+    currentAccount.value.usage_limits?.agents;
+  return Number(maxAgents) > 0 ? Number(maxAgents) : null;
+});
+const isAgentLimitReached = computed(() => {
+  if (!agentSlots.value) return false;
+  return agentList.value.length >= agentSlots.value;
+});
+const agentCountLabel = computed(() => {
+  if (!agentSlots.value) {
+    return t('AGENT_MGMT.COUNT', { n: agentList.value.length });
+  }
+  return t('AGENT_MGMT.SLOTS_COUNT', {
+    used: agentList.value.length,
+    total: agentSlots.value,
+  });
+});
+const availableAgentSlotsLabel = computed(() => {
+  if (!agentSlots.value) return '';
+  const available = Math.max(agentSlots.value - agentList.value.length, 0);
+  return t('AGENT_MGMT.AVAILABLE_SLOTS', { n: available });
+});
 
 const filteredAgentList = computed(() => {
   const query = searchQuery.value.trim();
@@ -107,6 +132,10 @@ const showAlertMessage = message => {
 };
 
 const openAddPopup = () => {
+  if (isAgentLimitReached.value) {
+    useAlert(t('AGENT_MGMT.MAX_REACHED'));
+    return;
+  }
   showAddPopup.value = true;
 };
 const hideAddPopup = () => {
@@ -160,15 +189,26 @@ const confirmDeletion = () => {
         :search-placeholder="$t('AGENT_MGMT.SEARCH_PLACEHOLDER')"
         feature-name="agents"
       >
-        <template v-if="agentList?.length" #count>
+        <template #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('AGENT_MGMT.COUNT', { n: agentList.length }) }}
+            {{ agentCountLabel }}
+          </span>
+          <span
+            v-if="availableAgentSlotsLabel"
+            class="text-body-main text-n-slate-10 ml-2"
+          >
+            {{ availableAgentSlotsLabel }}
           </span>
         </template>
         <template #actions>
           <Button
-            :label="$t('AGENT_MGMT.HEADER_BTN_TXT')"
+            :label="
+              isAgentLimitReached
+                ? $t('AGENT_MGMT.MAX_REACHED')
+                : $t('AGENT_MGMT.HEADER_BTN_TXT')
+            "
             size="sm"
+            :disabled="isAgentLimitReached"
             @click="openAddPopup"
           />
         </template>

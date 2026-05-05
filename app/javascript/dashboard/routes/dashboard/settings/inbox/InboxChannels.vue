@@ -1,17 +1,38 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useRoute, useRouter } from 'vue-router';
+import { useAlert } from 'dashboard/composables';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useBranding } from 'shared/composables/useBranding';
 
 import PageHeader from '../SettingsSubPageHeader.vue';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
+const store = useStore();
 const { replaceInstallationName } = useBranding();
 
 const globalConfig = useMapGetter('globalConfig/get');
+const currentAccount = computed(() => store.getters.getCurrentAccount || {});
+const inboxes = useMapGetter('inboxes/getInboxes');
+const inboxSlots = computed(() => {
+  const maxInboxes =
+    currentAccount.value.max_inboxes ||
+    currentAccount.value.usage_limits?.inboxes;
+  return Number(maxInboxes) > 0 ? Number(maxInboxes) : null;
+});
+const isInboxLimitReached = computed(() => {
+  if (!inboxSlots.value) return false;
+  return inboxes.value.length >= inboxSlots.value;
+});
+
+onMounted(() => {
+  if (!isInboxLimitReached.value) return;
+  useAlert(t('INBOX_MGMT.MAX_REACHED'));
+  router.replace({ name: 'settings_inbox_list', params: route.params });
+});
 
 const createFlowSteps = computed(() => {
   const steps = ['CHANNEL', 'INBOX', 'AGENT', 'FINISH'];

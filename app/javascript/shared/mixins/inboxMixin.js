@@ -1,4 +1,4 @@
-import { INBOX_TYPES } from 'dashboard/helper/inbox';
+import { INBOX_TYPES, isVoiceCallEnabled } from 'dashboard/helper/inbox';
 
 export const INBOX_FEATURES = {
   REPLY_TO: 'replyTo',
@@ -13,6 +13,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -21,6 +22,7 @@ export const INBOX_FEATURE_MAP = {
     INBOX_TYPES.WEB,
     INBOX_TYPES.TWITTER,
     INBOX_TYPES.WHATSAPP,
+    INBOX_TYPES.BAILEYS_WHATSAPP,
     INBOX_TYPES.TELEGRAM,
     INBOX_TYPES.TIKTOK,
     INBOX_TYPES.API,
@@ -59,14 +61,17 @@ export default {
     isALineChannel() {
       return this.channelType === INBOX_TYPES.LINE;
     },
-    isAVoiceChannel() {
-      return this.channelType === INBOX_TYPES.VOICE;
+    voiceCallEnabled() {
+      return isVoiceCallEnabled(this.inbox);
     },
     isAnEmailChannel() {
       return this.channelType === INBOX_TYPES.EMAIL;
     },
     isATelegramChannel() {
       return this.channelType === INBOX_TYPES.TELEGRAM;
+    },
+    isABaileysWhatsAppChannel() {
+      return this.channelType === INBOX_TYPES.BAILEYS_WHATSAPP;
     },
     isATwilioSMSChannel() {
       const { medium: medium = '' } = this.inbox;
@@ -115,6 +120,8 @@ export default {
         badgeKey = this.facebookBadge;
       } else if (this.isATwilioChannel) {
         badgeKey = this.twilioBadge;
+      } else if (this.isABaileysWhatsAppChannel) {
+        badgeKey = 'whatsapp';
       } else if (this.isAWhatsAppChannel) {
         badgeKey = 'whatsapp';
       } else if (this.isATiktokChannel) {

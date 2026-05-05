@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Nexus MVP / Chatwoot: sobe o stack de desenvolvimento com hot reload (Vite).
+# O compose em paralelo tenta construir vite/rails antes da imagem chatwoot:development existir;
+# por isso construímos sempre a base primeiro.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [[ ! -f .env ]]; then
+  echo "Criando .env a partir de .env.example (ajusta FRONTEND_URL / SMTP se precisares)."
+  cp .env.example .env
+fi
+
+echo "==> docker compose build base (imagem chatwoot:development)"
+docker compose build base
+
+echo "==> docker compose up -d --build"
+docker compose up -d --build
+
+echo "==> Preparar base de dados (schema + seed mínimo se aplicável)"
+docker compose run --rm rails bundle exec rails db:prepare
+
+echo ""
+echo "Pronto. App: http://localhost:3000  · Mailhog: http://localhost:8025  · Vite: http://localhost:3036"
+echo "Logs: docker compose logs -f rails vite"

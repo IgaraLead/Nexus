@@ -16,6 +16,7 @@ const {
   HCAPTCHA_SITE_KEY: hCaptchaSiteKey,
   INSTALLATION_NAME: installationName,
   LOGO_THUMBNAIL: logoThumbnail,
+  LOGO_THUMBNAIL_DARK: logoThumbnailDark,
   LOGO: logo,
   LOGO_DARK: logoDark,
   PRIVACY_URL: privacyURL,
@@ -24,6 +25,7 @@ const {
   WIDGET_BRAND_URL: widgetBrandURL,
   DISABLE_USER_PROFILE_UPDATE: disableUserProfileUpdate,
   DEPLOYMENT_ENV: deploymentEnv,
+  ACTIVE_PLATFORM_BANNERS: activePlatformBanners,
 } = window.globalConfig || {};
 
 const state = {
@@ -45,10 +47,12 @@ const state = {
   logo,
   logoDark,
   logoThumbnail,
+  logoThumbnailDark,
   privacyURL,
   termsURL,
   widgetBrandURL,
   isEnterprise: parseBoolean(isEnterprise),
+  activePlatformBanners: activePlatformBanners || [],
 };
 
 export const getters = {

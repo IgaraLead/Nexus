@@ -4,6 +4,7 @@ class Messages::MarkdownRendererService
     'Channel::WebWidget' => :render_html,
     'Channel::Telegram' => :render_telegram_html,
     'Channel::Whatsapp' => :render_whatsapp,
+    'Channel::BaileysWhatsapp' => :render_whatsapp,
     'Channel::FacebookPage' => :render_instagram,
     'Channel::Instagram' => :render_instagram,
     'Channel::Line' => :render_line,

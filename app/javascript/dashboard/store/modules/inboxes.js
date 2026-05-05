@@ -151,7 +151,9 @@ export const getters = {
   },
   getWhatsAppInboxes($state) {
     return $state.records.filter(
-      item => item.channel_type === INBOX_TYPES.WHATSAPP
+      item =>
+        item.channel_type === INBOX_TYPES.WHATSAPP ||
+        item.channel_type === INBOX_TYPES.BAILEYS_WHATSAPP
     );
   },
   dialogFlowEnabledInboxes($state) {

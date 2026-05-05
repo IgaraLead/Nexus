@@ -9,7 +9,10 @@
       "ADMINISTRATOR": "Administrador",
       "AGENT": "Agente"
     },
-    "COUNT": "{n} agent | {n} agents",
+    "COUNT": "{n} agente | {n} agentes",
+    "SLOTS_COUNT": "{used}/{total}",
+    "AVAILABLE_SLOTS": "({n} disponíveis)",
+    "MAX_REACHED": "Máximo atingido",
     "LIST": {
       "404": "Não há agentes associados a esta conta",
       "TITLE": "Gerir agentes na sua equipa",
@@ -20,7 +23,7 @@
       "ACTIONS": "Ações",
       "VERIFIED": "Verificada",
       "VERIFICATION_PENDING": "Verificação pendente",
-      "AVAILABLE_CUSTOM_ROLE": "Available custom role permissions"
+      "AVAILABLE_CUSTOM_ROLE": "Permissões de função personalizada disponíveis"
     },
     "ADD": {
       "TITLE": "Adicionar agente à sua equipa",
@@ -98,7 +101,7 @@
       }
     },
     "SEARCH_PLACEHOLDER": "Procurar agentes...",
-    "NO_RESULTS": "No agents found matching your search",
+    "NO_RESULTS": "Não foram encontrados agentes para a sua pesquisa",
     "SEARCH": {
       "NO_RESULTS": "Nenhum resultado encontrado."
     },

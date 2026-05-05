@@ -437,6 +437,29 @@ RSpec.describe Conversations::MessageWindowService do
     end
   end
 
+  describe 'on Baileys WhatsApp channels' do
+    let!(:baileys_channel) { create(:channel_baileys_whatsapp) }
+    let!(:baileys_inbox) { create(:inbox, channel: baileys_channel, account: baileys_channel.account) }
+    let!(:conversation) { create(:conversation, inbox: baileys_inbox, account: baileys_channel.account) }
+
+    it 'return true if the last message is outgoing' do
+      service = described_class.new(conversation)
+      expect(service.can_reply?).to be true
+    end
+
+    it 'return true if the last message is incoming and outside 24 hours' do
+      create(
+        :message,
+        account: conversation.account,
+        inbox: baileys_inbox,
+        conversation: conversation,
+        created_at: 3.days.ago
+      )
+      service = described_class.new(conversation)
+      expect(service.can_reply?).to be true
+    end
+  end
+
   describe 'on Web widget channels' do
     let!(:widget_channel) { create(:channel_widget) }
     let!(:widget_inbox) { create(:inbox, channel: widget_channel, account: widget_channel.account) }

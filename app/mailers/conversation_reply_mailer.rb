@@ -6,7 +6,7 @@ class ConversationReplyMailer < ApplicationMailer
   include ConversationReplyMailerHelper
   include ReferencesHeaderBuilder
   include EmailAddressParseable
-  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>')
+  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Nexus <contato@igaralead.com.br>')
   layout :choose_layout
 
   def reply_with_summary(conversation, last_queued_id)
@@ -105,7 +105,7 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def business_name
-    @inbox.business_name || @inbox.sanitized_name
+    @inbox.sanitized_business_name
   end
 
   def from_email

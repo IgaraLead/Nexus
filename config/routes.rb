@@ -77,7 +77,9 @@ Rails.application.routes.draw do
             resources :custom_tools do
               post :test, on: :collection
             end
-            resources :documents, only: [:index, :show, :create, :destroy]
+            resources :documents, only: [:index, :show, :create, :destroy] do
+              post :sync, on: :member
+            end
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite
               post :summarize
@@ -303,6 +305,14 @@ Rails.application.routes.draw do
             resource :authorization, only: [:create]
           end
 
+          resources :inboxes, only: [] do
+            member do
+              post :baileys_qr_code, to: 'baileys_sessions#qr_code'
+              get :baileys_status, to: 'baileys_sessions#status'
+              post :baileys_disconnect, to: 'baileys_sessions#disconnect'
+            end
+          end
+
           resources :webhooks, only: [:index, :create, :update, :destroy]
           namespace :integrations do
             resources :apps, only: [:index, :show]
@@ -357,6 +367,13 @@ Rails.application.routes.draw do
             end
             resources :categories do
               post :reorder, on: :collection
+            end
+            namespace :articles do
+              resource :bulk_actions, only: [] do
+                post :translate
+                patch :update_status
+                delete :delete_articles
+              end
             end
             resources :articles do
               post :reorder, on: :collection
@@ -578,6 +595,13 @@ Rails.application.routes.draw do
   post 'webhooks/tiktok', to: 'webhooks/tiktok#events'
   post 'webhooks/shopify', to: 'webhooks/shopify#events'
 
+  post 'webhooks/baileys/message', to: 'baileys/webhooks#message'
+  post 'webhooks/baileys/status', to: 'baileys/webhooks#status_update'
+  post 'webhooks/baileys/qr', to: 'baileys/webhooks#qr_code'
+  post 'webhooks/baileys/connection', to: 'baileys/webhooks#connection_update'
+  post 'webhooks/baileys/contact', to: 'baileys/webhooks#contact_update'
+  post 'webhooks/baileys/group', to: 'baileys/webhooks#group_update'
+
   namespace :twitter do
     resource :callback, only: [:show]
   end
@@ -598,6 +622,7 @@ Rails.application.routes.draw do
       post 'voice/call/:phone', to: 'voice#call_twiml', as: :voice_call
       post 'voice/status/:phone', to: 'voice#status', as: :voice_status
       post 'voice/conference_status/:phone', to: 'voice#conference_status', as: :voice_conference_status
+      post 'voice/recording_status/:phone', to: 'voice#recording_status', as: :voice_recording_status
     end
   end
 
@@ -625,6 +650,9 @@ Rails.application.routes.draw do
       root to: 'dashboard#index'
 
       resource :app_config, only: [:show, :create]
+      resource :push_diagnostics, only: [:show, :create] do
+        post :destroy_subscriptions, on: :collection
+      end
 
       # order of resources affect the order of sidebar navigation in super admin
       resources :accounts, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
@@ -641,6 +669,7 @@ Rails.application.routes.draw do
         delete :avatar, on: :member, action: :destroy_avatar
       end
       resources :platform_apps, only: [:index, :new, :create, :show, :edit, :update, :destroy]
+      resources :platform_banners
       resource :instance_status, only: [:show]
 
       resource :settings, only: [:show] do

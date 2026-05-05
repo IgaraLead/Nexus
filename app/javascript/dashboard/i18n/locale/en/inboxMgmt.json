@@ -4,6 +4,9 @@
     "DESCRIPTION": "A channel is the mode of communication your customer chooses to interact with you. An inbox is where you manage interactions for a specific channel. It can include communications from various sources such as email, live chat, and social media.",
     "LEARN_MORE": "Learn more about inboxes",
     "COUNT": "{n} inbox | {n} inboxes",
+    "SLOTS_COUNT": "{used}/{total}",
+    "AVAILABLE_SLOTS": "({n} available)",
+    "MAX_REACHED": "Maximum reached",
     "SEARCH_PLACEHOLDER": "Search inboxes...",
     "NO_RESULTS": "No inboxes found matching your search",
     "RECONNECTION_REQUIRED": "Your inbox is disconnected. You won't receive new messages until you reauthorize it.",
@@ -16,7 +19,7 @@
     "CREATE_FLOW": {
       "CHANNEL": {
         "TITLE": "Choose Channel",
-        "BODY": "Choose the provider you want to integrate with Chatwoot."
+        "BODY": "Choose the provider you want to integrate with Nexus."
       },
       "INBOX": {
         "TITLE": "Create Inbox",
@@ -42,7 +45,7 @@
         "PLACEHOLDER": "Enter your website name (eg: Acme Inc)"
       },
       "FB": {
-        "HELP": "PS: By signing in, we only get access to your Page's messages. Your private messages can never be accessed by Chatwoot.",
+        "HELP": "PS: By signing in, we only get access to your Page's messages. Your private messages can never be accessed by Nexus.",
         "CHOOSE_PAGE": "Choose Page",
         "CHOOSE_PLACEHOLDER": "Select a page from the list",
         "INBOX_NAME": "Inbox Name",
@@ -247,6 +250,8 @@
           "WHATSAPP_CLOUD": "WhatsApp Cloud",
           "WHATSAPP_CLOUD_DESC": "Quick setup through Meta",
           "TWILIO_DESC": "Connect via Twilio credentials",
+          "QR_CODE": "WhatsApp Web (QR)",
+          "QR_CODE_DESC": "Pair by scanning a QR code with WhatsApp on your phone.",
           "360_DIALOG": "360Dialog"
         },
         "SELECT_PROVIDER": {
@@ -321,6 +326,30 @@
         },
         "API": {
           "ERROR_MESSAGE": "We were not able to save the WhatsApp channel"
+        }
+      },
+      "BAILEYS": {
+        "INBOX_NAME": {
+          "LABEL": "Inbox Name",
+          "PLACEHOLDER": "Please enter an inbox name",
+          "ERROR": "This field is required"
+        },
+        "IMPORT_HISTORY": "Import chat history",
+        "IMPORT_GROUPS": "Import groups",
+        "COMING_SOON": "(coming soon)",
+        "SUBMIT_BUTTON": "Generate QR code",
+        "QR": {
+          "TITLE": "Scan this QR code",
+          "INSTRUCTIONS": "Open WhatsApp on your phone, go to Linked Devices, and scan the code.",
+          "WAITING": "Generating QR… keep this page open."
+        },
+        "CONNECTED": {
+          "TITLE": "WhatsApp connected",
+          "PHONE": "Linked number: {phone}",
+          "NEXT": "Add agents"
+        },
+        "API": {
+          "ERROR_MESSAGE": "We could not start the WhatsApp session. Please try again."
         }
       },
       "VOICE": {
@@ -449,7 +478,7 @@
       },
       "AUTH": {
         "TITLE": "Choose a channel",
-        "DESC": "Chatwoot supports live-chat widgets, Facebook Messenger, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
+        "DESC": "Nexus supports live-chat widgets, Facebook Messenger, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
         "TITLE_NEXT": "Complete the setup",
         "TITLE_FINISH": "Voilà!",
         "CHANNEL": {
@@ -507,11 +536,11 @@
       },
       "DETAILS": {
         "TITLE": "Inbox Details",
-        "DESC": "From the dropdown below, select the Facebook Page you want to connect to Chatwoot. You can also give a custom name to your inbox for better identification."
+        "DESC": "From the dropdown below, select the Facebook Page you want to connect to Nexus. You can also give a custom name to your inbox for better identification."
       },
       "FINISH": {
         "TITLE": "Nailed It!",
-        "DESC": "You have successfully finished integrating your Facebook Page with Chatwoot. Next time a customer messages your Page, the conversation will automatically appear on your inbox.<br>We are also providing you with a widget script that you can easily add to your website. Once this is live on your website, customers can message you right from your website without the help of any external tool and the conversation will appear right here, on Chatwoot.<br>Cool, huh? Well, we sure try to be :)"
+        "DESC": "You have successfully finished integrating your Facebook Page with Nexus. Next time a customer messages your Page, the conversation will automatically appear on your inbox.<br>We are also providing you with a widget script that you can easily add to your website. Once this is live on your website, customers can message you right from your website without the help of any external tool and the conversation will appear right here, on Nexus.<br>Cool, huh? Well, we sure try to be :)"
       },
       "EMAIL_PROVIDER": {
         "TITLE": "Select your email provider",
@@ -636,7 +665,17 @@
       "WIDGET_BUILDER": "Widget Builder",
       "BOT_CONFIGURATION": "Bot Configuration",
       "ACCOUNT_HEALTH": "Account Health",
-      "CSAT": "CSAT"
+      "CSAT": "CSAT",
+      "VOICE": "Voice"
+    },
+    "VOICE_CONFIGURATION": {
+      "ENABLE_VOICE": {
+        "LABEL": "Enable Voice Calling",
+        "DESCRIPTION": "Enable voice calling on this inbox. Agents will be able to make and receive phone calls."
+      },
+      "CREDENTIALS": {
+        "DESCRIPTION": "Voice calling requires Twilio API Key credentials. These are used to generate tokens for agent voice connections."
+      }
     },
     "CHANNEL_PREFERENCES": "Channel Preferences",
     "WIDGET_FEATURES": "Widget features",
@@ -745,6 +784,7 @@
       "SENDER_NAME_SECTION_TEXT": "Enable/Disable showing Agent's name in email, if disabled it will show business name",
       "ENABLE_CONTINUITY_VIA_EMAIL": "Enable conversation continuity via email",
       "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "Conversations will continue over email if the contact email address is available.",
+      "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "This feature is available on a paid plan. Upgrade to enable conversation continuity via email.",
       "LOCK_TO_SINGLE_CONVERSATION": "Conversation Routing",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Configure conversation creation for existing contacts",
       "INBOX_UPDATE_TITLE": "Inbox Settings",
@@ -760,6 +800,30 @@
       "FORWARD_EMAIL_TITLE": "Forward to Email",
       "FORWARD_EMAIL_SUB_TEXT": "Start forwarding your emails to the following email address.",
       "FORWARD_EMAIL_NOT_CONFIGURED": "Forwarding emails to your inbox is currently disabled on this installation. To use this feature, it must be enabled by your administrator. Please get in touch with them to proceed.",
+      "BAILEYS_LOADING_STATUS": "Loading session status…",
+      "BAILEYS_RECONNECT_HINT": "Session ID and status. Generate a new QR if disconnected.",
+      "BAILEYS_GENERATE_QR_BUTTON": "Generate QR code",
+      "BAILEYS_DISCONNECT_BUTTON": "Disconnect session",
+      "BAILEYS_LINK_OTHER_ACCOUNT_TITLE": "Link another WhatsApp account?",
+      "BAILEYS_LINK_OTHER_ACCOUNT_DESCRIPTION": "This starts a new pairing flow and replaces the current session.",
+      "BAILEYS_LINK_OTHER_ACCOUNT_CONFIRM": "Continue",
+      "BAILEYS_LINK_OTHER_ACCOUNT_CANCEL": "Cancel",
+      "BAILEYS_LINK_OTHER_ACCOUNT_BUTTON": "Link another device",
+      "BAILEYS_QR_SUCCESS": "QR code requested.",
+      "BAILEYS_QR_ERROR": "Could not request a QR code.",
+      "BAILEYS_FORCE_RELINK_SUCCESS": "New pairing started.",
+      "BAILEYS_FORCE_RELINK_ERROR": "Could not start pairing.",
+      "BAILEYS_DISCONNECT_SUCCESS": "Session disconnected.",
+      "BAILEYS_DISCONNECT_ERROR": "Could not disconnect.",
+      "BAILEYS_REFRESH_STATUS_BUTTON": "Refresh status",
+      "BAILEYS_STATUS_LOAD_ERROR": "Could not load Baileys session status.",
+      "BAILEYS_CONNECTION_TITLE": "WhatsApp Web connection",
+      "BAILEYS_CONNECTION_SUBTITLE": "Manage your WhatsApp Web connection and generate a QR code when needed.",
+      "BAILEYS_CONNECTED_STATE": "Connected. You can link another number if needed.",
+      "BAILEYS_DISCONNECTED_STATE": "Disconnected. Reconnect to receive and send messages.",
+      "BAILEYS_RECONNECT_BUTTON": "Reconnect",
+      "BAILEYS_CONNECT_OTHER_NUMBER": "Connect another number",
+      "BAILEYS_GENERATING_QR_BUTTON": "Generating QR code...",
       "ALLOW_MESSAGES_AFTER_RESOLVED": "Allow messages after conversation resolved",
       "ALLOW_MESSAGES_AFTER_RESOLVED_SUB_TEXT": "Allow the end-users to send messages even after the conversation is resolved.",
       "WHATSAPP_SECTION_SUBHEADER": "This API Key is used for the integration with the WhatsApp APIs.",
@@ -1123,7 +1187,7 @@
         "USER_MESSAGE": "Hi",
         "AGENT_MESSAGE": "Hello"
       },
-      "BRANDING_TEXT": "Powered by Chatwoot",
+      "BRANDING_TEXT": "Powered by Nexus",
       "SCRIPT_SETTINGS": "\n      window.chatwootSettings = {options};"
     },
     "EMAIL_PROVIDERS": {
@@ -1153,7 +1217,8 @@
       "API": "API Channel",
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
-      "VOICE": "Voice"
+      "VOICE": "Voice",
+      "WHATSAPP_QR": "WhatsApp (QR)"
     }
   }
 }
