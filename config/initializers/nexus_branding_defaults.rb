@@ -2,7 +2,12 @@
 
 Rails.application.config.to_prepare do
   next unless defined?(InstallationConfig)
-  next unless InstallationConfig.table_exists?
+  begin
+    next unless InstallationConfig.table_exists?
+  rescue ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished,
+         PG::ConnectionBad
+    next
+  end
 
   target_values = {
     'INSTALLATION_NAME' => 'Nexus',
