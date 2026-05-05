@@ -15,9 +15,7 @@ class CreateChannelBaileysWhatsapp < ActiveRecord::Migration[7.1]
     end
 
     add_index :channel_baileys_whatsapp, :account_id unless index_exists?(:channel_baileys_whatsapp, :account_id)
-    unless index_exists?(:channel_baileys_whatsapp, :session_id, unique: true)
-      add_index :channel_baileys_whatsapp, :session_id, unique: true
-    end
+    add_index :channel_baileys_whatsapp, :session_id, unique: true unless index_exists?(:channel_baileys_whatsapp, :session_id, unique: true)
     add_index :channel_baileys_whatsapp, :phone_number unless index_exists?(:channel_baileys_whatsapp, :phone_number)
   end
 

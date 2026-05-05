@@ -100,9 +100,7 @@ class ContactInboxBuilder
   end
 
   def new_source_id
-    if @inbox.baileys_whatsapp?
-      "whatsapp:#{@source_id}#{rand(100)}"
-    elsif @inbox.whatsapp? || @inbox.sms? || @inbox.twilio?
+    if @inbox.baileys_whatsapp? || @inbox.whatsapp? || @inbox.sms? || @inbox.twilio?
       "whatsapp:#{@source_id}#{rand(100)}"
     else
       "#{rand(10)}#{@source_id}"

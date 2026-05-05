@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Baileys::ProviderService
-  DEFAULT_SIDECAR_URL = "http://baileys:3500"
-  DEFAULT_SIDECAR_API_KEY = "nexus-internal-baileys"
+  DEFAULT_SIDECAR_URL = 'http://baileys:3500'
+  DEFAULT_SIDECAR_API_KEY = 'nexus-internal-baileys'
 
   attr_reader :channel
 
@@ -27,7 +27,7 @@ class Baileys::ProviderService
 
   def request_qr_code(force: false, sync_full_history: true, import_groups: false)
     response = post(
-      "/sessions/start",
+      '/sessions/start',
       {
         session_id: channel.session_id,
         force: force,
@@ -35,9 +35,7 @@ class Baileys::ProviderService
         import_groups: import_groups
       }
     )
-    if response.is_a?(Hash) && response['error'].blank?
-      channel.update!(session_status: 'qr_pending')
-    end
+    channel.update!(session_status: 'qr_pending') if response.is_a?(Hash) && response['error'].blank?
     response
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.warn("[Baileys::ProviderService] request_qr_code persist failed: #{e.message}")
@@ -108,7 +106,7 @@ class Baileys::ProviderService
   end
 
   def base_url
-    ENV.fetch("BAILEYS_SIDECAR_URL", DEFAULT_SIDECAR_URL).to_s.strip.presence
+    ENV.fetch('BAILEYS_SIDECAR_URL', DEFAULT_SIDECAR_URL).to_s.strip.presence
   end
 
   def connection
@@ -122,8 +120,8 @@ class Baileys::ProviderService
         Faraday.new(url: url) do |f|
           f.request :json
           f.response :json
-          f.headers["X-Api-Key"] = ENV.fetch(
-            "BAILEYS_SIDECAR_API_KEY",
+          f.headers['X-Api-Key'] = ENV.fetch(
+            'BAILEYS_SIDECAR_API_KEY',
             DEFAULT_SIDECAR_API_KEY
           )
           f.adapter Faraday.default_adapter
@@ -135,9 +133,7 @@ class Baileys::ProviderService
 
   def post(path, body_hash)
     conn = connection
-    unless conn
-      return { "error" => "Baileys sidecar URL not configured" }
-    end
+    return { 'error' => 'Baileys sidecar URL not configured' } unless conn
 
     response = conn.post(path, body_hash)
     normalize_response(response)
@@ -148,9 +144,7 @@ class Baileys::ProviderService
 
   def get(path)
     conn = connection
-    unless conn
-      return { "error" => "Baileys sidecar URL not configured" }
-    end
+    return { 'error' => 'Baileys sidecar URL not configured' } unless conn
 
     response = conn.get(path)
     normalize_response(response)

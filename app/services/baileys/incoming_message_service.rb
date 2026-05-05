@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-class Baileys::IncomingMessageService
-  DEFAULT_SIDECAR_URL = "http://baileys:3500"
+class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
+  DEFAULT_SIDECAR_URL = 'http://baileys:3500'
 
   pattr_initialize [:inbox!, :params!]
 
+  # rubocop:disable Metrics/CyclomaticComplexity
   def perform
     return unless processable_message?
     return if history_message? && group_message?
@@ -22,6 +23,7 @@ class Baileys::IncomingMessageService
       create_message
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   private
 
@@ -153,7 +155,7 @@ class Baileys::IncomingMessageService
     params[:key]&.dig(:fromMe) == true
   end
 
-  # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
   def individual_phone_number
     key = params[:key]
     return nil if key.blank?
@@ -161,9 +163,7 @@ class Baileys::IncomingMessageService
     participant_jid = key[:participant]
     participant_jid = key[:participantAlt] if participant_jid&.end_with?('@lid') &&
                                                key[:participantAlt]&.end_with?('@s.whatsapp.net')
-    if !from_me? && participant_jid&.end_with?('@s.whatsapp.net')
-      return participant_jid.split('@').first
-    end
+    return participant_jid.split('@').first if !from_me? && participant_jid&.end_with?('@s.whatsapp.net')
 
     remote_jid = key[:remoteJid]
     remote_jid = key[:remoteJidAlt] if remote_jid&.end_with?('@lid') &&
@@ -172,7 +172,7 @@ class Baileys::IncomingMessageService
 
     remote_jid.split('@').first
   end
-  # rubocop:enable Metrics/CyclomaticComplexity
+  # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
   def process_in_reply_to
     quoted_id = params[:quoted_message_id]
@@ -186,7 +186,7 @@ class Baileys::IncomingMessageService
     media_path = params[:media_path]
     return if media_path.blank?
 
-    sidecar_url = ENV.fetch("BAILEYS_SIDECAR_URL", DEFAULT_SIDECAR_URL)
+    sidecar_url = ENV.fetch('BAILEYS_SIDECAR_URL', DEFAULT_SIDECAR_URL)
     media_url = "#{sidecar_url}#{media_path}"
     file = Down.download(media_url)
     return if file.blank?
@@ -213,6 +213,7 @@ class Baileys::IncomingMessageService
     end
   end
 
+  # rubocop:disable Metrics/CyclomaticComplexity
   def media_fallback_text
     case params[:message_type]
     when 'stickerMessage'
@@ -231,6 +232,7 @@ class Baileys::IncomingMessageService
       ''
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   def update_contact_name(name)
     return if name.start_with?('+')
@@ -252,3 +254,4 @@ class Baileys::IncomingMessageService
   end
 
 end
+# rubocop:enable Metrics/ClassLength

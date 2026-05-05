@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Baileys::WebhooksController < ApplicationController
-  DEFAULT_SIDECAR_API_KEY = "nexus-internal-baileys"
+  DEFAULT_SIDECAR_API_KEY = 'nexus-internal-baileys'
 
   skip_before_action :verify_authenticity_token, raise: false
   skip_before_action :authenticate_user!, raise: false
@@ -68,7 +68,7 @@ class Baileys::WebhooksController < ApplicationController
 
   def authenticate_sidecar!
     api_key = request.headers['X-Api-Key'].to_s
-    expected = ENV.fetch("BAILEYS_SIDECAR_API_KEY", DEFAULT_SIDECAR_API_KEY).to_s
+    expected = ENV.fetch('BAILEYS_SIDECAR_API_KEY', DEFAULT_SIDECAR_API_KEY).to_s
     ok = expected.present? &&
          api_key.bytesize == expected.bytesize &&
          ActiveSupport::SecurityUtils.secure_compare(api_key, expected)

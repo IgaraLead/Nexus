@@ -4,17 +4,16 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
   before_action :fetch_inbox
   before_action :check_authorization
 
+  # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
   def qr_code
     channel = @inbox.channel
     return render json: { error: 'Inbox has no channel' }, status: :unprocessable_entity unless channel
-    unless channel.is_a?(Channel::BaileysWhatsapp)
-      return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity
-    end
+    return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity unless channel.is_a?(Channel::BaileysWhatsapp)
 
     result = channel.request_qr_code(
       force: ActiveModel::Type::Boolean.new.cast(params[:force]),
       sync_full_history: ActiveModel::Type::Boolean.new.cast(
-        params[:sync_full_history].nil? ? true : params[:sync_full_history]
+        params[:sync_full_history].nil? || params[:sync_full_history]
       ),
       import_groups: ActiveModel::Type::Boolean.new.cast(params[:import_groups])
     )
@@ -28,13 +27,12 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
                      message: 'QR code requested, waiting for sidecar response' }
     end
   end
+  # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
   def status
     channel = @inbox.channel
     return render json: { error: 'Inbox has no channel' }, status: :unprocessable_entity unless channel
-    unless channel.is_a?(Channel::BaileysWhatsapp)
-      return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity
-    end
+    return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity unless channel.is_a?(Channel::BaileysWhatsapp)
 
     render json: {
       session_id: channel.session_id,
@@ -48,9 +46,7 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
   def disconnect
     channel = @inbox.channel
     return render json: { error: 'Inbox has no channel' }, status: :unprocessable_entity unless channel
-    unless channel.is_a?(Channel::BaileysWhatsapp)
-      return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity
-    end
+    return render json: { error: 'Not a Baileys channel' }, status: :unprocessable_entity unless channel.is_a?(Channel::BaileysWhatsapp)
 
     channel.disconnect_session
     render json: { status: 'disconnected' }
