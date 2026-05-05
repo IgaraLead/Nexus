@@ -21,7 +21,7 @@ services:
       - postgres
       - redis
     ports:
-      - '127.0.0.1:3000:3000'
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
@@ -67,16 +67,13 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - '127.0.0.1:6379:6379'
+      - '6379:6379'
 
   baileys:
-    build:
-      context: ./baileys-sidecar
-      dockerfile: Dockerfile
-    image: ${BAILEYS_IMAGE:-nexus-baileys-sidecar:latest}
+    <<: *base
     restart: always
     ports:
-      - '127.0.0.1:3500:3500'
+      - '3500:3500'
     volumes:
       - baileys_sessions:/data/sessions
     environment:
@@ -85,7 +82,10 @@ services:
       NEXUS_WEBHOOK_URL: ${NEXUS_WEBHOOK_URL:-http://rails:3000}
       BAILEYS_SIDECAR_API_KEY: ${BAILEYS_SIDECAR_API_KEY:-nexus-internal-baileys}
       SESSIONS_DIR: /data/sessions
+      MEDIA_DIR: /data/media
       LOG_LEVEL: info
+    working_dir: /baileys-sidecar
+    command: ['node', 'dist/index.js']
     depends_on:
       - rails
 

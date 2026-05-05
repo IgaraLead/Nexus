@@ -1,5 +1,17 @@
 # pre-build stage
-FROM node:24-alpine as node
+FROM node:24-alpine AS node
+
+# Baileys HTTP sidecar (TypeScript → dist); bundled into final image at /baileys-sidecar
+FROM node:24-alpine AS baileys-builder
+WORKDIR /baileys-sidecar
+RUN apk add --no-cache python3 make g++ git
+COPY baileys-sidecar/package.json baileys-sidecar/tsconfig.json ./
+COPY baileys-sidecar/src ./src
+RUN npm install \
+  && npm run build \
+  && npm prune --omit=dev \
+  && rm -rf /root/.npm
+
 FROM ruby:3.4.4-alpine3.21 AS pre-builder
 
 ARG NODE_VERSION="24.13.0"
@@ -83,7 +95,7 @@ RUN mkdir -p /app/log
 # generate production assets if production environment
 RUN if [ "$RAILS_ENV" = "production" ]; then \
   SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
-  && rm -rf spec node_modules tmp/cache; \
+  && rm -rf spec node_modules tmp/cache /app/baileys-sidecar; \
   fi
 
 # Generate .git_sha file with current commit hash
@@ -147,6 +159,9 @@ COPY --from=pre-builder /app /app
 # Copy .git_sha file from pre-builder stage
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
+COPY --from=baileys-builder /baileys-sidecar /baileys-sidecar
+RUN mkdir -p /data/sessions /data/media
+
 WORKDIR /app
 
-EXPOSE 3000
+EXPOSE 3000 3500
