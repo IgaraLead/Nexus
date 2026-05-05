@@ -42,8 +42,32 @@ if (isLibraryMode) {
   plugins = [vue(vueOptions)];
 }
 
+const viteRubyDevPort = Number(process.env.VITE_RUBY_PORT || 3036);
+
+/** Listen on all interfaces in Docker; HMR uses the host browser URL when set via env. */
+const viteDevServer =
+  !isLibraryMode && !isTestMode && process.env.VITEST !== 'true'
+    ? {
+        host: process.env.VITE_DEV_SERVER_HOST === '0.0.0.0' ? '0.0.0.0' : true,
+        port: viteRubyDevPort,
+        strictPort: true,
+        ...(process.env.VITE_HMR_CLIENT_HOST
+          ? {
+              hmr: {
+                host: process.env.VITE_HMR_CLIENT_HOST,
+                port: viteRubyDevPort,
+                clientPort: Number(
+                  process.env.VITE_HMR_CLIENT_PORT || viteRubyDevPort
+                ),
+              },
+            }
+          : {}),
+      }
+    : undefined;
+
 export default defineConfig({
   plugins: plugins,
+  ...(viteDevServer ? { server: viteDevServer } : {}),
   build: {
     rollupOptions: {
       output: {

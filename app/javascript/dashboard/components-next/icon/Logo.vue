@@ -1,4 +1,5 @@
 <script setup>
+defineOptions({ inheritAttrs: false });
 import { useAttrs } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 
@@ -7,37 +8,67 @@ const globalConfig = useMapGetter('globalConfig/get');
 </script>
 
 <template>
-  <img
-    v-if="globalConfig.logoThumbnail"
+  <span
     v-bind="attrs"
-    :src="globalConfig.logoThumbnail"
-  />
-  <svg
-    v-else
-    v-once
-    v-bind="attrs"
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
+    class="inline-grid shrink-0 place-content-center [&>*]:col-start-1 [&>*]:row-start-1 [&>*]:max-h-full [&>*]:max-w-full"
   >
-    <g clip-path="url(#woot-logo-clip-2342424e23u32098)">
+    <template v-if="globalConfig.logoThumbnail">
+      <img :src="globalConfig.logoThumbnail" alt="" class="dark:hidden" />
+      <img
+        v-if="globalConfig.logoThumbnailDark"
+        :src="globalConfig.logoThumbnailDark"
+        alt=""
+        class="hidden dark:block"
+      />
+      <!-- IgaraLead mark when dark thumbnail not in DB yet (~90% lightness) -->
+      <svg
+        v-else
+        v-once
+        width="16"
+        height="16"
+        viewBox="0 0 1025 1025"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        class="hidden dark:block text-[#e6e6e6]"
+        aria-hidden="true"
+      >
+        <path
+          d="M0 129C0 58.3076 57.3076 1 128 1H256V1025H128C57.3076 1025 0 967.692 0 897V129Z"
+          fill="currentColor"
+        />
+        <path
+          d="M385 1C385 0.447715 385.448 0 386 0H641V1024H385V1Z"
+          fill="currentColor"
+        />
+        <path
+          d="M769 1.00002C769 0.447738 769.448 0 770 0H897C967.692 0 1025 57.3076 1025 128V896H897C826.308 896 769 838.692 769 768V1.00002Z"
+          fill="currentColor"
+        />
+      </svg>
+    </template>
+    <svg
+      v-else
+      v-once
+      width="16"
+      height="16"
+      viewBox="0 0 1025 1025"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      class="text-[#1a1a1a] dark:text-[#e6e6e6]"
+      aria-hidden="true"
+    >
       <path
-        d="M8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16Z"
-        fill="#2781F6"
+        d="M0 129C0 58.3076 57.3076 1 128 1H256V1025H128C57.3076 1025 0 967.692 0 897V129Z"
+        fill="currentColor"
       />
       <path
-        d="M11.4172 11.4172H7.70831C5.66383 11.4172 4 9.75328 4 7.70828C4 5.66394 5.66383 4 7.70835 4C9.75339 4 11.4172 5.66394 11.4172 7.70828V11.4172Z"
-        fill="white"
-        stroke="white"
-        stroke-width="0.1875"
+        d="M385 1C385 0.447715 385.448 0 386 0H641V1024H385V1Z"
+        fill="currentColor"
       />
-    </g>
-    <defs>
-      <clipPath id="woot-logo-clip-2342424e23u32098">
-        <rect width="16" height="16" fill="white" />
-      </clipPath>
-    </defs>
-  </svg>
+      <path
+        d="M769 1.00002C769 0.447738 769.448 0 770 0H897C967.692 0 1025 57.3076 1025 128V896H897C826.308 896 769 838.692 769 768V1.00002Z"
+        fill="currentColor"
+      />
+    </svg>
+  </span>
 </template>

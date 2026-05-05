@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useRouter } from 'vue-router';
+import { BaseTable } from 'dashboard/components-next/table';
 import BasePaywallModal from 'dashboard/routes/dashboard/settings/components/BasePaywallModal.vue';
 import CustomRoleListItem from './CustomRoleTableBody.vue';
 import { useI18n } from 'vue-i18n';
@@ -74,23 +75,16 @@ const tableHeaders = computed(() => {
 
 <template>
   <div class="w-full min-h-[12rem] relative">
-    <div class="w-full space-y-3 text-sm">
-      <thead class="opacity-30 dark:opacity-30">
-        <th
-          v-for="thHeader in tableHeaders"
-          :key="thHeader"
-          class="py-4 ltr:pr-4 rtl:pl-4 text-start text-heading-3 text-n-slate-12"
-        >
-          <span class="mb-0">
-            {{ thHeader }}
-          </span>
-        </th>
-      </thead>
-      <CustomRoleListItem
-        class="opacity-25 dark:opacity-20"
-        :roles="dummyCustomRolesData"
-        :loading="{}"
-      />
+    <div class="w-full text-sm">
+      <BaseTable :headers="tableHeaders" :items="dummyCustomRolesData">
+        <template #row="{ items }">
+          <CustomRoleListItem
+            class="opacity-25 dark:opacity-20"
+            :roles="items"
+            :loading="{}"
+          />
+        </template>
+      </BaseTable>
     </div>
     <div
       class="absolute inset-0 flex flex-col items-center justify-center w-full h-full bg-gradient-to-t from-white dark:from-slate-900 to-transparent"

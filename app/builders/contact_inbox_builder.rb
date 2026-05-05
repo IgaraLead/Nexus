@@ -13,6 +13,8 @@ class ContactInboxBuilder
 
   def generate_source_id
     case @inbox.channel_type
+    when 'Channel::BaileysWhatsapp'
+      baileys_wa_source_id
     when 'Channel::TwilioSms'
       twilio_source_id
     when 'Channel::Whatsapp'
@@ -45,6 +47,12 @@ class ContactInboxBuilder
 
     # whatsapp doesn't want the + in e164 format
     @contact.phone_number.delete('+').to_s
+  end
+
+  def baileys_wa_source_id
+    raise ActionController::ParameterMissing, 'contact phone number' unless @contact.phone_number
+
+    "#{@contact.phone_number.delete('+')}@s.whatsapp.net"
   end
 
   def twilio_source_id
@@ -92,7 +100,7 @@ class ContactInboxBuilder
   end
 
   def new_source_id
-    if @inbox.whatsapp? || @inbox.sms? || @inbox.twilio?
+    if @inbox.baileys_whatsapp? || @inbox.whatsapp? || @inbox.sms? || @inbox.twilio?
       "whatsapp:#{@source_id}#{rand(100)}"
     else
       "#{rand(10)}#{@source_id}"
@@ -100,7 +108,7 @@ class ContactInboxBuilder
   end
 
   def allowed_channels?
-    @inbox.email? || @inbox.sms? || @inbox.twilio? || @inbox.whatsapp?
+    @inbox.baileys_whatsapp? || @inbox.email? || @inbox.sms? || @inbox.twilio? || @inbox.whatsapp?
   end
 end
 

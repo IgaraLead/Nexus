@@ -3,7 +3,7 @@ import { ref, nextTick, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { required, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
-import { useI18n } from 'vue-i18n';
+import { useI18n, I18nT } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 
 // components
@@ -71,62 +71,92 @@ onMounted(async () => {
   <main
     class="flex flex-col w-full min-h-screen py-20 bg-n-brand/5 dark:bg-n-background sm:px-6 lg:px-8"
   >
-    <section class="max-w-5xl mx-auto">
-      <img
-        :src="globalConfig.logo"
-        :alt="globalConfig.installationName"
-        class="block w-auto h-8 mx-auto dark:hidden"
-      />
-      <img
-        v-if="globalConfig.logoDark"
-        :src="globalConfig.logoDark"
-        :alt="globalConfig.installationName"
-        class="hidden w-auto h-8 mx-auto dark:block"
-      />
-      <h2 class="mt-6 text-3xl font-medium text-center text-n-slate-12">
-        {{ t('LOGIN.SAML.TITLE') }}
-      </h2>
-    </section>
-    <section
-      class="bg-white shadow sm:mx-auto mt-11 sm:w-full sm:max-w-lg dark:bg-n-solid-2 p-11 sm:shadow-lg sm:rounded-lg"
-      :class="{
-        'animate-wiggle': loginApi.hasErrored,
-      }"
-    >
-      <form class="space-y-5" method="POST" action="/api/v1/auth/saml_login">
-        <FormInput
-          v-model="credentials.email"
-          name="email"
-          type="text"
-          :tabindex="1"
-          required
-          :label="t('LOGIN.SAML.WORK_EMAIL.LABEL')"
-          :placeholder="t('LOGIN.SAML.WORK_EMAIL.PLACEHOLDER')"
-          :has-error="v$.credentials.email.$error"
-          @input="v$.credentials.email.$touch"
+    <div class="flex flex-col flex-1">
+      <section class="max-w-5xl mx-auto">
+        <img
+          :src="globalConfig.logo"
+          :alt="globalConfig.installationName"
+          class="block w-auto h-8 mx-auto dark:hidden"
         />
-        <input
-          type="hidden"
-          class="h-0"
-          name="authenticity_token"
-          :value="csrfToken"
+        <img
+          v-if="globalConfig.logoDark"
+          :src="globalConfig.logoDark"
+          :alt="globalConfig.installationName"
+          class="hidden w-auto h-8 mx-auto dark:block"
         />
-        <input type="hidden" class="h-0" name="target" :value="target" />
-        <NextButton
-          lg
-          type="submit"
-          class="w-full"
-          :tabindex="2"
-          :label="t('LOGIN.SAML.SUBMIT')"
-          :disabled="loginApi.showLoading"
-          :is-loading="loginApi.showLoading"
-        />
-      </form>
-    </section>
-    <p class="mt-6 text-sm text-center text-n-slate-11">
-      <router-link to="/app/login" class="text-link text-n-brand">
-        {{ t('LOGIN.SAML.BACK_TO_LOGIN') }}
-      </router-link>
-    </p>
+        <h2 class="mt-6 text-3xl font-medium text-center text-n-slate-12">
+          {{ t('LOGIN.SAML.TITLE') }}
+        </h2>
+      </section>
+      <section
+        class="bg-white shadow sm:mx-auto mt-11 sm:w-full sm:max-w-lg dark:bg-n-solid-2 p-11 sm:shadow-lg sm:rounded-lg"
+        :class="{
+          'animate-wiggle': loginApi.hasErrored,
+        }"
+      >
+        <form class="space-y-5" method="POST" action="/api/v1/auth/saml_login">
+          <FormInput
+            v-model="credentials.email"
+            name="email"
+            type="text"
+            :tabindex="1"
+            required
+            :label="t('LOGIN.SAML.WORK_EMAIL.LABEL')"
+            :placeholder="t('LOGIN.SAML.WORK_EMAIL.PLACEHOLDER')"
+            :has-error="v$.credentials.email.$error"
+            @input="v$.credentials.email.$touch"
+          />
+          <input
+            type="hidden"
+            class="h-0"
+            name="authenticity_token"
+            :value="csrfToken"
+          />
+          <input type="hidden" class="h-0" name="target" :value="target" />
+          <NextButton
+            lg
+            type="submit"
+            class="w-full"
+            :tabindex="2"
+            :label="t('LOGIN.SAML.SUBMIT')"
+            :disabled="loginApi.showLoading"
+            :is-loading="loginApi.showLoading"
+          />
+        </form>
+      </section>
+      <p class="mt-6 text-sm text-center text-n-slate-11">
+        <router-link to="/app/login" class="text-link text-n-brand">
+          {{ t('LOGIN.SAML.BACK_TO_LOGIN') }}
+        </router-link>
+      </p>
+    </div>
+    <footer class="mt-auto shrink-0 px-4 pt-10 pb-6">
+      <I18nT
+        keypath="LOGIN.CREDITS"
+        tag="p"
+        class="max-w-xl mx-auto text-xs leading-relaxed text-center text-n-slate-11"
+      >
+        <template #igaralead>
+          <a
+            href="https://igaralead.com.br"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-n-brand underline underline-offset-2"
+          >
+            {{ t('LOGIN.CREDITS_IGARALEAD') }}
+          </a>
+        </template>
+        <template #chatwoot>
+          <a
+            href="https://www.chatwoot.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-n-brand underline underline-offset-2"
+          >
+            {{ t('LOGIN.CREDITS_CHATWOOT') }}
+          </a>
+        </template>
+      </I18nT>
+    </footer>
   </main>
 </template>

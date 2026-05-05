@@ -78,6 +78,15 @@ export default {
         'agent_list',
       ].includes(this.$route.name);
     },
+    nexusMvpProductSurface() {
+      return window.chatwootConfig?.productSurface || {};
+    },
+    showCaptainCopilotUi() {
+      return this.nexusMvpProductSurface.captain === true;
+    },
+    showVoiceCallingUi() {
+      return this.nexusMvpProductSurface.voice === true;
+    },
     previouslyUsedDisplayType() {
       const {
         previously_used_conversation_display_type: conversationDisplayType,
@@ -156,13 +165,15 @@ export default {
       <template v-if="!showUpgradePage">
         <router-view />
         <CommandBar />
-        <CopilotLauncher />
+        <CopilotLauncher v-if="showCaptainCopilotUi" />
         <MobileSidebarLauncher
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />
-        <CopilotContainer />
-        <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
+        <CopilotContainer v-if="showCaptainCopilotUi" />
+        <FloatingCallWidget
+          v-if="showVoiceCallingUi && (hasActiveCall || hasIncomingCall)"
+        />
       </template>
       <AddAccountModal
         :show="showCreateAccountModal"

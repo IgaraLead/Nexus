@@ -305,6 +305,14 @@ Rails.application.routes.draw do
             resource :authorization, only: [:create]
           end
 
+          resources :inboxes, only: [] do
+            member do
+              post :baileys_qr_code, to: 'baileys_sessions#qr_code'
+              get :baileys_status, to: 'baileys_sessions#status'
+              post :baileys_disconnect, to: 'baileys_sessions#disconnect'
+            end
+          end
+
           resources :webhooks, only: [:index, :create, :update, :destroy]
           namespace :integrations do
             resources :apps, only: [:index, :show]
@@ -586,6 +594,13 @@ Rails.application.routes.draw do
   post 'webhooks/instagram', to: 'webhooks/instagram#events'
   post 'webhooks/tiktok', to: 'webhooks/tiktok#events'
   post 'webhooks/shopify', to: 'webhooks/shopify#events'
+
+  post 'webhooks/baileys/message', to: 'baileys/webhooks#message'
+  post 'webhooks/baileys/status', to: 'baileys/webhooks#status_update'
+  post 'webhooks/baileys/qr', to: 'baileys/webhooks#qr_code'
+  post 'webhooks/baileys/connection', to: 'baileys/webhooks#connection_update'
+  post 'webhooks/baileys/contact', to: 'baileys/webhooks#contact_update'
+  post 'webhooks/baileys/group', to: 'baileys/webhooks#group_update'
 
   namespace :twitter do
     resource :callback, only: [:show]

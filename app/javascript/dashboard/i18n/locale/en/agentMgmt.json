@@ -10,6 +10,9 @@
       "AGENT": "Agent"
     },
     "COUNT": "{n} agent | {n} agents",
+    "SLOTS_COUNT": "{used}/{total}",
+    "AVAILABLE_SLOTS": "({n} available)",
+    "MAX_REACHED": "Maximum reached",
     "LIST": {
       "404": "There are no agents associated to this account",
       "TITLE": "Manage agents in your team",

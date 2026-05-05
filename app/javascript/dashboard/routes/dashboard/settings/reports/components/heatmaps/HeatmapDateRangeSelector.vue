@@ -2,13 +2,15 @@
 import { computed, ref, watch, defineModel } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
-import addMonths from 'date-fns/addMonths';
-import differenceInCalendarDays from 'date-fns/differenceInCalendarDays';
-import endOfDay from 'date-fns/endOfDay';
-import endOfMonth from 'date-fns/endOfMonth';
-import startOfDay from 'date-fns/startOfDay';
-import startOfMonth from 'date-fns/startOfMonth';
-import subDays from 'date-fns/subDays';
+import {
+  addMonths,
+  differenceInCalendarDays,
+  endOfDay,
+  endOfMonth,
+  startOfDay,
+  startOfMonth,
+  subDays,
+} from 'date-fns';
 import { vOnClickOutside } from '@vueuse/components';
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';

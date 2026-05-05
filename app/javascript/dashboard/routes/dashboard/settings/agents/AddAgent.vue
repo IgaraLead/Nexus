@@ -54,6 +54,19 @@ const roles = computed(() => {
   return [...defaultRoles, ...customRoles];
 });
 
+const currentAccount = computed(() => store.getters.getCurrentAccount || {});
+const agents = useMapGetter('agents/getAgents');
+const agentSlots = computed(() => {
+  const maxAgents =
+    currentAccount.value.max_agents ||
+    currentAccount.value.usage_limits?.agents;
+  return Number(maxAgents) > 0 ? Number(maxAgents) : null;
+});
+const isAgentLimitReached = computed(() => {
+  if (!agentSlots.value) return false;
+  return agents.value.length >= agentSlots.value;
+});
+
 const selectedRole = computed(() =>
   roles.value.find(
     role =>
@@ -62,6 +75,12 @@ const selectedRole = computed(() =>
 );
 
 const addAgent = async () => {
+  if (isAgentLimitReached.value) {
+    useAlert(t('AGENT_MGMT.MAX_REACHED'));
+    emit('close');
+    return;
+  }
+
   v$.value.$touch();
   if (v$.value.$invalid) return;
 

@@ -13,6 +13,7 @@ export function useChannelIcon(inbox) {
     'Channel::TwitterProfile': 'i-woot-x',
     'Channel::WebWidget': 'i-woot-website',
     'Channel::Whatsapp': 'i-woot-whatsapp',
+    'Channel::BaileysWhatsapp': 'i-woot-whatsapp',
     'Channel::Instagram': 'i-woot-instagram',
     'Channel::Tiktok': 'i-woot-tiktok',
   };

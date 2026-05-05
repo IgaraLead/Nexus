@@ -1,6 +1,6 @@
 {
   "LOGIN": {
-    "TITLE": "Entrar no Chatwoot",
+    "TITLE": "Entrar no Nexus",
     "EMAIL": {
       "LABEL": "E-mail",
       "PLACEHOLDER": "nome{'@'}empresa.com.br",
@@ -36,6 +36,9 @@
       "API": {
         "ERROR_MESSAGE": "A autenticação SSO falhou. Verifique suas credenciais e tente novamente."
       }
-    }
+    },
+    "CREDITS": "O Nexus é criado pela {igaralead}. Baseia-se no {chatwoot}, projeto open-source de engajamento com clientes.",
+    "CREDITS_IGARALEAD": "IgaraLead",
+    "CREDITS_CHATWOOT": "Chatwoot"
   }
 }

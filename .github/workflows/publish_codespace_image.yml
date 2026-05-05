@@ -24,4 +24,4 @@ jobs:
     - name: Build the Codespace Base Image
       run: |
         docker compose -f .devcontainer/docker-compose.base.yml build base
-        docker push ghcr.io/chatwoot/chatwoot_codespace:latest
+        docker push ghcr.io/igaralead/nexus_codespace:latest

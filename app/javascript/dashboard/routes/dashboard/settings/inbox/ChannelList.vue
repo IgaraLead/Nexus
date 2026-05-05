@@ -3,16 +3,30 @@ import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store';
+import { useAlert } from 'dashboard/composables';
 
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useProductSurface } from 'dashboard/composables/useProductSurface';
 
 import ChannelItem from 'dashboard/components/widgets/ChannelItem.vue';
 
 const { t } = useI18n();
 const router = useRouter();
 const { accountId, currentAccount } = useAccount();
+const productSurface = useProductSurface();
 
 const globalConfig = useMapGetter('globalConfig/get');
+const inboxes = useMapGetter('inboxes/getInboxes');
+const inboxSlots = computed(() => {
+  const maxInboxes =
+    currentAccount.value.max_inboxes ||
+    currentAccount.value.usage_limits?.inboxes;
+  return Number(maxInboxes) > 0 ? Number(maxInboxes) : null;
+});
+const isInboxLimitReached = computed(() => {
+  if (!inboxSlots.value) return false;
+  return inboxes.value.length >= inboxSlots.value;
+});
 
 const enabledFeatures = ref({});
 
@@ -95,7 +109,11 @@ const channelList = computed(() => {
     icon: 'i-woot-voice',
   });
 
-  return channels;
+  return channels.filter(channel => {
+    if (channel.key === 'sms' && !productSurface.smsChannel) return false;
+    if (channel.key === 'voice' && !productSurface.voice) return false;
+    return true;
+  });
 });
 
 const initializeEnabledFeatures = async () => {
@@ -103,6 +121,10 @@ const initializeEnabledFeatures = async () => {
 };
 
 const initChannelAuth = channel => {
+  if (isInboxLimitReached.value) {
+    useAlert(t('INBOX_MGMT.MAX_REACHED'));
+    return;
+  }
   const params = {
     sub_page: channel,
     accountId: accountId.value,

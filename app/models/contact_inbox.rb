@@ -72,8 +72,16 @@ class ContactInbox < ApplicationRecord
     errors.add(:source_id, "invalid source id for whatsapp inbox. valid Regex #{WHATSAPP_CHANNEL_REGEX}")
   end
 
+  def validate_baileys_whatsapp_source_id
+    return if /\A\d{6,20}@s\.whatsapp\.net\z/.match?(source_id.to_s)
+    return if /\A[^\s]+@g\.us\z/.match?(source_id.to_s)
+
+    errors.add(:source_id, 'invalid source id for baileys whatsapp inbox')
+  end
+
   def valid_source_id_format?
     validate_twilio_source_id if inbox.channel_type == 'Channel::TwilioSms'
     validate_whatsapp_source_id if inbox.channel_type == 'Channel::Whatsapp'
+    validate_baileys_whatsapp_source_id if inbox.channel_type == 'Channel::BaileysWhatsapp'
   end
 end
