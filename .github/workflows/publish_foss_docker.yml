@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_REPO: ghcr.io/${{ toLower(github.repository_owner) }}/${{ github.event.repository.name }}
+  DOCKER_REPO: ghcr.io/igaralead/nexus
 
 permissions:
   contents: read
