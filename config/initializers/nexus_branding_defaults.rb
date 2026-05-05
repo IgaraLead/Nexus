@@ -2,6 +2,7 @@
 
 Rails.application.config.to_prepare do
   next unless defined?(InstallationConfig)
+
   begin
     next unless InstallationConfig.table_exists?
   rescue ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished,
