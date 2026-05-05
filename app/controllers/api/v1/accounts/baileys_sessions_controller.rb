@@ -4,7 +4,7 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
   before_action :fetch_inbox
   before_action :check_authorization
 
-  # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
   def qr_code
     channel = @inbox.channel
     return render json: { error: 'Inbox has no channel' }, status: :unprocessable_entity unless channel
@@ -27,7 +27,7 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
                      message: 'QR code requested, waiting for sidecar response' }
     end
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
   def status
     channel = @inbox.channel

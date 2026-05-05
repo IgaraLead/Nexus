@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.config.to_prepare do
+  next if Rails.env.test?
   next unless defined?(InstallationConfig)
 
   begin

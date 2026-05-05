@@ -162,12 +162,12 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
 
     participant_jid = key[:participant]
     participant_jid = key[:participantAlt] if participant_jid&.end_with?('@lid') &&
-                                               key[:participantAlt]&.end_with?('@s.whatsapp.net')
+                                              key[:participantAlt]&.end_with?('@s.whatsapp.net')
     return participant_jid.split('@').first if !from_me? && participant_jid&.end_with?('@s.whatsapp.net')
 
     remote_jid = key[:remoteJid]
     remote_jid = key[:remoteJidAlt] if remote_jid&.end_with?('@lid') &&
-                                        key[:remoteJidAlt]&.end_with?('@s.whatsapp.net')
+                                       key[:remoteJidAlt]&.end_with?('@s.whatsapp.net')
     return nil if remote_jid.blank? || !remote_jid.end_with?('@s.whatsapp.net')
 
     remote_jid.split('@').first
@@ -252,6 +252,4 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       value[:low].to_i
     end
   end
-
 end
-# rubocop:enable Metrics/ClassLength
