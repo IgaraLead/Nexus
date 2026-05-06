@@ -43,7 +43,21 @@ Rails.application.configure do
   config.active_storage.service = ENV.fetch('ACTIVE_STORAGE_SERVICE', 'local').to_sym
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch('FORCE_SSL', false))
+  force_ssl_enabled = ActiveModel::Type::Boolean.new.cast(ENV.fetch('FORCE_SSL', false))
+  config.force_ssl = force_ssl_enabled
+
+  if force_ssl_enabled
+    # Baileys sidecar and other Docker internals hit Puma over plain HTTP. A redirect to
+    # https://host:3000 makes fetch() retry with TLS on a non-TLS socket → Puma::HttpParserError.
+    config.ssl_options = {
+      redirect: {
+        exclude: lambda { |request|
+          path = request.path
+          path.start_with?('/webhooks/baileys') || path == '/health'
+        },
+      },
+    }
+  end
 
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
