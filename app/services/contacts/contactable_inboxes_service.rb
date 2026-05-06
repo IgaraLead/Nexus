@@ -8,6 +8,7 @@ class Contacts::ContactableInboxesService
 
   private
 
+  # rubocop:disable Metrics/CyclomaticComplexity
   def get_contactable_inbox(inbox)
     case inbox.channel_type
     when 'Channel::TwilioSms'
@@ -26,6 +27,7 @@ class Contacts::ContactableInboxesService
       website_contactable_inbox(inbox)
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   def website_contactable_inbox(inbox)
     latest_contact_inbox = inbox.contact_inboxes.where(contact: @contact).last

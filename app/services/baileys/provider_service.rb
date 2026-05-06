@@ -116,16 +116,14 @@ class Baileys::ProviderService
     return nil if raw.blank?
 
     candidate =
-      if raw.match?(/\A[a-z][a-z0-9+\-.]*:\/\//i)
+      if raw.match?(%r{\A[a-z][a-z0-9+\-.]*://}i)
         raw
       else
         "http://#{raw}"
       end
 
     uri = URI.parse(candidate)
-    unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
-      return nil
-    end
+    return nil unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
 
     return nil if uri.host.blank?
 

@@ -5,7 +5,6 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
 
   pattr_initialize [:inbox!, :params!]
 
-  # rubocop:disable Metrics/CyclomaticComplexity
   def perform
     return unless processable_message?
     return if group_message?
@@ -14,7 +13,7 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       message_id = params[:key][:id].to_s
       if Message.exists?(inbox_id: inbox.id, source_id: message_id)
         Rails.logger.info(
-          "[Baileys::IncomingMessageService] skipped duplicate message source_id=#{message_id} "\
+          "[Baileys::IncomingMessageService] skipped duplicate message source_id=#{message_id} " \
           "inbox_id=#{inbox.id} is_history=#{history_message?}"
         )
         return
@@ -29,8 +28,6 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       create_message
     end
   end
-  # rubocop:enable Metrics/CyclomaticComplexity
-
   private
 
   def processable_message?

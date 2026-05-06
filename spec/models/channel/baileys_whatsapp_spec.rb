@@ -32,7 +32,7 @@ RSpec.describe Channel::BaileysWhatsapp, type: :model do
 
       expect do
         channel.disconnect_session
-      end.not_to change { inbox.messages.count }
+      end.not_to(change { inbox.messages.count })
 
       expect(channel.reload.session_status).to eq('disconnected')
       expect(conversation.reload.messages.where(source_id: 'history-preserved')).to exist
