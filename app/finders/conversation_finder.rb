@@ -186,7 +186,7 @@ class ConversationFinder
 
   def filter_out_group_conversations
     @conversations = @conversations.joins(:contact_inbox)
-      .where.not('contact_inboxes.source_id LIKE ?', '%@g.us')
+                                  .where.not('contact_inboxes.source_id LIKE ?', '%@g.us')
   end
 
   def set_count_for_all_conversations

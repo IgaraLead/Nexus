@@ -28,6 +28,7 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       create_message
     end
   end
+
   private
 
   def processable_message?
