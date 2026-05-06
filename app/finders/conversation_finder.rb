@@ -80,6 +80,7 @@ class ConversationFinder
     set_assignee_type
 
     find_all_conversations
+    filter_out_group_conversations
     filter_by_status unless params[:q]
     filter_by_team
     filter_by_labels
@@ -181,6 +182,11 @@ class ConversationFinder
 
     @conversations = @conversations.joins(:contact_inbox)
     @conversations = @conversations.where(contact_inboxes: { source_id: params[:source_id] })
+  end
+
+  def filter_out_group_conversations
+    @conversations = @conversations.joins(:contact_inbox)
+                                 .where.not('contact_inboxes.source_id LIKE ?', '%@g.us')
   end
 
   def set_count_for_all_conversations

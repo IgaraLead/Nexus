@@ -295,6 +295,10 @@ export class SessionManager {
         await this.handleMessagesUpsert(sessionId, events['messages.upsert'], sock)
       }
 
+      if (events['messaging-history.set']) {
+        await this.handleMessagingHistorySet(sessionId, events['messaging-history.set'], sock)
+      }
+
       if (events['messages.update']) {
         await this.handleMessagesUpdate(sessionId, events['messages.update'])
       }
@@ -411,6 +415,29 @@ export class SessionManager {
     }
   }
 
+  private async handleMessagingHistorySet(sessionId: string, data: any, sock: WASocket): Promise<void> {
+    const historyMessages = Array.isArray(data?.messages) ? data.messages : []
+    if (!historyMessages.length) return
+
+    logger.info(
+      {
+        sessionId,
+        count: historyMessages.length,
+        syncType: data?.syncType?.toString?.() ?? null,
+        isLatest: data?.isLatest ?? null,
+      },
+      'History sync event received'
+    )
+
+    const sortedMessages = [...historyMessages].sort(
+      (a, b) => normalizeTimestamp(a.messageTimestamp) - normalizeTimestamp(b.messageTimestamp)
+    )
+    for (const msg of sortedMessages) {
+      if (msg.key?.remoteJid?.endsWith('@g.us')) continue
+      await this.processMessage(sessionId, msg, true, sock)
+    }
+  }
+
   private async processMessage(sessionId: string, msg: any, isHistory: boolean, sock: WASocket): Promise<void> {
     if (msg.key.remoteJid === 'status@broadcast') return
     if (msg.key.remoteJid?.endsWith('@newsletter')) return
@@ -460,6 +487,10 @@ export class SessionManager {
       payload.media_path = media.path
       payload.media_mimetype = media.mimetype
       payload.media_filename = media.filename
+    }
+
+    if (isHistory) {
+      logger.debug({ sessionId, messageId: payload.key?.id, remoteJid: payload.key?.remoteJid }, 'Sending history message webhook')
     }
 
     await this.webhookPost('/webhooks/baileys/message', payload)
@@ -609,7 +640,12 @@ export class SessionManager {
           },
           body: JSON.stringify(body),
         })
-        if (res.ok) return
+        if (res.ok) {
+          if (body.is_history === true) {
+            logger.debug({ url, messageId: body.key?.id }, 'History webhook delivered')
+          }
+          return
+        }
 
         if (res.status >= 500 && attempt < maxRetries) {
           logger.warn({ url, status: res.status, attempt }, 'Webhook server error, retrying...')
@@ -617,15 +653,15 @@ export class SessionManager {
           continue
         }
 
-        logger.warn({ url, status: res.status }, 'Webhook request failed')
+        logger.warn({ url, status: res.status, isHistory: body.is_history === true }, 'Webhook request failed')
         return
       } catch (err) {
         if (attempt < maxRetries) {
-          logger.warn({ err, url, attempt }, 'Webhook error, retrying...')
+          logger.warn({ err, url, attempt, isHistory: body.is_history === true }, 'Webhook error, retrying...')
           await this.sleep(1000 * attempt)
           continue
         }
-        logger.error({ err, url }, 'Webhook request error after retries')
+        logger.error({ err, url, isHistory: body.is_history === true }, 'Webhook request error after retries')
       }
     }
   }
