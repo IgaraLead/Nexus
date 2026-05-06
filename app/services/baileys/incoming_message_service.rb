@@ -5,14 +5,19 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
 
   pattr_initialize [:inbox!, :params!]
 
-  # rubocop:disable Metrics/CyclomaticComplexity
   def perform
     return unless processable_message?
-    return if history_message? && group_message?
+    return if group_message?
 
     if params[:key]&.dig(:id).present?
       message_id = params[:key][:id].to_s
-      return if Message.exists?(inbox_id: inbox.id, source_id: message_id)
+      if Message.exists?(inbox_id: inbox.id, source_id: message_id)
+        Rails.logger.info(
+          "[Baileys::IncomingMessageService] skipped duplicate message source_id=#{message_id} " \
+          "inbox_id=#{inbox.id} is_history=#{history_message?}"
+        )
+        return
+      end
     end
 
     set_contact
@@ -23,7 +28,6 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       create_message
     end
   end
-  # rubocop:enable Metrics/CyclomaticComplexity
 
   private
 
@@ -34,11 +38,7 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
   end
 
   def set_contact
-    if group_message?
-      set_group_contact
-    else
-      set_individual_contact
-    end
+    set_individual_contact
   end
 
   def set_individual_contact
@@ -59,22 +59,6 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
     @contact = contact_inbox.contact
 
     update_contact_name(name) if !from_me? && @contact.name.start_with?('+')
-  end
-
-  def set_group_contact
-    group_jid = params.dig(:key, :remoteJid)
-    return if group_jid.blank?
-
-    group_id = group_jid.split('@').first
-
-    contact_inbox = ::ContactInboxWithContactBuilder.new(
-      source_id: group_jid,
-      inbox: inbox,
-      contact_attributes: { name: "Group #{group_id}", phone_number: nil, identifier: group_jid }
-    ).perform
-
-    @contact_inbox = contact_inbox
-    @contact = contact_inbox.contact
   end
 
   def set_conversation
