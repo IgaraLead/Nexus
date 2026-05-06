@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'uri'
+
 class Baileys::ProviderService
   DEFAULT_SIDECAR_URL = 'http://baileys:3500'
   DEFAULT_SIDECAR_API_KEY = 'nexus-internal-baileys'
@@ -106,7 +108,30 @@ class Baileys::ProviderService
   end
 
   def base_url
-    ENV.fetch('BAILEYS_SIDECAR_URL', DEFAULT_SIDECAR_URL).to_s.strip.presence
+    normalize_sidecar_url(ENV.fetch('BAILEYS_SIDECAR_URL', DEFAULT_SIDECAR_URL).to_s.strip)
+  end
+
+  # Faraday parses host:port without a scheme as URI::Generic with path nil; later code calls path.end_with? and crashes.
+  def normalize_sidecar_url(raw)
+    return nil if raw.blank?
+
+    candidate =
+      if raw.match?(/\A[a-z][a-z0-9+\-.]*:\/\//i)
+        raw
+      else
+        "http://#{raw}"
+      end
+
+    uri = URI.parse(candidate)
+    unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+      return nil
+    end
+
+    return nil if uri.host.blank?
+
+    candidate
+  rescue URI::InvalidURIError
+    nil
   end
 
   def connection

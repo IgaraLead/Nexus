@@ -23,6 +23,7 @@ import {
   isMediaType,
   getMediaPlaceholder,
 } from './message-utils.js'
+import { normalizeNexusWebhookBaseUrl } from './nexus-webhook-url.js'
 
 interface SessionEntry {
   socket: WASocket | null
@@ -45,7 +46,7 @@ export class SessionManager {
   private msgRetryCounterCache = new NodeCache() as CacheStore
 
   constructor(nexusWebhookUrl: string, apiKey: string) {
-    this.nexusWebhookUrl = nexusWebhookUrl
+    this.nexusWebhookUrl = normalizeNexusWebhookBaseUrl(nexusWebhookUrl)
     this.apiKey = apiKey
   }
 
