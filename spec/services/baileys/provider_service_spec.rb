@@ -7,7 +7,7 @@ RSpec.describe Baileys::ProviderService do
 
   describe '#send_message' do
     it 'sends document attachments with filename and mimetype' do
-      file = instance_double(ActiveStorage::Attached::One, filename: 'manual.pdf', content_type: 'application/pdf')
+      file = instance_double(ActiveStorage::Blob, filename: 'manual.pdf', content_type: 'application/pdf')
       attachment = instance_double(Attachment, file_type: 'file', download_url: 'https://example.com/manual.pdf', file: file)
       message = instance_double(Message, attachments: [attachment], outgoing_content: 'Read this', content_attributes: {})
       service = described_class.new(channel: channel)
@@ -32,7 +32,7 @@ RSpec.describe Baileys::ProviderService do
     end
 
     it 'sends audio attachments with normalized mimetype' do
-      file = instance_double(ActiveStorage::Attached::One, filename: 'recording.mp3', content_type: 'audio/mp3')
+      file = instance_double(ActiveStorage::Blob, filename: 'recording.mp3', content_type: 'audio/mp3')
       attachment = instance_double(Attachment, file_type: 'audio',
                                                download_url: 'http://localhost:3000/rails/active_storage/disk/recording.mp3', file: file)
       message = instance_double(

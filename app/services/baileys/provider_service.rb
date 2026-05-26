@@ -104,8 +104,8 @@ class Baileys::ProviderService
   end
 
   def quoted_message_payload(message, jid)
-    quoted = message.conversation.messages.find_by(id: message.content_attributes[:in_reply_to])
-    quoted_id = quoted&.source_id || message.content_attributes[:in_reply_to_external_id]
+    quoted = quoted_message_record(message)
+    quoted_id = quoted_message_id(message, quoted)
     return if quoted_id.blank?
 
     {
@@ -114,6 +114,17 @@ class Baileys::ProviderService
       from_me: quoted&.outgoing? || false,
       text: quoted&.outgoing_content || quoted&.content || ' '
     }
+  end
+
+  def quoted_message_record(message)
+    in_reply_to = message.content_attributes[:in_reply_to]
+    return if in_reply_to.blank?
+
+    message.conversation.messages.find_by(id: in_reply_to)
+  end
+
+  def quoted_message_id(message, quoted)
+    quoted&.source_id || message.content_attributes[:in_reply_to_external_id]
   end
 
   def media_type_content(attachment, media_type, message)
