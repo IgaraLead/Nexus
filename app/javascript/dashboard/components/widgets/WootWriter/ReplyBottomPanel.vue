@@ -223,6 +223,10 @@ export default {
         channelType = INBOX_TYPES.INSTAGRAM;
       }
 
+      if (this.isABaileysWhatsAppChannel) {
+        channelType = INBOX_TYPES.WHATSAPP;
+      }
+
       return getAllowedFileTypesByChannel({
         channelType,
         medium: this.inbox?.medium,

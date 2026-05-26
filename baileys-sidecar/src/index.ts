@@ -151,7 +151,7 @@ app.post('/sessions/disconnect', async (req, res) => {
 
 // Send a message
 app.post('/messages/send', async (req, res) => {
-  const { session_id, jid, message, quoted_message_id, client_slug } = req.body
+  const { session_id, jid, message, quoted_message_id, quoted_message, client_slug } = req.body
   if (!isValidSessionId(session_id) || !isValidJid(jid) || !message || typeof message !== 'object') {
     res.status(400).json({ error: 'session_id (alphanumeric), jid (valid WhatsApp JID), and message (object) are required' })
     return
@@ -167,7 +167,7 @@ app.post('/messages/send', async (req, res) => {
   }
 
   try {
-    const result = await manager.sendMessage(session_id, jid, message, quoted_message_id, client_slug)
+    const result = await manager.sendMessage(session_id, jid, message, quoted_message_id, quoted_message, client_slug)
     res.json(result)
   } catch (err: any) {
     logger.error({ err, session_id, jid, client_slug }, 'Failed to send message')

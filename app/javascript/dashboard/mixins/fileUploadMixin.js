@@ -1,6 +1,9 @@
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
-import { checkFileSizeLimit } from 'shared/helpers/FileHelper';
+import {
+  checkFileSizeLimit,
+  normalizeAttachmentChannelType,
+} from 'shared/helpers/FileHelper';
 import { getMaxUploadSizeByChannel } from '@chatwoot/utils';
 import { DirectUpload } from 'activestorage';
 import {
@@ -28,7 +31,9 @@ export default {
         return this.installationLimit;
       }
 
-      const channelType = this.inbox?.channel_type;
+      const channelType = normalizeAttachmentChannelType(
+        this.inbox?.channel_type
+      );
 
       if (!channelType || channelType === INBOX_TYPES.WEB) {
         return this.installationLimit;

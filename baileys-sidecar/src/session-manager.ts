@@ -223,6 +223,7 @@ export class SessionManager {
     jid: string,
     message: Record<string, any>,
     quotedMessageId?: string,
+    quotedMessage?: Record<string, any>,
     clientSlug?: string
   ): Promise<{ key: proto.IMessageKey } | null> {
     const key = this.sessionKey(sessionId, clientSlug)
@@ -236,22 +237,66 @@ export class SessionManager {
     if (message.text) {
       content = { text: message.text } as any
     } else if (message.image) {
-      content = { image: { url: message.image.url }, caption: message.caption || undefined } as any
+      content = {
+        image: { url: message.image.url || message.image.link },
+        caption: message.image.caption || message.caption || undefined
+      } as any
     } else if (message.video) {
-      content = { video: { url: message.video.url }, caption: message.caption || undefined } as any
+      content = {
+        video: { url: message.video.url || message.video.link },
+        caption: message.video.caption || message.caption || undefined
+      } as any
     } else if (message.audio) {
-      content = { audio: { url: message.audio.url }, mimetype: 'audio/ogg; codecs=opus' } as any
+      content = {
+        audio: { url: message.audio.url || message.audio.link },
+        mimetype: this.normalizeAudioMimetype(message.audio.mimetype || message.mimetype),
+        ptt: message.audio.ptt || message.ptt || undefined
+      } as any
     } else if (message.document) {
-      content = { document: { url: message.document.url }, mimetype: message.mimetype || 'application/octet-stream' } as any
+      content = {
+        document: { url: message.document.url || message.document.link },
+        mimetype: message.document.mimetype || message.mimetype || 'application/octet-stream',
+        fileName: message.document.filename || message.document.fileName || message.filename || undefined,
+        caption: message.document.caption || message.caption || undefined
+      } as any
     }
 
     const options: any = {}
-    if (quotedMessageId) {
-      options.quoted = { key: { id: quotedMessageId } }
+    const quoted = this.buildQuotedMessage(jid, quotedMessageId, quotedMessage)
+    if (quoted) {
+      options.quoted = quoted
     }
 
     const result = await entry.socket.sendMessage(jid, content as any, options)
     return result || null
+  }
+
+  private buildQuotedMessage(
+    jid: string,
+    quotedMessageId?: string,
+    quotedMessage?: Record<string, any>
+  ): proto.IWebMessageInfo | undefined {
+    const id = quotedMessage?.id || quotedMessageId
+    if (!id) return undefined
+
+    return {
+      key: {
+        remoteJid: quotedMessage?.remoteJid || quotedMessage?.remote_jid || jid,
+        id,
+        fromMe: Boolean(quotedMessage?.fromMe ?? quotedMessage?.from_me)
+      },
+      message: {
+        conversation: quotedMessage?.text || quotedMessage?.content || ' '
+      }
+    } as proto.IWebMessageInfo
+  }
+
+  private normalizeAudioMimetype(mimetype?: string): string {
+    if (mimetype === 'audio/mp3') {
+      return 'audio/mpeg'
+    }
+
+    return mimetype || 'audio/mpeg'
   }
 
   async markMessagesRead(

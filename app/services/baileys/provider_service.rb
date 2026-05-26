@@ -2,6 +2,7 @@
 
 require 'uri'
 
+# rubocop:disable Metrics/ClassLength
 class Baileys::ProviderService
   DEFAULT_SIDECAR_URL = 'http://baileys:3500'
   DEFAULT_SIDECAR_API_KEY = 'nexus-internal-baileys'
@@ -22,6 +23,10 @@ class Baileys::ProviderService
               end
 
     response = post('/messages/send', payload)
+    if response.is_a?(Hash) && response['error'].present?
+      message.update!(status: :failed, external_error: response['error'])
+      return
+    end
     return unless response.is_a?(Hash) && response['key'].present?
 
     response['key']['id']
@@ -74,30 +79,63 @@ class Baileys::ProviderService
       jid: jid,
       message: { text: message.outgoing_content }
     }
-    if message.content_attributes[:in_reply_to_external_id].present?
-      payload[:quoted_message_id] =
-        message.content_attributes[:in_reply_to_external_id]
-    end
+    add_reply_context(payload, message, jid)
     payload
   end
 
   def build_media_payload(jid, message)
     attachment = message.attachments.first
     media_type = attachment_media_type(attachment.file_type)
-
     payload = {
       session_id: channel.session_id,
       jid: jid,
-      message: {
-        media_type => { url: attachment.download_url },
-        :caption => message.outgoing_content
-      }.compact
+      message: { media_type => media_type_content(attachment, media_type, message) }
     }
-    if message.content_attributes[:in_reply_to_external_id].present?
-      payload[:quoted_message_id] =
-        message.content_attributes[:in_reply_to_external_id]
-    end
+    add_reply_context(payload, message, jid)
     payload
+  end
+
+  def add_reply_context(payload, message, jid)
+    quoted_message = quoted_message_payload(message, jid)
+    return if quoted_message.blank?
+
+    payload[:quoted_message_id] = quoted_message[:id]
+    payload[:quoted_message] = quoted_message
+  end
+
+  def quoted_message_payload(message, jid)
+    quoted = quoted_message_record(message)
+    quoted_id = quoted_message_id(message, quoted)
+    return if quoted_id.blank?
+
+    {
+      id: quoted_id,
+      remote_jid: jid,
+      from_me: quoted&.outgoing? || false,
+      text: quoted&.outgoing_content || quoted&.content || ' '
+    }
+  end
+
+  def quoted_message_record(message)
+    in_reply_to = message.content_attributes[:in_reply_to]
+    return if in_reply_to.blank?
+
+    message.conversation.messages.find_by(id: in_reply_to)
+  end
+
+  def quoted_message_id(message, quoted)
+    quoted&.source_id || message.content_attributes[:in_reply_to_external_id]
+  end
+
+  def media_type_content(attachment, media_type, message)
+    download_url = attachment.download_url.sub(%r{\Ahttps?://(localhost|127\.0\.0\.1|0\.0\.0\.0):3000},
+                                               ENV.fetch('BAILEYS_MEDIA_BASE_URL', 'http://rails:3000'))
+    {
+      url: download_url,
+      caption: media_type == :audio ? nil : message.outgoing_content,
+      filename: media_type == :document ? attachment.file.filename.to_s : nil,
+      mimetype: %i[audio document].include?(media_type) ? attachment.file.content_type.sub('audio/mp3', 'audio/mpeg') : nil
+    }.compact
   end
 
   def attachment_media_type(file_type)
@@ -110,8 +148,7 @@ class Baileys::ProviderService
   end
 
   def normalize_jid(phone_number)
-    number = phone_number.to_s.gsub(/[^\d]/, '')
-    "#{number}@s.whatsapp.net"
+    "#{phone_number.to_s.gsub(/[^\d]/, '')}@s.whatsapp.net"
   end
 
   def read_message_key(message)
@@ -162,10 +199,7 @@ class Baileys::ProviderService
         Faraday.new(url: url) do |f|
           f.request :json
           f.response :json
-          f.headers['X-Api-Key'] = ENV.fetch(
-            'BAILEYS_SIDECAR_API_KEY',
-            DEFAULT_SIDECAR_API_KEY
-          )
+          f.headers['X-Api-Key'] = ENV.fetch('BAILEYS_SIDECAR_API_KEY', DEFAULT_SIDECAR_API_KEY)
           f.adapter Faraday.default_adapter
           f.options.timeout = 30
           f.options.open_timeout = 10
@@ -212,3 +246,4 @@ class Baileys::ProviderService
     { 'error' => 'Unexpected response from Baileys sidecar' }
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -132,6 +132,7 @@ export default {
     isAWhatsAppChannel() {
       return (
         this.channelType === INBOX_TYPES.WHATSAPP ||
+        this.isABaileysWhatsAppChannel ||
         this.isATwilioWhatsAppChannel
       );
     },

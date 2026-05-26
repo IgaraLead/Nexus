@@ -6,6 +6,7 @@ import { reactive } from 'vue';
 
 vi.mock('shared/helpers/FileHelper', () => ({
   checkFileSizeLimit: vi.fn(),
+  normalizeAttachmentChannelType: vi.fn(channelType => channelType),
   resolveMaximumFileUploadSize: vi.fn(value => Number(value) || 40),
   DEFAULT_MAXIMUM_FILE_UPLOAD_SIZE: 40,
 }));
