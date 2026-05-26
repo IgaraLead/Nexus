@@ -1,0 +1,37 @@
+{
+  "name": "nexus-next-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@igaralead/ui": "file:vendor/igaraui/igaralead-ui-0.1.0.tgz",
+    "@rails/actioncable": "^8.1.300",
+    "@tanstack/react-query": "^5.100.14",
+    "lucide-react": "^1.16.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "tailwindcss": "^4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.4",
+    "vite": "^5.4.21"
+  }
+}

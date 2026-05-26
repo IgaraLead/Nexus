@@ -1,0 +1,57 @@
+@import '@igaralead/ui/styles.css';
+@import 'tailwindcss';
+
+@source './**/*.{ts,tsx}';
+
+:root {
+  --platform: #40c0ff;
+  --platform-foreground: #031018;
+  --platform-subtle: rgba(64, 192, 255, 0.1);
+  --platform-muted: rgba(64, 192, 255, 0.16);
+  --platform-border: rgba(64, 192, 255, 0.28);
+  --platform-ring: #66ccff;
+  --primary: #40c0ff;
+  --primary-foreground: #031018;
+  --secondary: #0f6691;
+  --secondary-foreground: #ffffff;
+  --ring: #66ccff;
+  --background: #020a0f;
+  --foreground: #effaff;
+  --card: #061622;
+  --card-foreground: #effaff;
+  --popover: #082033;
+  --popover-foreground: #effaff;
+  --muted: #0a2738;
+  --muted-foreground: #9bbdcd;
+  --accent: rgba(64, 192, 255, 0.16);
+  --accent-foreground: #e0f5ff;
+  --border: rgba(64, 192, 255, 0.18);
+  --input: rgba(64, 192, 255, 0.18);
+  --chart-1: #40c0ff;
+  --chart-2: #66ccff;
+  --chart-3: #1685b8;
+  --chart-4: #8fd9ff;
+  --chart-5: #0a4766;
+  --hero-glow: rgba(64, 192, 255, 0.2);
+  --hero-gradient-from: #061622;
+  --hero-gradient-to: #020a0f;
+  --shadow-glow-primary: 0 0 20px rgba(64, 192, 255, 0.35), 0 0 60px rgba(64, 192, 255, 0.12);
+  --shadow-glow-secondary: 0 0 20px rgba(102, 204, 255, 0.32), 0 0 60px rgba(15, 102, 145, 0.14);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.16);
+}
+
+#root {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+#root * {
+  border-color: var(--border);
+}
+
+#root ::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}

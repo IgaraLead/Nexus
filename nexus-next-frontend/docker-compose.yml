@@ -1,0 +1,16 @@
+services:
+  nexus-next-frontend:
+    build:
+      context: .
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_NEXUS_URL=http://localhost:3000/app
+      - VITE_PORT=5173
+    volumes:
+      - .:/app:delegated
+      - node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  node_modules:
