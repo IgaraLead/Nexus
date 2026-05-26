@@ -27,6 +27,16 @@ function isValidJid(jid: unknown): jid is string {
   return typeof jid === 'string' && JID_RE.test(jid)
 }
 
+function isValidMessageKey(key: unknown): key is { id: string; remoteJid: string; fromMe?: boolean; participant?: string } {
+  if (!key || typeof key !== 'object') return false
+
+  const messageKey = key as Record<string, unknown>
+  return typeof messageKey.id === 'string' &&
+    messageKey.id.length > 0 &&
+    isValidJid(messageKey.remoteJid) &&
+    (messageKey.participant === undefined || isValidJid(messageKey.participant))
+}
+
 function isValidSlug(slug: unknown): slug is string {
   return typeof slug === 'string' && SLUG_RE.test(slug)
 }
@@ -161,6 +171,27 @@ app.post('/messages/send', async (req, res) => {
     res.json(result)
   } catch (err: any) {
     logger.error({ err, session_id, jid, client_slug }, 'Failed to send message')
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Mark incoming WhatsApp messages as read
+app.post('/messages/read', async (req, res) => {
+  const { session_id, keys, client_slug } = req.body
+  if (!isValidSessionId(session_id) || !Array.isArray(keys) || keys.length === 0 || !keys.every(isValidMessageKey)) {
+    res.status(400).json({ error: 'session_id and keys (valid WhatsApp message keys) are required' })
+    return
+  }
+  if (client_slug !== undefined && !isValidSlug(client_slug)) {
+    res.status(400).json({ error: 'client_slug must be lowercase alphanumeric with hyphens, max 63 chars' })
+    return
+  }
+
+  try {
+    const result = await manager.markMessagesRead(session_id, keys, client_slug)
+    res.json({ status: 'ok', ...result })
+  } catch (err: any) {
+    logger.error({ err, session_id, client_slug, count: keys.length }, 'Failed to mark messages as read')
     res.status(500).json({ error: err.message })
   }
 })

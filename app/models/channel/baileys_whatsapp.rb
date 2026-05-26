@@ -27,6 +27,10 @@ class Channel::BaileysWhatsapp < ApplicationRecord
     baileys_service.send_message(phone_number, message)
   end
 
+  def mark_messages_read(messages)
+    baileys_service.mark_messages_read(messages)
+  end
+
   def request_qr_code(force: false, sync_full_history: true, import_groups: false)
     baileys_service.request_qr_code(
       force: force,

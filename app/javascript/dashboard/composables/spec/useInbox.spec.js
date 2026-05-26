@@ -53,6 +53,7 @@ const mockStore = createStore({
               voice_enabled: true,
             },
             15: { id: 15, channel_type: INBOX_TYPES.TIKTOK },
+            16: { id: 16, channel_type: INBOX_TYPES.BAILEYS_WHATSAPP },
           };
           return inboxes[id] || null;
         },
@@ -178,6 +179,15 @@ describe('useInbox', () => {
       expect(wrapper.vm.isAWhatsAppCloudChannel).toBe(false);
     });
 
+    it('identifies Baileys WhatsApp channel as a WhatsApp channel', () => {
+      const wrapper = mount(createTestComponent(16), {
+        global: { plugins: [mockStore] },
+      });
+
+      expect(wrapper.vm.isABaileysWhatsAppChannel).toBe(true);
+      expect(wrapper.vm.isAWhatsAppChannel).toBe(true);
+    });
+
     it('identifies all other channel types correctly', () => {
       // Test Telegram
       let wrapper = mount(createTestComponent(8), {
@@ -275,6 +285,7 @@ describe('useInbox', () => {
         'isATwilioWhatsAppChannel',
         'isAWhatsAppCloudChannel',
         'is360DialogWhatsAppChannel',
+        'isABaileysWhatsAppChannel',
         'isAnEmailChannel',
         'isAnInstagramChannel',
         'isATiktokChannel',

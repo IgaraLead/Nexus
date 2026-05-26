@@ -254,6 +254,21 @@ export class SessionManager {
     return result || null
   }
 
+  async markMessagesRead(
+    sessionId: string,
+    keys: proto.IMessageKey[],
+    clientSlug?: string
+  ): Promise<{ count: number }> {
+    const key = this.sessionKey(sessionId, clientSlug)
+    const entry = this.sessions.get(key)
+    if (!entry?.socket || entry.status !== 'connected') {
+      throw new Error(`Session ${sessionId} is not connected`)
+    }
+
+    await entry.socket.readMessages(keys)
+    return { count: keys.length }
+  }
+
   // --- Private ---
 
   private async connect(sessionId: string, entry: SessionEntry, clientSlug?: string): Promise<void> {

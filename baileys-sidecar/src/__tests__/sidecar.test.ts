@@ -306,6 +306,40 @@ describe('Message Validation', () => {
   })
 })
 
+// ─── Read Receipt Validation ────────────────────────────
+
+describe('Read Receipt Validation', () => {
+  it('rejects missing read message keys', async () => {
+    const { status } = await request('POST', '/messages/read', {
+      headers: authedHeaders,
+      body: { session_id: 'test' },
+    })
+    assert.equal(status, 400)
+  })
+
+  it('rejects malformed read message keys', async () => {
+    const { status } = await request('POST', '/messages/read', {
+      headers: authedHeaders,
+      body: {
+        session_id: 'test',
+        keys: [{ id: 'abc123', remoteJid: '../etc/passwd' }],
+      },
+    })
+    assert.equal(status, 400)
+  })
+
+  it('accepts valid read message keys', async () => {
+    const { status } = await request('POST', '/messages/read', {
+      headers: authedHeaders,
+      body: {
+        session_id: 'test',
+        keys: [{ id: 'abc123', remoteJid: '5511999999999@s.whatsapp.net', fromMe: false }],
+      },
+    })
+    assert.notEqual(status, 400)
+  })
+})
+
 // ─── Health Endpoint ───────────────────────────────────
 
 describe('Health Endpoint', () => {

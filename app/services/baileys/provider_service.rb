@@ -55,6 +55,13 @@ class Baileys::ProviderService
     response['error'].present? ? 'unknown' : (response['status'] || 'unknown')
   end
 
+  def mark_messages_read(messages)
+    keys = Array(messages).filter_map { |message| read_message_key(message) }
+    return if keys.blank?
+
+    post('/messages/read', { session_id: channel.session_id, keys: keys })
+  end
+
   def validate_provider_config?
     base_url.present?
   end
@@ -105,6 +112,18 @@ class Baileys::ProviderService
   def normalize_jid(phone_number)
     number = phone_number.to_s.gsub(/[^\d]/, '')
     "#{number}@s.whatsapp.net"
+  end
+
+  def read_message_key(message)
+    source_id = message.source_id.to_s
+    remote_jid = message.conversation.contact_inbox&.source_id.to_s
+    return if source_id.blank? || remote_jid.blank?
+
+    {
+      id: source_id,
+      remoteJid: remote_jid,
+      fromMe: false
+    }
   end
 
   def base_url

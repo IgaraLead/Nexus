@@ -777,6 +777,44 @@ RSpec.describe 'Conversations API', type: :request do
         expect(conversation.reload.agent_last_seen_at).to be > initial_last_seen
       end
 
+      it 'sends WhatsApp Web read receipts for unread Baileys messages' do
+        channel = create(:channel_baileys_whatsapp, account: account)
+        inbox = channel.inbox
+        contact = create(:contact, account: account, phone_number: '+5511999999999')
+        contact_inbox = create(:contact_inbox, inbox: inbox, contact: contact, source_id: '5511999999999@s.whatsapp.net')
+        baileys_conversation = create(
+          :conversation,
+          account: account,
+          inbox: inbox,
+          contact: contact,
+          contact_inbox: contact_inbox,
+          agent_last_seen_at: 30.minutes.ago
+        )
+        create(
+          :message,
+          account: account,
+          inbox: inbox,
+          conversation: baileys_conversation,
+          message_type: :incoming,
+          source_id: 'message-id-1',
+          created_at: 5.minutes.ago
+        )
+        create(:inbox_member, user: agent, inbox: inbox)
+        service = instance_double(Baileys::ReadReceiptService, perform: true)
+
+        expect(Baileys::ReadReceiptService).to receive(:new).with(
+          conversation: have_attributes(id: baileys_conversation.id),
+          last_seen_at: kind_of(DateTime),
+          update_assignee: false
+        ).and_return(service)
+
+        post "/api/v1/accounts/#{account.id}/conversations/#{baileys_conversation.display_id}/update_last_seen",
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+      end
+
       it 'updates both if one timestamp is old even when the other is recent' do
         conversation.update!(assignee_id: agent.id, agent_last_seen_at: 2.hours.ago, assignee_last_seen_at: 30.minutes.ago)
         # Ensure all messages are older than assignee_last_seen_at (no unread messages)
