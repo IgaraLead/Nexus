@@ -804,7 +804,7 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(Baileys::ReadReceiptService).to receive(:new).with(
           conversation: have_attributes(id: baileys_conversation.id),
-          last_seen_at: kind_of(DateTime),
+          last_seen_at: kind_of(Time),
           update_assignee: false
         ).and_return(service)
 
