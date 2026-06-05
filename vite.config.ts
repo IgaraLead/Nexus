@@ -49,6 +49,7 @@ const viteDevServer =
   !isLibraryMode && !isTestMode && process.env.VITEST !== 'true'
     ? {
         host: process.env.VITE_DEV_SERVER_HOST === '0.0.0.0' ? '0.0.0.0' : true,
+        allowedHosts: ['localhost', '127.0.0.1', 'vite'],
         port: viteRubyDevPort,
         strictPort: true,
         ...(process.env.VITE_HMR_CLIENT_HOST

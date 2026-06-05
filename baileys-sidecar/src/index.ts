@@ -27,6 +27,16 @@ function isValidJid(jid: unknown): jid is string {
   return typeof jid === 'string' && JID_RE.test(jid)
 }
 
+function isValidMessageKey(key: unknown): key is { id: string; remoteJid: string; fromMe?: boolean; participant?: string } {
+  if (!key || typeof key !== 'object') return false
+
+  const messageKey = key as Record<string, unknown>
+  return typeof messageKey.id === 'string' &&
+    messageKey.id.length > 0 &&
+    isValidJid(messageKey.remoteJid) &&
+    (messageKey.participant === undefined || isValidJid(messageKey.participant))
+}
+
 function isValidSlug(slug: unknown): slug is string {
   return typeof slug === 'string' && SLUG_RE.test(slug)
 }
@@ -110,6 +120,11 @@ app.post('/sessions/start', async (req, res) => {
   }
 })
 
+// List active in-memory sessions. Does not expose QR codes or auth credentials.
+app.get('/sessions', (_req, res) => {
+  res.json({ sessions: manager.listSessions() })
+})
+
 // Get session status
 app.get('/sessions/:session_id/status', (req, res) => {
   const { session_id } = req.params
@@ -141,7 +156,7 @@ app.post('/sessions/disconnect', async (req, res) => {
 
 // Send a message
 app.post('/messages/send', async (req, res) => {
-  const { session_id, jid, message, quoted_message_id, client_slug } = req.body
+  const { session_id, jid, message, quoted_message_id, quoted_message, client_slug } = req.body
   if (!isValidSessionId(session_id) || !isValidJid(jid) || !message || typeof message !== 'object') {
     res.status(400).json({ error: 'session_id (alphanumeric), jid (valid WhatsApp JID), and message (object) are required' })
     return
@@ -157,10 +172,31 @@ app.post('/messages/send', async (req, res) => {
   }
 
   try {
-    const result = await manager.sendMessage(session_id, jid, message, quoted_message_id, client_slug)
+    const result = await manager.sendMessage(session_id, jid, message, quoted_message_id, quoted_message, client_slug)
     res.json(result)
   } catch (err: any) {
     logger.error({ err, session_id, jid, client_slug }, 'Failed to send message')
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Mark incoming WhatsApp messages as read
+app.post('/messages/read', async (req, res) => {
+  const { session_id, keys, client_slug } = req.body
+  if (!isValidSessionId(session_id) || !Array.isArray(keys) || keys.length === 0 || !keys.every(isValidMessageKey)) {
+    res.status(400).json({ error: 'session_id and keys (valid WhatsApp message keys) are required' })
+    return
+  }
+  if (client_slug !== undefined && !isValidSlug(client_slug)) {
+    res.status(400).json({ error: 'client_slug must be lowercase alphanumeric with hyphens, max 63 chars' })
+    return
+  }
+
+  try {
+    const result = await manager.markMessagesRead(session_id, keys, client_slug)
+    res.json({ status: 'ok', ...result })
+  } catch (err: any) {
+    logger.error({ err, session_id, client_slug, count: keys.length }, 'Failed to mark messages as read')
     res.status(500).json({ error: err.message })
   }
 })

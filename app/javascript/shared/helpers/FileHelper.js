@@ -36,6 +36,12 @@ export const resolveMaximumFileUploadSize = value => {
   return parsedValue;
 };
 
+export const normalizeAttachmentChannelType = channelType => {
+  return channelType === INBOX_TYPES.BAILEYS_WHATSAPP
+    ? INBOX_TYPES.WHATSAPP
+    : channelType;
+};
+
 /**
  * Validates if a file type is allowed for a specific channel
  * @param {File} file - The file to validate
@@ -65,7 +71,7 @@ export const isFileTypeAllowedForChannel = (file, options = {}) => {
         channelType:
           isInstagramChannel || conversationType === 'instagram_direct_message'
             ? INBOX_TYPES.INSTAGRAM
-            : originalChannelType,
+            : normalizeAttachmentChannelType(originalChannelType),
         medium,
       });
 

@@ -1,0 +1,193 @@
+<% content_for(:title) do %>WhatsApp<% end %>
+
+<header class="main-content__header" role="banner">
+  <h1 class="main-content__page-title" id="page-title">WhatsApp</h1>
+</header>
+
+<section class="main-content__body">
+  <p class="text-sm text-slate-600 mb-6">
+    Manage WhatsApp Cloud API credentials and WhatsApp Web sessions from one place.
+    Session revocation is always manual and audit logged.
+  </p>
+
+  <div class="flex gap-2 mb-8 border-b border-slate-100">
+    <% cloud_active = @active_tab == 'cloud_api' %>
+    <% web_active = @active_tab == 'whatsapp_web' %>
+    <%= link_to 'Cloud API',
+                super_admin_whatsapp_path(tab: 'cloud_api'),
+                class: "px-4 py-2 text-sm font-medium border-b-2 #{cloud_active ? 'border-woot-500 text-woot-500' : 'border-transparent text-slate-600 hover:text-woot-500'}" %>
+    <%= link_to 'WhatsApp Web',
+                super_admin_whatsapp_path(tab: 'whatsapp_web'),
+                class: "px-4 py-2 text-sm font-medium border-b-2 #{web_active ? 'border-woot-500 text-woot-500' : 'border-transparent text-slate-600 hover:text-woot-500'}" %>
+  </div>
+
+  <% if cloud_active %>
+    <div class="max-w-4xl">
+      <h2 class="text-base font-semibold mb-2">Cloud API</h2>
+      <p class="text-sm text-slate-600 mb-6">
+        These are the same credentials previously managed under WhatsApp Embedded.
+      </p>
+
+      <%= form_with url: super_admin_whatsapp_url(tab: 'cloud_api'), method: :post do |form| %>
+        <% @cloud_api_config_keys.each do |key| %>
+          <% metadata = @installation_configs[key] || {} %>
+          <% is_secret = metadata['type'] == 'secret' || key.end_with?('SECRET') %>
+          <div class="flex mb-8">
+            <div class="field-unit__label">
+              <%= form.label "app_config[#{key}]", metadata['display_title'] || key %>
+            </div>
+            <div class="-mt-2 field-unit__field">
+              <% if metadata['type'] == 'boolean' %>
+                <%= form.select "app_config[#{key}]",
+                                [['True', true], ['False', false]],
+                                { selected: ActiveModel::Type::Boolean.new.cast(@app_config[key]) },
+                                class: 'mt-2 border border-slate-100 p-1 rounded-md' %>
+              <% elsif metadata['type'] == 'code' %>
+                <%= form.text_area "app_config[#{key}]",
+                                   value: @app_config[key],
+                                   rows: 12,
+                                   wrap: 'off',
+                                   class: 'mt-2 border font-mono text-xs border-slate-100 p-1 rounded-md overflow-scroll' %>
+              <% elsif is_secret %>
+                <%= form.password_field "app_config[#{key}]",
+                                        value: @app_config[key],
+                                        class: 'mt-2 border border-slate-100 p-1.5 rounded-md w-full' %>
+              <% else %>
+                <%= form.text_field "app_config[#{key}]", value: @app_config[key] %>
+              <% end %>
+
+              <% if metadata['description'].present? %>
+                <p class="pt-2 text-xs italic text-slate-400"><%= metadata['description'] %></p>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="form-actions">
+          <%= form.submit 'Submit' %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if web_active %>
+    <div>
+      <div class="mb-6">
+        <h2 class="text-base font-semibold mb-2">WhatsApp Web Sessions</h2>
+        <p class="text-sm text-slate-600">
+          Review Rails channel state alongside live sidecar sessions. Revocation disconnects WhatsApp Web and removes the sidecar auth state for that session.
+        </p>
+        <% if @sidecar_error.present? %>
+          <p class="text-sm text-amber-700 mt-3">
+            Sidecar status is unavailable: <span class="font-mono"><%= @sidecar_error %></span>.
+            Rails channel data is still shown below.
+          </p>
+        <% end %>
+      </div>
+
+      <% if @whatsapp_web_rows_by_account.empty? %>
+        <p class="text-sm text-slate-600">No WhatsApp Web inboxes found.</p>
+      <% else %>
+        <% @whatsapp_web_rows_by_account.each do |account, rows| %>
+          <div class="mb-8 border border-slate-100 rounded-md overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-25 border-b border-slate-100">
+              <div>
+                <h3 class="text-sm font-semibold"><%= account.name %></h3>
+                <p class="text-xs text-slate-500">Account ID <%= account.id %> · <%= rows.size %> WhatsApp Web inbox(es)</p>
+              </div>
+              <%= form_with url: revoke_account_sessions_super_admin_whatsapp_path, method: :post, local: true do %>
+                <%= hidden_field_tag :account_id, account.id %>
+                <%= submit_tag 'Revoke organization sessions',
+                               data: { confirm: "Revoke all WhatsApp Web sessions for #{account.name}?" },
+                               class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm font-medium' %>
+              <% end %>
+            </div>
+
+            <table class="w-full text-sm">
+              <thead class="text-left text-xs text-slate-500 bg-slate-25">
+                <tr>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Inbox</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Session ID</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Rails status</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Sidecar status</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Phone</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Last connected</th>
+                  <th class="px-3 py-2 first:!pl-4 last:!pr-4">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% rows.each do |row| %>
+                  <% channel = row[:channel] %>
+                  <% inbox = row[:inbox] %>
+                  <% sidecar_session = row[:sidecar_session] %>
+                  <tr class="border-t border-slate-100 align-middle">
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= inbox&.name || 'Inbox unavailable' %></td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4 font-mono text-xs"><%= channel.session_id %></td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= channel.session_status %></td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= @sidecar_error.present? ? 'unavailable' : (sidecar_session&.dig('status') || 'not running') %></td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= channel.phone_number.presence || sidecar_session&.dig('phone_number') || '—' %></td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4 whitespace-nowrap">
+                      <% if channel.last_connected_at %>
+                        <%= channel.last_connected_at.strftime('%Y-%m-%d %H:%M') %>
+                        <span class="text-xs text-slate-400">(<%= time_ago_in_words(channel.last_connected_at) %> ago)</span>
+                      <% else %>
+                        —
+                      <% end %>
+                    </td>
+                    <td class="px-3 py-2 first:!pl-4 last:!pr-4">
+                      <%= form_with url: revoke_session_super_admin_whatsapp_path, method: :post, local: true do %>
+                        <%= hidden_field_tag :channel_id, channel.id %>
+                        <%= submit_tag 'Revoke',
+                                       data: { confirm: "Revoke WhatsApp Web session #{channel.session_id}?" },
+                                       class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% if @orphan_sidecar_sessions.present? %>
+        <div class="mt-10">
+          <h2 class="text-base font-semibold mb-2">Orphan sidecar sessions</h2>
+          <p class="text-sm text-slate-600 mb-4">
+            These sessions are active in the sidecar but do not match a Rails WhatsApp Web channel.
+          </p>
+          <table class="w-full text-sm border border-slate-100 rounded-md">
+            <thead class="text-left text-xs text-slate-500 bg-slate-25">
+              <tr>
+                <th class="px-3 py-2 first:!pl-4 last:!pr-4">Session ID</th>
+                <th class="px-3 py-2 first:!pl-4 last:!pr-4">Client slug</th>
+                <th class="px-3 py-2 first:!pl-4 last:!pr-4">Status</th>
+                <th class="px-3 py-2 first:!pl-4 last:!pr-4">Phone</th>
+                <th class="px-3 py-2 first:!pl-4 last:!pr-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @orphan_sidecar_sessions.each do |session| %>
+                <tr class="border-t border-slate-100 align-middle">
+                  <td class="px-3 py-2 first:!pl-4 last:!pr-4 font-mono text-xs"><%= session['session_id'] %></td>
+                  <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= session['client_slug'].presence || '—' %></td>
+                  <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= session['status'] %></td>
+                  <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= session['phone_number'].presence || '—' %></td>
+                  <td class="px-3 py-2 first:!pl-4 last:!pr-4">
+                    <%= form_with url: revoke_orphan_session_super_admin_whatsapp_path, method: :post, local: true do %>
+                      <%= hidden_field_tag :session_id, session['session_id'] %>
+                      <%= hidden_field_tag :client_slug, session['client_slug'] if session['client_slug'].present? %>
+                      <%= submit_tag 'Revoke',
+                                     data: { confirm: "Revoke orphan WhatsApp Web session #{session['session_id']}?" },
+                                     class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</section>

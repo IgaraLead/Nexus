@@ -66,6 +66,10 @@ json.reauthorization_required resource.channel.try(:reauthorization_required?) i
 ## Twilio Attributes
 json.messaging_service_sid resource.channel.try(:messaging_service_sid)
 json.phone_number resource.channel.try(:phone_number)
+if resource.channel.is_a?(Channel::BaileysWhatsapp)
+  json.baileys_session_status resource.channel.session_status
+  json.baileys_reconnect_required !resource.channel.connected_session?
+end
 json.medium resource.channel.try(:medium) if resource.twilio?
 if resource.twilio?
   json.content_templates resource.channel.try(:content_templates)

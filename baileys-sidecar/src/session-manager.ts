@@ -36,6 +36,13 @@ interface SessionEntry {
   importGroups: boolean
 }
 
+interface SessionInfo {
+  session_id: string
+  client_slug?: string
+  status: SessionEntry['status']
+  phone_number: string | null
+}
+
 const MAX_RETRIES = 3
 const SESSIONS_DIR = process.env.SESSIONS_DIR || './sessions'
 
@@ -156,6 +163,18 @@ export class SessionManager {
     return this.sessions.get(key)?.status || 'disconnected'
   }
 
+  listSessions(): SessionInfo[] {
+    return Array.from(this.sessions.entries()).map(([key, session]) => {
+      const { sessionId, clientSlug } = this.parseSessionKey(key)
+      return {
+        session_id: sessionId,
+        client_slug: clientSlug,
+        status: session.status,
+        phone_number: session.phoneNumber,
+      }
+    })
+  }
+
   async startSession(
     sessionId: string,
     clientSlug?: string,
@@ -215,6 +234,8 @@ export class SessionManager {
       try { entry.socket.end(undefined) } catch { /* ignore */ }
     }
     this.sessions.delete(key)
+    const sessionDir = this.sessionPath(sessionId, clientSlug)
+    await rm(sessionDir, { recursive: true, force: true }).catch(() => {})
     logger.info({ sessionId, clientSlug }, 'Session disconnected')
   }
 
@@ -223,6 +244,7 @@ export class SessionManager {
     jid: string,
     message: Record<string, any>,
     quotedMessageId?: string,
+    quotedMessage?: Record<string, any>,
     clientSlug?: string
   ): Promise<{ key: proto.IMessageKey } | null> {
     const key = this.sessionKey(sessionId, clientSlug)
@@ -236,22 +258,81 @@ export class SessionManager {
     if (message.text) {
       content = { text: message.text } as any
     } else if (message.image) {
-      content = { image: { url: message.image.url }, caption: message.caption || undefined } as any
+      content = {
+        image: { url: message.image.url || message.image.link },
+        caption: message.image.caption || message.caption || undefined
+      } as any
     } else if (message.video) {
-      content = { video: { url: message.video.url }, caption: message.caption || undefined } as any
+      content = {
+        video: { url: message.video.url || message.video.link },
+        caption: message.video.caption || message.caption || undefined
+      } as any
     } else if (message.audio) {
-      content = { audio: { url: message.audio.url }, mimetype: 'audio/ogg; codecs=opus' } as any
+      content = {
+        audio: { url: message.audio.url || message.audio.link },
+        mimetype: this.normalizeAudioMimetype(message.audio.mimetype || message.mimetype),
+        ptt: message.audio.ptt || message.ptt || undefined
+      } as any
     } else if (message.document) {
-      content = { document: { url: message.document.url }, mimetype: message.mimetype || 'application/octet-stream' } as any
+      content = {
+        document: { url: message.document.url || message.document.link },
+        mimetype: message.document.mimetype || message.mimetype || 'application/octet-stream',
+        fileName: message.document.filename || message.document.fileName || message.filename || undefined,
+        caption: message.document.caption || message.caption || undefined
+      } as any
     }
 
     const options: any = {}
-    if (quotedMessageId) {
-      options.quoted = { key: { id: quotedMessageId } }
+    const quoted = this.buildQuotedMessage(jid, quotedMessageId, quotedMessage)
+    if (quoted) {
+      options.quoted = quoted
     }
 
     const result = await entry.socket.sendMessage(jid, content as any, options)
     return result || null
+  }
+
+  private buildQuotedMessage(
+    jid: string,
+    quotedMessageId?: string,
+    quotedMessage?: Record<string, any>
+  ): proto.IWebMessageInfo | undefined {
+    const id = quotedMessage?.id || quotedMessageId
+    if (!id) return undefined
+
+    return {
+      key: {
+        remoteJid: quotedMessage?.remoteJid || quotedMessage?.remote_jid || jid,
+        id,
+        fromMe: Boolean(quotedMessage?.fromMe ?? quotedMessage?.from_me)
+      },
+      message: {
+        conversation: quotedMessage?.text || quotedMessage?.content || ' '
+      }
+    } as proto.IWebMessageInfo
+  }
+
+  private normalizeAudioMimetype(mimetype?: string): string {
+    if (mimetype === 'audio/mp3') {
+      return 'audio/mpeg'
+    }
+
+    return mimetype || 'audio/mpeg'
+  }
+
+  async markMessagesRead(
+    sessionId: string,
+    keys: proto.IMessageKey[],
+    clientSlug?: string
+  ): Promise<{ count: number }> {
+    const key = this.sessionKey(sessionId, clientSlug)
+    const entry = this.sessions.get(key)
+    if (!entry?.socket || entry.status !== 'connected') {
+      throw new Error(`Session ${sessionId} is not connected`)
+    }
+
+    await entry.socket.readMessages(keys)
+    return { count: keys.length }
   }
 
   // --- Private ---
@@ -315,6 +396,11 @@ export class SessionManager {
         await this.handleGroupsUpdate(sessionId, events['groups.update'], sock)
       }
     })
+  }
+
+  private parseSessionKey(key: string): { sessionId: string; clientSlug?: string } {
+    const [clientSlug, sessionId] = key.split(':')
+    return sessionId ? { sessionId, clientSlug } : { sessionId: key }
   }
 
   private async handleConnectionUpdate(key: string, sessionId: string, update: any, clientSlug?: string): Promise<void> {

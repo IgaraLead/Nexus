@@ -196,6 +196,9 @@ export default {
     },
     messagePlaceHolder() {
       if (this.isEditorDisabled) {
+        if (this.isBaileysReconnectRequired) {
+          return this.$t('CONVERSATION.FOOTER.WHATSAPP_WEB_RECONNECT_REQUIRED');
+        }
         if (this.isAWhatsAppChannel) {
           return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED_WHATSAPP');
         }
@@ -429,6 +432,10 @@ export default {
       return !this.showAudioRecorderEditor && !this.copilot.isActive.value;
     },
     isEditorDisabled() {
+      if (this.isBaileysReconnectRequired && !this.isOnPrivateNote) {
+        return true;
+      }
+
       return (
         (this.isAWhatsAppChannel || this.isAPIInbox) &&
         !this.isOnPrivateNote &&
@@ -761,10 +768,7 @@ export default {
       }
       if (!this.showMentions) {
         const copilotAcceptedMessage = this.getCopilotAcceptedMessage();
-        const isOnWhatsApp =
-          this.isATwilioWhatsAppChannel ||
-          this.isAWhatsAppCloudChannel ||
-          this.is360DialogWhatsAppChannel;
+        const isOnWhatsApp = this.isAWhatsAppChannel;
         // Instagram and TikTok do not support sending text and attachments in the same message.
         // For Instagram, combining them causes duplicate messages due to separate echo events per component.
         // For TikTok, the API rejects messages that mix text and media.

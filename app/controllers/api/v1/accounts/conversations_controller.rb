@@ -113,18 +113,14 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def update_last_seen
-    # High-traffic accounts generate excessive DB writes when agents frequently switch between conversations.
-    # Throttle last_seen updates to once per hour when there are no unread messages to reduce DB load.
-    # Always update immediately if there are unread messages to maintain accurate read/unread state.
-    # Visiting a conversation should clear any unread inbox notifications for this conversation.
     Notification::MarkConversationReadService.new(user: Current.user, account: Current.account, conversation: @conversation).perform
-    return update_last_seen_on_conversation(DateTime.now.utc, true) if assignee? && @conversation.assignee_unread_messages.any?
-    return update_last_seen_on_conversation(DateTime.now.utc, false) if !assignee? && @conversation.unread_messages.any?
+    return update_last_seen_on_conversation(DateTime.now.utc, true, mark_read: true) if assignee? && @conversation.assignee_unread_messages.any?
+    return update_last_seen_on_conversation(DateTime.now.utc, false, mark_read: true) if !assignee? && @conversation.unread_messages.any?
 
     # No unread messages - apply throttling to limit DB writes
     return unless should_update_last_seen?
 
-    update_last_seen_on_conversation(DateTime.now.utc, assignee?)
+    update_last_seen_on_conversation(DateTime.now.utc, assignee?, mark_read: true)
   end
 
   def unread
@@ -155,7 +151,8 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     params.permit(:page)
   end
 
-  def update_last_seen_on_conversation(last_seen_at, update_assignee)
+  def update_last_seen_on_conversation(last_seen_at, update_assignee, mark_read: false)
+    Baileys::ReadReceiptService.new(conversation: @conversation, last_seen_at: last_seen_at, update_assignee: update_assignee).perform if mark_read
     updates = { agent_last_seen_at: last_seen_at }
     updates[:assignee_last_seen_at] = last_seen_at if update_assignee.present?
 
@@ -165,12 +162,9 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def should_update_last_seen?
-    # Update if at least one relevant timestamp is older than 1 hour or not set
-    # This prevents redundant DB writes when agents repeatedly view the same conversation
     agent_needs_update = @conversation.agent_last_seen_at.blank? || @conversation.agent_last_seen_at < 1.hour.ago
     return agent_needs_update unless assignee?
 
-    # For assignees, check both timestamps - update if either is old
     assignee_needs_update = @conversation.assignee_last_seen_at.blank? || @conversation.assignee_last_seen_at < 1.hour.ago
     agent_needs_update || assignee_needs_update
   end

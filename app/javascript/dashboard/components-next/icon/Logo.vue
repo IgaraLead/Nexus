@@ -20,7 +20,7 @@ const globalConfig = useMapGetter('globalConfig/get');
         alt=""
         class="hidden dark:block"
       />
-      <!-- IgaraLead mark when dark thumbnail not in DB yet (~90% lightness) -->
+      <!-- IgaraLead mark when dark thumbnail is not in DB yet -->
       <svg
         v-else
         v-once
@@ -29,7 +29,7 @@ const globalConfig = useMapGetter('globalConfig/get');
         viewBox="0 0 1025 1025"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        class="hidden dark:block text-[#e6e6e6]"
+        class="hidden dark:block text-[#2781F6]"
         aria-hidden="true"
       >
         <path
@@ -54,7 +54,7 @@ const globalConfig = useMapGetter('globalConfig/get');
       viewBox="0 0 1025 1025"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      class="text-[#1a1a1a] dark:text-[#e6e6e6]"
+      class="text-[#2781F6]"
       aria-hidden="true"
     >
       <path
