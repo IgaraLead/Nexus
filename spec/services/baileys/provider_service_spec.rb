@@ -61,6 +61,26 @@ RSpec.describe Baileys::ProviderService do
     end
   end
 
+  describe '#request_qr_code' do
+    it 'does not mark a channel as qr_pending when sidecar reports an existing connected session' do
+      service = described_class.new(channel: channel)
+
+      allow(service).to receive(:post).and_return({ 'session_id' => '1_abcd1234', 'status' => 'connected' })
+      expect(channel).not_to receive(:update!)
+
+      service.request_qr_code
+    end
+
+    it 'marks a channel as qr_pending when sidecar returns a QR code' do
+      service = described_class.new(channel: channel)
+
+      allow(service).to receive(:post).and_return({ 'session_id' => '1_abcd1234', 'status' => 'qr_pending', 'qr' => 'data:image/png' })
+      expect(channel).to receive(:update!).with(session_status: 'qr_pending')
+
+      service.request_qr_code
+    end
+  end
+
   describe '#mark_messages_read' do
     it 'sends Baileys message keys for incoming messages with source ids' do
       contact_inbox = instance_double(ContactInbox, source_id: '5511999999999@s.whatsapp.net')

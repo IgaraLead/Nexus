@@ -73,6 +73,15 @@ export default {
     isABaileysWhatsAppChannel() {
       return this.channelType === INBOX_TYPES.BAILEYS_WHATSAPP;
     },
+    isBaileysReconnectRequired() {
+      if (!this.isABaileysWhatsAppChannel) return false;
+
+      return (
+        this.inbox.baileys_reconnect_required ??
+        this.inbox.baileysReconnectRequired ??
+        this.inbox.baileys_session_status !== 'connected'
+      );
+    },
     isATwilioSMSChannel() {
       const { medium: medium = '' } = this.inbox;
       return this.isATwilioChannel && medium === 'sms';

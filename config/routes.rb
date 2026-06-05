@@ -653,6 +653,11 @@ Rails.application.routes.draw do
       resource :push_diagnostics, only: [:show, :create] do
         post :destroy_subscriptions, on: :collection
       end
+      resource :whatsapp, only: [:show, :create], controller: :whatsapp do
+        post :revoke_session
+        post :revoke_account_sessions
+        post :revoke_orphan_session
+      end
 
       # order of resources affect the order of sidebar navigation in super admin
       resources :accounts, only: [:index, :new, :create, :show, :edit, :update, :destroy] do

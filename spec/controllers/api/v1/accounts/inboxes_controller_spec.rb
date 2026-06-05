@@ -175,6 +175,22 @@ RSpec.describe 'Inboxes API', type: :request do
         end
       end
 
+      context 'when it is a Baileys WhatsApp inbox' do
+        let(:baileys_channel) { create(:channel_baileys_whatsapp, account: account, session_status: 'disconnected') }
+        let(:baileys_inbox) { baileys_channel.inbox }
+
+        it 'returns session status and reconnect requirement' do
+          get "/api/v1/accounts/#{account.id}/inboxes/#{baileys_inbox.id}",
+              headers: admin.create_new_auth_token,
+              as: :json
+
+          expect(response).to have_http_status(:success)
+          data = JSON.parse(response.body, symbolize_names: true)
+          expect(data[:baileys_session_status]).to eq('disconnected')
+          expect(data[:baileys_reconnect_required]).to be(true)
+        end
+      end
+
       it 'fetch API inbox without hmac token when agent' do
         api_channel = create(:channel_api, account: account)
         api_inbox = create(:inbox, channel: api_channel, account: account)

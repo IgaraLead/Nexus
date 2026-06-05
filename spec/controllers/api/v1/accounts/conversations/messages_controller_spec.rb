@@ -106,6 +106,54 @@ RSpec.describe 'Conversation Messages API', type: :request do
                                     content: 'System reopened the conversation due to a new incoming message.' }))
         end
       end
+
+      context 'when Baileys WhatsApp Web is disconnected' do
+        let(:baileys_channel) { create(:channel_baileys_whatsapp, account: account, session_status: 'disconnected') }
+        let(:conversation) { create(:conversation, inbox: baileys_channel.inbox, account: account) }
+
+        it 'does not create public outgoing messages' do
+          params = { content: 'test-message', private: false }
+
+          expect do
+            post api_v1_account_conversation_messages_url(account_id: account.id, conversation_id: conversation.display_id),
+                 params: params,
+                 headers: agent.create_new_auth_token,
+                 as: :json
+          end.not_to(change { conversation.messages.count })
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['error']).to eq(I18n.t('errors.baileys_whatsapp.disconnected'))
+        end
+
+        it 'allows private notes' do
+          params = { content: 'internal note', private: true }
+
+          post api_v1_account_conversation_messages_url(account_id: account.id, conversation_id: conversation.display_id),
+               params: params,
+               headers: agent.create_new_auth_token,
+               as: :json
+
+          expect(response).to have_http_status(:success)
+          expect(conversation.messages.last).to be_private
+        end
+      end
+
+      context 'when Baileys WhatsApp Web is connected' do
+        let(:baileys_channel) { create(:channel_baileys_whatsapp, account: account, session_status: 'connected') }
+        let(:conversation) { create(:conversation, inbox: baileys_channel.inbox, account: account) }
+
+        it 'creates public outgoing messages' do
+          params = { content: 'test-message', private: false }
+
+          post api_v1_account_conversation_messages_url(account_id: account.id, conversation_id: conversation.display_id),
+               params: params,
+               headers: agent.create_new_auth_token,
+               as: :json
+
+          expect(response).to have_http_status(:success)
+          expect(conversation.messages.last.content).to eq(params[:content])
+        end
+      end
     end
 
     context 'when it is an authenticated agent bot' do
@@ -276,6 +324,24 @@ RSpec.describe 'Conversation Messages API', type: :request do
         expect(response).to have_http_status(:success)
         expect(message.reload.status).to eq('sent')
         expect(message.reload.content_attributes['external_error']).to be_nil
+      end
+
+      context 'when Baileys WhatsApp Web is disconnected' do
+        let(:baileys_channel) { create(:channel_baileys_whatsapp, account: account, session_status: 'disconnected') }
+        let(:conversation) { create(:conversation, inbox: baileys_channel.inbox, account: account) }
+        let(:message) do
+          create(:message, account: account, inbox: baileys_channel.inbox, conversation: conversation, status: :failed, message_type: :outgoing)
+        end
+
+        it 'does not retry public messages' do
+          post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/messages/#{message.id}/retry",
+               headers: agent.create_new_auth_token,
+               as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['error']).to eq(I18n.t('errors.baileys_whatsapp.disconnected'))
+          expect(message.reload.status).to eq('failed')
+        end
       end
     end
 

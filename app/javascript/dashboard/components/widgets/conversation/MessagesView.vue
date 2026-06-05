@@ -91,6 +91,7 @@ export default {
     ...mapGetters({
       currentChat: 'getSelectedChat',
       currentUserId: 'getCurrentUserID',
+      currentRole: 'getCurrentRole',
       listLoadingStatus: 'getAllMessagesLoaded',
       currentAccountId: 'getCurrentAccountId',
     }),
@@ -169,6 +170,12 @@ export default {
         additionalAttributes.type === 'instagram_direct_message' &&
         instagramInbox
       );
+    },
+    isCurrentUserAdmin() {
+      return this.currentRole === 'administrator';
+    },
+    shouldShowBaileysReconnectAction() {
+      return this.isBaileysReconnectRequired && this.isCurrentUserAdmin;
     },
 
     replyWindowBannerMessage() {
@@ -438,6 +445,11 @@ export default {
       const payload = useSnakeCase(message);
       await this.$store.dispatch('sendMessageWithData', payload);
     },
+    handleBaileysReconnectClick() {
+      this.$router.push(
+        `/app/accounts/${this.currentAccountId}/settings/inboxes/${this.inboxId}`
+      );
+    },
     toggleReplyEditorSize() {
       this.resizableEditorWrapperRef?.toggleEditorExpand?.();
     },
@@ -455,7 +467,16 @@ export default {
   >
     <div ref="topBannerRef">
       <Banner
-        v-if="!currentChat.can_reply"
+        v-if="isBaileysReconnectRequired"
+        color-scheme="alert"
+        class="mx-2 mt-2 overflow-hidden rounded-lg"
+        :banner-message="$t('CONVERSATION.WHATSAPP_WEB_RECONNECT_REQUIRED')"
+        :has-action-button="shouldShowBaileysReconnectAction"
+        :action-button-label="$t('CONVERSATION.WHATSAPP_WEB_RECONNECT_ACTION')"
+        @primary-action="handleBaileysReconnectClick"
+      />
+      <Banner
+        v-else-if="!currentChat.can_reply"
         color-scheme="alert"
         class="mx-2 mt-2 overflow-hidden rounded-lg"
         :banner-message="replyWindowBannerMessage"

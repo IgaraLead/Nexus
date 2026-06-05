@@ -11,7 +11,7 @@
     </summary>
     <ul class="ml-4 mt-1">
       <% settings_pages.each do |_feature_key, attrs| %>
-        <% url = super_admin_app_config_url(config: attrs['config_key']) %>
+        <% url = attrs['config_key'] == 'whatsapp' ? super_admin_whatsapp_url : super_admin_app_config_url(config: attrs['config_key']) %>
         <li class="px-4 mb-1">
           <% text_class = current_page?(url) ? 'text-woot-500 bg-slate-25' : 'text-slate-800' %>
           <%= link_to url, class: text_class + ' -ml-1 flex items-center px-2 py-1.5 hover:text-woot-500 hover:bg-slate-25 rounded-lg' do %>
