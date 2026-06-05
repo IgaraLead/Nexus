@@ -116,6 +116,8 @@ en:
       reauthorization:
         generic: 'Failed to reauthorize WhatsApp. Please try again.'
         not_supported: 'Reauthorization is not supported for this type of WhatsApp channel.'
+    baileys_whatsapp:
+      disconnected: 'WhatsApp Web is disconnected. Reconnect this inbox before sending messages.'
     inboxes:
       imap:
         socket_error: Please check the network connection, IMAP address and try again.
@@ -509,6 +511,11 @@ en:
     ssl_status:
       custom_domain_not_configured: 'Custom domain is not configured'
   super_admin:
+    whatsapp:
+      cloud_api_updated: 'WhatsApp Cloud API settings updated successfully.'
+      session_revoked: 'WhatsApp Web session %{session_id} was revoked.'
+      account_sessions_revoked: 'Revoked %{count} WhatsApp Web session(s) for %{account}.'
+      invalid_session: 'Invalid WhatsApp Web session identifier.'
     push_diagnostics:
       user_not_found: 'User not found.'
       no_subscriptions_to_test: 'Select at least one subscription to test.'

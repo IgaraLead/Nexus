@@ -1,5 +1,6 @@
 class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::Conversations::BaseController
   before_action :ensure_api_inbox, only: :update
+  before_action :ensure_connected_baileys_session, only: [:create, :retry]
 
   def index
     @messages = message_finder.perform
@@ -76,5 +77,18 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   def ensure_api_inbox
     # Only API inboxes can update messages
     render json: { error: 'Message status update is only allowed for API inboxes' }, status: :forbidden unless @conversation.inbox.api?
+  end
+
+  def ensure_connected_baileys_session
+    channel = @conversation.inbox.channel
+    return unless channel.is_a?(Channel::BaileysWhatsapp)
+    return if private_baileys_message?
+    return if channel.connected_session?
+
+    render_could_not_create_error(I18n.t('errors.baileys_whatsapp.disconnected'))
+  end
+
+  def private_baileys_message?
+    ActiveModel::Type::Boolean.new.cast(params[:private]) || (action_name == 'retry' && message.private?)
   end
 end

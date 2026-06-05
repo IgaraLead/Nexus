@@ -36,6 +36,13 @@ interface SessionEntry {
   importGroups: boolean
 }
 
+interface SessionInfo {
+  session_id: string
+  client_slug?: string
+  status: SessionEntry['status']
+  phone_number: string | null
+}
+
 const MAX_RETRIES = 3
 const SESSIONS_DIR = process.env.SESSIONS_DIR || './sessions'
 
@@ -156,6 +163,18 @@ export class SessionManager {
     return this.sessions.get(key)?.status || 'disconnected'
   }
 
+  listSessions(): SessionInfo[] {
+    return Array.from(this.sessions.entries()).map(([key, session]) => {
+      const { sessionId, clientSlug } = this.parseSessionKey(key)
+      return {
+        session_id: sessionId,
+        client_slug: clientSlug,
+        status: session.status,
+        phone_number: session.phoneNumber,
+      }
+    })
+  }
+
   async startSession(
     sessionId: string,
     clientSlug?: string,
@@ -215,6 +234,8 @@ export class SessionManager {
       try { entry.socket.end(undefined) } catch { /* ignore */ }
     }
     this.sessions.delete(key)
+    const sessionDir = this.sessionPath(sessionId, clientSlug)
+    await rm(sessionDir, { recursive: true, force: true }).catch(() => {})
     logger.info({ sessionId, clientSlug }, 'Session disconnected')
   }
 
@@ -375,6 +396,11 @@ export class SessionManager {
         await this.handleGroupsUpdate(sessionId, events['groups.update'], sock)
       }
     })
+  }
+
+  private parseSessionKey(key: string): { sessionId: string; clientSlug?: string } {
+    const [clientSlug, sessionId] = key.split(':')
+    return sessionId ? { sessionId, clientSlug } : { sessionId: key }
   }
 
   private async handleConnectionUpdate(key: string, sessionId: string, update: any, clientSlug?: string): Promise<void> {

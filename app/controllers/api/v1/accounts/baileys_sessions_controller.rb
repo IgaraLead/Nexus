@@ -19,7 +19,7 @@ class Api::V1::Accounts::BaileysSessionsController < Api::V1::Accounts::BaseCont
     )
     if result.is_a?(Hash) && result['error'].present?
       render json: { error: result['error'], session_id: channel.session_id, session_status: channel.session_status },
-             status: :bad_gateway
+             status: result['code'] == 'active_session' ? :unprocessable_entity : :bad_gateway
     elsif result.is_a?(Hash) && result['qr'].present?
       render json: { qr_code: result['qr'], session_id: channel.session_id, session_status: channel.session_status }
     else
