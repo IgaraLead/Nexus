@@ -33,16 +33,9 @@ class Baileys::ProviderService
   end
 
   def request_qr_code(force: false, sync_full_history: true, import_groups: false)
-    response = post(
-      '/sessions/start',
-      {
-        session_id: channel.session_id,
-        force: force,
-        sync_full_history: sync_full_history,
-        import_groups: import_groups
-      }
-    )
-    channel.update!(session_status: 'qr_pending') if response.is_a?(Hash) && response['error'].blank?
+    payload = { session_id: channel.session_id, force: force, sync_full_history: sync_full_history, import_groups: import_groups }
+    response = post('/sessions/start', payload)
+    update_session_status_from(response)
     response
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.warn("[Baileys::ProviderService] request_qr_code persist failed: #{e.message}")
@@ -149,6 +142,13 @@ class Baileys::ProviderService
 
   def normalize_jid(phone_number)
     "#{phone_number.to_s.gsub(/[^\d]/, '')}@s.whatsapp.net"
+  end
+
+  def update_session_status_from(response)
+    return unless response.is_a?(Hash) && response['error'].blank?
+
+    status = response['qr'].present? ? 'qr_pending' : response['status']
+    channel.update!(session_status: status) if %w[connecting qr_pending].include?(status)
   end
 
   def read_message_key(message)

@@ -282,5 +282,27 @@ describe('inboxMixin', () => {
       const wrapper = shallowMount(Component);
       expect(wrapper.vm.isAWhatsAppChannel).toBe(true);
     });
+
+    it('isAWhatsAppChannel returns true if channel type is Baileys WhatsApp', () => {
+      const Component = getComponentConfigForInbox('Channel::BaileysWhatsapp');
+      const wrapper = shallowMount(Component);
+      expect(wrapper.vm.isAWhatsAppChannel).toBe(true);
+    });
+
+    it('isBaileysReconnectRequired returns true when Baileys session is disconnected', () => {
+      const Component = getComponentConfigForInbox('Channel::BaileysWhatsapp', {
+        baileys_session_status: 'disconnected',
+      });
+      const wrapper = shallowMount(Component);
+      expect(wrapper.vm.isBaileysReconnectRequired).toBe(true);
+    });
+
+    it('isBaileysReconnectRequired returns false when Baileys session is connected', () => {
+      const Component = getComponentConfigForInbox('Channel::BaileysWhatsapp', {
+        baileys_session_status: 'connected',
+      });
+      const wrapper = shallowMount(Component);
+      expect(wrapper.vm.isBaileysReconnectRequired).toBe(false);
+    });
   });
 });

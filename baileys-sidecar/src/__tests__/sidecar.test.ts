@@ -12,9 +12,11 @@ import crypto from 'crypto'
 import http from 'http'
 import { spawn, type ChildProcess } from 'node:child_process'
 import path from 'node:path'
+import { access, mkdir } from 'node:fs/promises'
 
 const PORT = parseInt(process.env.TEST_PORT || '3599', 10)
 const API_KEY = 'test-api-key-for-sidecar-tests'
+const SESSIONS_DIR = '/tmp/baileys-test-sessions'
 
 let serverProcess: ChildProcess | null = null
 
@@ -27,7 +29,7 @@ before(async () => {
       BAILEYS_SIDECAR_API_KEY: API_KEY,
       PORT: String(PORT),
       NEXUS_WEBHOOK_URL: 'http://localhost:3000',
-      SESSIONS_DIR: '/tmp/baileys-test-sessions',
+      SESSIONS_DIR,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -377,6 +379,43 @@ describe('Session Status', () => {
     assert.equal(status, 200)
     // Should return disconnected or similar for unknown session
     assert.ok((body as any).status !== undefined)
+  })
+})
+
+// ─── Session Listing And Revocation ─────────────────────
+
+describe('Session Listing And Revocation', () => {
+  it('rejects session list requests without API key', async () => {
+    const { status } = await request('GET', '/sessions')
+    assert.equal(status, 401)
+  })
+
+  it('lists sessions without leaking QR codes or auth credentials', async () => {
+    const { status, body } = await request('GET', '/sessions', {
+      headers: authedHeaders,
+    })
+
+    assert.equal(status, 200)
+    assert.ok(Array.isArray((body as any).sessions))
+    const raw = JSON.stringify(body)
+    assert.ok(!raw.includes('qrDataUrl'))
+    assert.ok(!raw.includes('creds'))
+    assert.ok(!raw.includes('authState'))
+    assert.ok(!raw.includes(API_KEY))
+  })
+
+  it('removes persisted auth state only on explicit disconnect', async () => {
+    const sessionId = 'revokable_session'
+    const sessionDir = path.join(SESSIONS_DIR, sessionId)
+    await mkdir(sessionDir, { recursive: true })
+
+    const { status } = await request('POST', '/sessions/disconnect', {
+      headers: authedHeaders,
+      body: { session_id: sessionId },
+    })
+
+    assert.equal(status, 200)
+    await assert.rejects(() => access(sessionDir))
   })
 })
 

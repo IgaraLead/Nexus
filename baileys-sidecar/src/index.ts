@@ -120,6 +120,11 @@ app.post('/sessions/start', async (req, res) => {
   }
 })
 
+// List active in-memory sessions. Does not expose QR codes or auth credentials.
+app.get('/sessions', (_req, res) => {
+  res.json({ sessions: manager.listSessions() })
+})
+
 // Get session status
 app.get('/sessions/:session_id/status', (req, res) => {
   const { session_id } = req.params

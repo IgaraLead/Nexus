@@ -196,6 +196,9 @@ export default {
     },
     messagePlaceHolder() {
       if (this.isEditorDisabled) {
+        if (this.isBaileysReconnectRequired) {
+          return this.$t('CONVERSATION.FOOTER.WHATSAPP_WEB_RECONNECT_REQUIRED');
+        }
         if (this.isAWhatsAppChannel) {
           return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED_WHATSAPP');
         }
@@ -429,6 +432,10 @@ export default {
       return !this.showAudioRecorderEditor && !this.copilot.isActive.value;
     },
     isEditorDisabled() {
+      if (this.isBaileysReconnectRequired && !this.isOnPrivateNote) {
+        return true;
+      }
+
       return (
         (this.isAWhatsAppChannel || this.isAPIInbox) &&
         !this.isOnPrivateNote &&
