@@ -181,11 +181,15 @@ class Baileys::IncomingMessageService # rubocop:disable Metrics/ClassLength
       file: {
         io: file,
         filename: params[:media_filename] || file.original_filename || "attachment_#{SecureRandom.hex(4)}",
-        content_type: params[:media_mimetype] || file.content_type
+        content_type: normalized_media_content_type(params[:media_mimetype] || file.content_type)
       }
     )
   rescue Down::Error => e
     Rails.logger.error("[Baileys::IncomingMessageService] Media download failed: #{e.message}")
+  end
+
+  def normalized_media_content_type(mimetype)
+    UrlHelper.normalize_audio_content_type(mimetype)
   end
 
   def detect_file_type
