@@ -110,8 +110,21 @@ export const hasValidAvatarUrl = avatarUrl => {
   }
 };
 
-export const timeStampAppendedURL = dataUrl => {
+const UNREACHABLE_HOSTS = new Set(['0.0.0.0']);
+
+export const normalizeBrowserAccessibleURL = dataUrl => {
+  if (!dataUrl) return dataUrl;
+
   const url = new URL(dataUrl);
+  if (UNREACHABLE_HOSTS.has(url.hostname)) {
+    url.hostname = window.location.hostname || 'localhost';
+  }
+
+  return url.toString();
+};
+
+export const timeStampAppendedURL = dataUrl => {
+  const url = new URL(normalizeBrowserAccessibleURL(dataUrl));
   if (!url.searchParams.has('t')) {
     url.searchParams.append('t', Date.now());
   }

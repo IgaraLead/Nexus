@@ -51,13 +51,17 @@ class Attachment < ApplicationRecord
 
   # NOTE: the URl returned does a 301 redirect to the actual file
   def file_url
-    file.attached? ? url_for(file) : ''
+    return '' unless file.attached?
+
+    UrlHelper.normalize_browser_accessible_url(url_for(file))
   end
 
   # NOTE: for External services use this methods since redirect doesn't work effectively in a lot of cases
   def download_url
     ActiveStorage::Current.url_options = Rails.application.routes.default_url_options if ActiveStorage::Current.url_options.blank?
-    file.attached? ? file.blob.url : ''
+    return '' unless file.attached?
+
+    UrlHelper.normalize_browser_accessible_url(file.blob.url)
   end
 
   def thumb_url
@@ -112,7 +116,7 @@ class Attachment < ApplicationRecord
   def file_metadata
     metadata = {
       extension: extension,
-      content_type: file.content_type,
+      content_type: UrlHelper.normalize_audio_content_type(file.content_type),
       data_url: file_url,
       thumb_url: thumb_url,
       file_size: file.byte_size,
