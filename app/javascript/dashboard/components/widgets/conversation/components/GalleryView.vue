@@ -8,6 +8,7 @@ import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { useImageZoom } from 'dashboard/composables/useImageZoom';
 import { messageTimestamp } from 'shared/helpers/timeHelper';
 import { downloadFile } from '@chatwoot/utils';
+import { normalizeBrowserAccessibleURL } from 'dashboard/helper/URLHelper';
 
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
@@ -83,6 +84,12 @@ const isVideo = computed(() =>
 const isAudio = computed(
   () => activeFileType.value === ALLOWED_FILE_TYPES.AUDIO
 );
+
+const activeAudioSourceUrl = computed(() => {
+  const { data_url: dataUrl } = activeAttachment.value;
+  if (!dataUrl) return '';
+  return `${normalizeBrowserAccessibleURL(dataUrl)}?t=${Date.now()}`;
+});
 
 const senderDetails = computed(() => {
   const {
@@ -320,7 +327,7 @@ onMounted(() => {
               class="w-full max-w-md"
               @click.stop
             >
-              <source :src="`${activeAttachment.data_url}?t=${Date.now()}`" />
+              <source :src="activeAudioSourceUrl" />
             </audio>
           </div>
 

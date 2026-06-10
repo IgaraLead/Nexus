@@ -27,7 +27,14 @@ defineOptions({
   inheritAttrs: false,
 });
 
+const audioSourceType = computed(() => {
+  const { contentType, extension } = attachment;
+  if (contentType === 'audio/opus' || extension === 'ogg') return 'audio/ogg';
+  return contentType || undefined;
+});
+
 const timeStampURL = computed(() => {
+  if (!attachment.dataUrl) return '';
   return timeStampAppendedURL(attachment.dataUrl);
 });
 
@@ -134,7 +141,7 @@ const downloadAudio = async () => {
     @timeupdate="onTimeUpdate"
     @ended="onEnd"
   >
-    <source :src="timeStampURL" />
+    <source :src="timeStampURL" :type="audioSourceType" />
   </audio>
   <div
     v-bind="$attrs"

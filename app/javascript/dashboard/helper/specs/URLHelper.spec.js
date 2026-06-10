@@ -5,6 +5,7 @@ import {
   conversationListPageURL,
   getArticleSearchURL,
   hasValidAvatarUrl,
+  normalizeBrowserAccessibleURL,
   timeStampAppendedURL,
   getHostNameFromURL,
   extractFilenameFromUrl,
@@ -201,6 +202,20 @@ describe('#URL Helpers', () => {
     test('should return false for empty or undefined URL', () => {
       expect(hasValidAvatarUrl('')).toBe(false);
       expect(hasValidAvatarUrl()).toBe(false);
+    });
+  });
+
+  describe('normalizeBrowserAccessibleURL', () => {
+    it('should replace 0.0.0.0 with window hostname', () => {
+      const input = 'http://0.0.0.0:3000/rails/active_storage/blobs/audio.ogg';
+      expect(normalizeBrowserAccessibleURL(input)).toBe(
+        `http://${window.location.hostname || 'localhost'}:3000/rails/active_storage/blobs/audio.ogg`
+      );
+    });
+
+    it('should return the original URL for reachable hosts', () => {
+      const input = 'https://example.com/audio.mp3';
+      expect(normalizeBrowserAccessibleURL(input)).toBe(input);
     });
   });
 
