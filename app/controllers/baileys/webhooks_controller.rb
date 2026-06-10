@@ -83,9 +83,7 @@ class Baileys::WebhooksController < ApplicationController
   end
 
   def render_missing_message_channel
-    unless history_message?
-      return render json: { error: 'Channel not found' }, status: :not_found
-    end
+    return render json: { error: 'Channel not found' }, status: :not_found unless history_message?
 
     Rails.logger.warn(
       "[BaileysWebhook] Skipped history message for missing channel session_id=#{params[:session_id]}"

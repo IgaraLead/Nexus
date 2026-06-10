@@ -24,7 +24,7 @@ RSpec.describe SendReplyJob do
       facebook_inbox = create(:inbox, channel: facebook_channel)
       message = create(:message, conversation: create(:conversation, inbox: facebook_inbox))
       allow(Facebook::SendOnFacebookService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Facebook::SendOnFacebookService).to receive(:new).with(message: message)
+      expect(Facebook::SendOnFacebookService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -34,7 +34,7 @@ RSpec.describe SendReplyJob do
       twitter_inbox = create(:inbox, channel: twitter_channel)
       message = create(:message, conversation: create(:conversation, inbox: twitter_inbox))
       allow(Twitter::SendOnTwitterService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Twitter::SendOnTwitterService).to receive(:new).with(message: message)
+      expect(Twitter::SendOnTwitterService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -43,7 +43,7 @@ RSpec.describe SendReplyJob do
       twilio_channel = create(:channel_twilio_sms)
       message = create(:message, conversation: create(:conversation, inbox: twilio_channel.inbox))
       allow(Twilio::SendOnTwilioService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Twilio::SendOnTwilioService).to receive(:new).with(message: message)
+      expect(Twilio::SendOnTwilioService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -52,7 +52,7 @@ RSpec.describe SendReplyJob do
       telegram_channel = create(:channel_telegram)
       message = create(:message, conversation: create(:conversation, inbox: telegram_channel.inbox))
       allow(Telegram::SendOnTelegramService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Telegram::SendOnTelegramService).to receive(:new).with(message: message)
+      expect(Telegram::SendOnTelegramService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -61,7 +61,7 @@ RSpec.describe SendReplyJob do
       line_channel = create(:channel_line)
       message = create(:message, conversation: create(:conversation, inbox: line_channel.inbox))
       allow(Line::SendOnLineService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Line::SendOnLineService).to receive(:new).with(message: message)
+      expect(Line::SendOnLineService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -71,7 +71,7 @@ RSpec.describe SendReplyJob do
       whatsapp_channel = create(:channel_whatsapp, sync_templates: false)
       message = create(:message, conversation: create(:conversation, inbox: whatsapp_channel.inbox))
       allow(Whatsapp::SendOnWhatsappService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Whatsapp::SendOnWhatsappService).to receive(:new).with(message: message)
+      expect(Whatsapp::SendOnWhatsappService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -80,7 +80,7 @@ RSpec.describe SendReplyJob do
       sms_channel = create(:channel_sms)
       message = create(:message, conversation: create(:conversation, inbox: sms_channel.inbox))
       allow(Sms::SendOnSmsService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Sms::SendOnSmsService).to receive(:new).with(message: message)
+      expect(Sms::SendOnSmsService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -89,7 +89,7 @@ RSpec.describe SendReplyJob do
       instagram_channel = create(:channel_instagram)
       message = create(:message, conversation: create(:conversation, inbox: instagram_channel.inbox))
       allow(Instagram::SendOnInstagramService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Instagram::SendOnInstagramService).to receive(:new).with(message: message)
+      expect(Instagram::SendOnInstagramService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -104,7 +104,7 @@ RSpec.describe SendReplyJob do
       message = create(:message, conversation: conversation)
 
       allow(Instagram::Messenger::SendOnInstagramService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Instagram::Messenger::SendOnInstagramService).to receive(:new).with(message: message)
+      expect(Instagram::Messenger::SendOnInstagramService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -113,7 +113,7 @@ RSpec.describe SendReplyJob do
       email_channel = create(:channel_email)
       message = create(:message, conversation: create(:conversation, inbox: email_channel.inbox))
       allow(Email::SendOnEmailService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Email::SendOnEmailService).to receive(:new).with(message: message)
+      expect(Email::SendOnEmailService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -122,7 +122,7 @@ RSpec.describe SendReplyJob do
       webwidget_channel = create(:channel_widget)
       message = create(:message, conversation: create(:conversation, inbox: webwidget_channel.inbox))
       allow(Messages::SendEmailNotificationService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Messages::SendEmailNotificationService).to receive(:new).with(message: message)
+      expect(Messages::SendEmailNotificationService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -131,7 +131,7 @@ RSpec.describe SendReplyJob do
       api_channel = create(:channel_api)
       message = create(:message, conversation: create(:conversation, inbox: api_channel.inbox))
       allow(Messages::SendEmailNotificationService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Messages::SendEmailNotificationService).to receive(:new).with(message: message)
+      expect(Messages::SendEmailNotificationService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
@@ -140,7 +140,7 @@ RSpec.describe SendReplyJob do
       tiktok_channel = create(:channel_tiktok)
       message = create(:message, conversation: create(:conversation, inbox: tiktok_channel.inbox))
       allow(Tiktok::SendOnTiktokService).to receive(:new).with(message: message).and_return(process_service)
-      expect(Tiktok::SendOnTiktokService).to receive(:new).with(message: message)
+      expect(Tiktok::SendOnTiktokService).to receive(:new).with(message: message).and_return(process_service)
       expect(process_service).to receive(:perform)
       described_class.perform_now(message.id)
     end
