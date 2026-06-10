@@ -9,7 +9,7 @@ class Baileys::WebhooksController < ApplicationController
 
   def message
     channel = find_channel
-    return render json: { error: 'Channel not found' }, status: :not_found unless channel
+    return render_missing_message_channel unless channel
 
     Baileys::IncomingMessageService.new(inbox: channel.inbox, params: baileys_params).perform
     render json: { status: 'ok' }
@@ -80,6 +80,21 @@ class Baileys::WebhooksController < ApplicationController
 
   def find_channel
     Channel::BaileysWhatsapp.find_by(session_id: params[:session_id])
+  end
+
+  def render_missing_message_channel
+    unless history_message?
+      return render json: { error: 'Channel not found' }, status: :not_found
+    end
+
+    Rails.logger.warn(
+      "[BaileysWebhook] Skipped history message for missing channel session_id=#{params[:session_id]}"
+    )
+    render json: { status: 'skipped', reason: 'channel_not_found' }
+  end
+
+  def history_message?
+    ActiveModel::Type::Boolean.new.cast(params[:is_history])
   end
 
   def baileys_params

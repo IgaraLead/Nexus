@@ -52,6 +52,11 @@ class Channel::BaileysWhatsapp < ApplicationRecord
     reset_session_state!
   end
 
+  def delete_session
+    baileys_service.disconnect
+    reset_session_state!
+  end
+
   def mark_connected(phone_number)
     update!(session_status: 'connected', phone_number: phone_number, last_connected_at: Time.current,
             provider_config: provider_config.except('qr_code'))

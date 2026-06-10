@@ -139,6 +139,8 @@ export const convertAudio = async (inputBlob, outputFormat, bitrate = 128) => {
     audio = await convertToWav(inputBlob);
   } else if (outputFormat === 'audio/mp3') {
     audio = await convertToMp3(inputBlob, bitrate);
+  } else if (outputFormat === 'audio/ogg; codecs=opus') {
+    audio = inputBlob;
   } else {
     throw new Error('Unsupported output format');
   }

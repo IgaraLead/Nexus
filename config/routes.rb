@@ -655,8 +655,11 @@ Rails.application.routes.draw do
       end
       resource :whatsapp, only: [:show, :create], controller: :whatsapp do
         post :revoke_session
+        post :delete_session
         post :revoke_account_sessions
+        post :delete_account_sessions
         post :revoke_orphan_session
+        post :delete_orphan_session
       end
 
       # order of resources affect the order of sidebar navigation in super admin

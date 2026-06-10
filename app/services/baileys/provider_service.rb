@@ -123,12 +123,14 @@ class Baileys::ProviderService
   def media_type_content(attachment, media_type, message)
     download_url = attachment.download_url.sub(%r{\Ahttps?://(localhost|127\.0\.0\.1|0\.0\.0\.0):3000},
                                                ENV.fetch('BAILEYS_MEDIA_BASE_URL', 'http://rails:3000'))
-    {
+    payload = {
       url: download_url,
       caption: media_type == :audio ? nil : message.outgoing_content,
       filename: media_type == :document ? attachment.file.filename.to_s : nil,
-      mimetype: %i[audio document].include?(media_type) ? attachment.file.content_type.sub('audio/mp3', 'audio/mpeg') : nil
-    }.compact
+      mimetype: %i[audio document].include?(media_type) ? normalized_mimetype(attachment.file.content_type) : nil
+    }
+    payload[:ptt] = true if media_type == :audio
+    payload.compact
   end
 
   def attachment_media_type(file_type)
@@ -137,6 +139,17 @@ class Baileys::ProviderService
     when 'audio' then :audio
     when 'video' then :video
     else :document
+    end
+  end
+
+  def normalized_mimetype(content_type)
+    case content_type
+    when 'audio/mp3'
+      'audio/mpeg'
+    when 'audio/ogg', 'audio/opus'
+      'audio/ogg; codecs=opus'
+    else
+      content_type
     end
   end
 
