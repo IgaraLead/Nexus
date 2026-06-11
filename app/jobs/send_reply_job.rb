@@ -2,18 +2,18 @@ class SendReplyJob < ApplicationJob
   queue_as :high
 
   CHANNEL_SERVICES = {
-    'Channel::TwitterProfile' => ::Twitter::SendOnTwitterService,
-    'Channel::TwilioSms' => ::Twilio::SendOnTwilioService,
-    'Channel::Line' => ::Line::SendOnLineService,
-    'Channel::Telegram' => ::Telegram::SendOnTelegramService,
-    'Channel::Whatsapp' => ::Whatsapp::SendOnWhatsappService,
-    'Channel::BaileysWhatsapp' => ::Baileys::SendOnBaileysService,
-    'Channel::Sms' => ::Sms::SendOnSmsService,
-    'Channel::Instagram' => ::Instagram::SendOnInstagramService,
-    'Channel::Tiktok' => ::Tiktok::SendOnTiktokService,
-    'Channel::Email' => ::Email::SendOnEmailService,
-    'Channel::WebWidget' => ::Messages::SendEmailNotificationService,
-    'Channel::Api' => ::Messages::SendEmailNotificationService
+    'Channel::TwitterProfile' => 'Twitter::SendOnTwitterService',
+    'Channel::TwilioSms' => 'Twilio::SendOnTwilioService',
+    'Channel::Line' => 'Line::SendOnLineService',
+    'Channel::Telegram' => 'Telegram::SendOnTelegramService',
+    'Channel::Whatsapp' => 'Whatsapp::SendOnWhatsappService',
+    'Channel::BaileysWhatsapp' => 'Baileys::SendOnBaileysService',
+    'Channel::Sms' => 'Sms::SendOnSmsService',
+    'Channel::Instagram' => 'Instagram::SendOnInstagramService',
+    'Channel::Tiktok' => 'Tiktok::SendOnTiktokService',
+    'Channel::Email' => 'Email::SendOnEmailService',
+    'Channel::WebWidget' => 'Messages::SendEmailNotificationService',
+    'Channel::Api' => 'Messages::SendEmailNotificationService'
   }.freeze
 
   def perform(message_id)
@@ -22,10 +22,10 @@ class SendReplyJob < ApplicationJob
 
     return send_on_facebook_page(message) if channel_name == 'Channel::FacebookPage'
 
-    service_class = CHANNEL_SERVICES[channel_name]
-    return unless service_class
+    service_name = CHANNEL_SERVICES[channel_name]
+    return unless service_name
 
-    service_class.new(message: message).perform
+    service_name.constantize.new(message: message).perform
   end
 
   private

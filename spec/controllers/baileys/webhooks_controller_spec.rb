@@ -38,5 +38,37 @@ RSpec.describe Baileys::WebhooksController, type: :request do
         expect(json['status']).to eq('ok')
       end
     end
+
+    it 'skips history messages for missing channels' do
+      with_modified_env BAILEYS_SIDECAR_API_KEY: 'secret' do
+        post '/webhooks/baileys/message',
+             headers: { 'X-Api-Key' => 'secret' },
+             params: {
+               session_id: '1_orphan',
+               content: 'old message',
+               is_history: true,
+               key: { id: 'msgid1', remoteJid: '5511999999999@s.whatsapp.net', fromMe: false }
+             },
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq({ 'status' => 'skipped', 'reason' => 'channel_not_found' })
+      end
+    end
+
+    it 'returns not found for realtime messages from missing channels' do
+      with_modified_env BAILEYS_SIDECAR_API_KEY: 'secret' do
+        post '/webhooks/baileys/message',
+             headers: { 'X-Api-Key' => 'secret' },
+             params: {
+               session_id: '1_orphan',
+               content: 'new message',
+               key: { id: 'msgid1', remoteJid: '5511999999999@s.whatsapp.net', fromMe: false }
+             },
+             as: :json
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
   end
 end

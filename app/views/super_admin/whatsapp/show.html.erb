@@ -76,6 +76,7 @@
         <h2 class="text-base font-semibold mb-2">WhatsApp Web Sessions</h2>
         <p class="text-sm text-slate-600">
           Review Rails channel state alongside live sidecar sessions. Revocation disconnects WhatsApp Web and removes the sidecar auth state for that session.
+          Deletion keeps the inbox, resets its WhatsApp Web session, and sends users through the reconnect flow.
         </p>
         <% if @sidecar_error.present? %>
           <p class="text-sm text-amber-700 mt-3">
@@ -95,12 +96,20 @@
                 <h3 class="text-sm font-semibold"><%= account.name %></h3>
                 <p class="text-xs text-slate-500">Account ID <%= account.id %> · <%= rows.size %> WhatsApp Web inbox(es)</p>
               </div>
-              <%= form_with url: revoke_account_sessions_super_admin_whatsapp_path, method: :post, local: true do %>
-                <%= hidden_field_tag :account_id, account.id %>
-                <%= submit_tag 'Revoke organization sessions',
-                               data: { confirm: "Revoke all WhatsApp Web sessions for #{account.name}?" },
-                               class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm font-medium' %>
-              <% end %>
+              <div class="flex gap-2">
+                <%= form_with url: revoke_account_sessions_super_admin_whatsapp_path, method: :post, local: true do %>
+                  <%= hidden_field_tag :account_id, account.id %>
+                  <%= submit_tag 'Revoke organization sessions',
+                                 data: { confirm: "Revoke all WhatsApp Web sessions for #{account.name}?" },
+                                 class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm font-medium' %>
+                <% end %>
+                <%= form_with url: delete_account_sessions_super_admin_whatsapp_path, method: :post, local: true do %>
+                  <%= hidden_field_tag :account_id, account.id %>
+                  <%= submit_tag 'Delete organization sessions',
+                                 data: { confirm: "Delete all WhatsApp Web sessions for #{account.name}? Inboxes will remain and ask users to reconnect." },
+                                 class: 'border border-red-300 bg-white text-red-800 px-3 py-1.5 rounded-md cursor-pointer text-sm font-medium' %>
+                <% end %>
+              </div>
             </div>
 
             <table class="w-full text-sm">
@@ -135,12 +144,20 @@
                       <% end %>
                     </td>
                     <td class="px-3 py-2 first:!pl-4 last:!pr-4">
+                      <div class="flex gap-2">
                       <%= form_with url: revoke_session_super_admin_whatsapp_path, method: :post, local: true do %>
                         <%= hidden_field_tag :channel_id, channel.id %>
                         <%= submit_tag 'Revoke',
                                        data: { confirm: "Revoke WhatsApp Web session #{channel.session_id}?" },
                                        class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
                       <% end %>
+                      <%= form_with url: delete_session_super_admin_whatsapp_path, method: :post, local: true do %>
+                        <%= hidden_field_tag :channel_id, channel.id %>
+                        <%= submit_tag 'Delete',
+                                       data: { confirm: "Delete WhatsApp Web session #{channel.session_id}? The inbox will remain and ask users to reconnect." },
+                                       class: 'border border-red-300 bg-white text-red-800 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
+                      <% end %>
+                      </div>
                     </td>
                   </tr>
                 <% end %>
@@ -174,6 +191,7 @@
                   <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= session['status'] %></td>
                   <td class="px-3 py-2 first:!pl-4 last:!pr-4"><%= session['phone_number'].presence || '—' %></td>
                   <td class="px-3 py-2 first:!pl-4 last:!pr-4">
+                    <div class="flex gap-2">
                     <%= form_with url: revoke_orphan_session_super_admin_whatsapp_path, method: :post, local: true do %>
                       <%= hidden_field_tag :session_id, session['session_id'] %>
                       <%= hidden_field_tag :client_slug, session['client_slug'] if session['client_slug'].present? %>
@@ -181,6 +199,14 @@
                                      data: { confirm: "Revoke orphan WhatsApp Web session #{session['session_id']}?" },
                                      class: 'border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
                     <% end %>
+                    <%= form_with url: delete_orphan_session_super_admin_whatsapp_path, method: :post, local: true do %>
+                      <%= hidden_field_tag :session_id, session['session_id'] %>
+                      <%= hidden_field_tag :client_slug, session['client_slug'] if session['client_slug'].present? %>
+                      <%= submit_tag 'Delete',
+                                     data: { confirm: "Delete orphan WhatsApp Web session #{session['session_id']}?" },
+                                     class: 'border border-red-300 bg-white text-red-800 px-3 py-1.5 rounded-md cursor-pointer text-sm' %>
+                    <% end %>
+                    </div>
                   </td>
                 </tr>
               <% end %>

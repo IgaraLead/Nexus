@@ -31,7 +31,7 @@ RSpec.describe Baileys::ProviderService do
       expect(service.send_message('5511999999999', message)).to eq('message-id-1')
     end
 
-    it 'sends audio attachments with normalized mimetype' do
+    it 'sends audio attachments as voice notes with normalized mimetype' do
       file = instance_double(ActiveStorage::Blob, filename: 'recording.mp3', content_type: 'audio/mp3')
       attachment = instance_double(Attachment, file_type: 'audio',
                                                download_url: 'http://localhost:3000/rails/active_storage/disk/recording.mp3', file: file)
@@ -51,13 +51,39 @@ RSpec.describe Baileys::ProviderService do
           message: {
             audio: {
               url: 'http://rails:3000/rails/active_storage/disk/recording.mp3',
-              mimetype: 'audio/mpeg'
+              mimetype: 'audio/mpeg',
+              ptt: true
             }
           }
         }
       ).and_return({ 'key' => { 'id' => 'message-id-2' } })
 
       expect(service.send_message('5511999999999', message)).to eq('message-id-2')
+    end
+
+    it 'normalizes ogg audio attachments to WhatsApp ogg opus mimetype' do
+      file = instance_double(ActiveStorage::Blob, filename: 'recording.ogg', content_type: 'audio/ogg')
+      attachment = instance_double(Attachment, file_type: 'audio',
+                                               download_url: 'https://example.com/recording.ogg', file: file)
+      message = instance_double(Message, attachments: [attachment], outgoing_content: '', content_attributes: {})
+      service = described_class.new(channel: channel)
+
+      expect(service).to receive(:post).with(
+        '/messages/send',
+        {
+          session_id: '1_abcd1234',
+          jid: '5511999999999@s.whatsapp.net',
+          message: {
+            audio: {
+              url: 'https://example.com/recording.ogg',
+              mimetype: 'audio/ogg; codecs=opus',
+              ptt: true
+            }
+          }
+        }
+      ).and_return({ 'key' => { 'id' => 'message-id-3' } })
+
+      expect(service.send_message('5511999999999', message)).to eq('message-id-3')
     end
   end
 

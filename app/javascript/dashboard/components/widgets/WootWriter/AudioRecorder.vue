@@ -20,6 +20,8 @@ const emit = defineEmits([
   'play',
 ]);
 
+const OGG_OPUS_MIME_TYPE = 'audio/ogg; codecs=opus';
+
 const waveformContainer = ref(null);
 const wavesurfer = ref(null);
 const record = ref(null);
@@ -35,7 +37,38 @@ const formatTimeProgress = time => {
   );
 };
 
+const audioExtension = formatType => {
+  if (formatType === OGG_OPUS_MIME_TYPE || formatType === 'audio/ogg') {
+    return 'ogg';
+  }
+  if (formatType === 'audio/wav') {
+    return 'wav';
+  }
+  return 'mp3';
+};
+
+const canRecordOggOpus = () => {
+  return window.MediaRecorder?.isTypeSupported?.(OGG_OPUS_MIME_TYPE);
+};
+
+const outputAudioFormat = () => {
+  if (props.audioRecordFormat !== OGG_OPUS_MIME_TYPE) {
+    return props.audioRecordFormat;
+  }
+
+  return canRecordOggOpus() ? OGG_OPUS_MIME_TYPE : 'audio/mp3';
+};
+
 const initWaveSurfer = () => {
+  const recordOptions = {
+    scrollingWaveform: true,
+    renderRecordedAudio: false,
+  };
+
+  if (props.audioRecordFormat === OGG_OPUS_MIME_TYPE && canRecordOggOpus()) {
+    recordOptions.mimeType = OGG_OPUS_MIME_TYPE;
+  }
+
   wavesurfer.value = WaveSurfer.create({
     container: waveformContainer.value,
     waveColor: '#1F93FF',
@@ -44,12 +77,7 @@ const initWaveSurfer = () => {
     barWidth: 2,
     barGap: 1,
     barRadius: 2,
-    plugins: [
-      RecordPlugin.create({
-        scrollingWaveform: true,
-        renderRecordedAudio: false,
-      }),
-    ],
+    plugins: [RecordPlugin.create(recordOptions)],
   });
 
   wavesurfer.value.on('pause', () => emit('pause'));
@@ -63,10 +91,11 @@ const initWaveSurfer = () => {
 
   record.value.on('record-end', async blob => {
     const audioUrl = URL.createObjectURL(blob);
-    const audioBlob = await convertAudio(blob, props.audioRecordFormat);
-    const fileName = `${getUuid()}.mp3`;
+    const formatType = outputAudioFormat();
+    const audioBlob = await convertAudio(blob, formatType);
+    const fileName = `${getUuid()}.${audioExtension(formatType)}`;
     const file = new File([audioBlob], fileName, {
-      type: props.audioRecordFormat,
+      type: formatType,
     });
     wavesurfer.value.load(audioUrl);
     emit('finishRecord', {

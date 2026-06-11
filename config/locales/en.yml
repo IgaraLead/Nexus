@@ -514,7 +514,9 @@ en:
     whatsapp:
       cloud_api_updated: 'WhatsApp Cloud API settings updated successfully.'
       session_revoked: 'WhatsApp Web session %{session_id} was revoked.'
+      session_deleted: 'WhatsApp Web session %{session_id} was deleted. The inbox can reconnect with a new WhatsApp Web session.'
       account_sessions_revoked: 'Revoked %{count} WhatsApp Web session(s) for %{account}.'
+      account_sessions_deleted: 'Deleted %{count} WhatsApp Web session(s) for %{account}. Inboxes can reconnect with new WhatsApp Web sessions.'
       invalid_session: 'Invalid WhatsApp Web session identifier.'
     push_diagnostics:
       user_not_found: 'User not found.'

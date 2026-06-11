@@ -30,15 +30,40 @@ class SuperAdmin::WhatsappController < SuperAdmin::ApplicationController
                 notice: I18n.t('super_admin.whatsapp.session_revoked', session_id: revoked_session_id)
   end
 
+  def delete_session
+    channel = Channel::BaileysWhatsapp.find(params[:channel_id])
+    deleted_session_id = channel.session_id
+    channel.delete_session
+    orphan_count = disconnect_sidecar_sessions_by_id(deleted_session_id)
+    log_super_admin_action(
+      "deleted channel #{channel.id} session #{deleted_session_id} and #{orphan_count} matching orphan sessions"
+    )
+
+    redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
+                notice: I18n.t('super_admin.whatsapp.session_deleted', session_id: deleted_session_id)
+  end
+
   def revoke_account_sessions
     account = Account.find(params[:account_id])
     channels = account.baileys_whatsapp_channels.to_a
     channels.each(&:disconnect_session)
-    orphan_count = revoke_orphan_sessions_for_account(account)
+    orphan_count = disconnect_orphan_sessions_for_account(account)
     log_super_admin_action("revoked #{channels.size} channel sessions and #{orphan_count} orphan sessions for account #{account.id}")
 
     redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
                 notice: I18n.t('super_admin.whatsapp.account_sessions_revoked',
+                               account: account.name, count: channels.size + orphan_count)
+  end
+
+  def delete_account_sessions
+    account = Account.find(params[:account_id])
+    channels = account.baileys_whatsapp_channels.to_a
+    channels.each(&:delete_session)
+    orphan_count = disconnect_orphan_sessions_for_account(account)
+    log_super_admin_action("deleted #{channels.size} channel sessions and #{orphan_count} orphan sessions for account #{account.id}")
+
+    redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
+                notice: I18n.t('super_admin.whatsapp.account_sessions_deleted',
                                account: account.name, count: channels.size + orphan_count)
   end
 
@@ -56,6 +81,22 @@ class SuperAdmin::WhatsappController < SuperAdmin::ApplicationController
     log_super_admin_action("revoked orphan session #{session_id}")
     redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
                 notice: I18n.t('super_admin.whatsapp.session_revoked', session_id: session_id)
+  end
+
+  def delete_orphan_session
+    session_id = params[:session_id].to_s
+    client_slug = params[:client_slug].presence
+    unless valid_session_params?(session_id, client_slug)
+      return redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
+                         alert: I18n.t('super_admin.whatsapp.invalid_session')
+    end
+
+    response = sidecar_service.disconnect(session_id: session_id, client_slug: client_slug)
+    return redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'), alert: response['error'] if response['error'].present?
+
+    log_super_admin_action("deleted orphan session #{session_id}")
+    redirect_to super_admin_whatsapp_path(tab: 'whatsapp_web'),
+                notice: I18n.t('super_admin.whatsapp.session_deleted', session_id: session_id)
   end
 
   private
@@ -80,13 +121,13 @@ class SuperAdmin::WhatsappController < SuperAdmin::ApplicationController
     result = sidecar_service.sessions
     @sidecar_sessions = result[:sessions]
     @sidecar_error = result[:error]
-    @sidecar_sessions_by_id = @sidecar_sessions.index_by { |session| session['session_id'] }
+    @sidecar_sessions_by_key = @sidecar_sessions.index_by { |session| sidecar_session_key(session) }
 
     channels = Channel::BaileysWhatsapp.includes(:account, :inbox).order(:account_id, :id)
-    channel_session_ids = channels.to_set(&:session_id)
     @whatsapp_web_rows = channels.map { |channel| whatsapp_web_row(channel) }
     @whatsapp_web_rows_by_account = @whatsapp_web_rows.group_by { |row| row[:account] }
-    @orphan_sidecar_sessions = @sidecar_sessions.reject { |session| channel_session_ids.include?(session['session_id']) }
+    matched_sidecar_keys = @whatsapp_web_rows.filter_map { |row| row[:sidecar_session_key] }.to_set
+    @orphan_sidecar_sessions = @sidecar_sessions.reject { |session| matched_sidecar_keys.include?(sidecar_session_key(session)) }
   end
 
   def whatsapp_web_row(channel)
@@ -94,8 +135,16 @@ class SuperAdmin::WhatsappController < SuperAdmin::ApplicationController
       account: channel.account,
       inbox: channel.inbox,
       channel: channel,
-      sidecar_session: @sidecar_sessions_by_id[channel.session_id]
+      sidecar_session_key: channel.session_id,
+      sidecar_session: @sidecar_sessions_by_key[channel.session_id]
     }
+  end
+
+  def sidecar_session_key(session)
+    client_slug = sidecar_client_slug(session)
+    session_id = sidecar_session_id(session)
+
+    client_slug.present? ? "#{client_slug}:#{session_id}" : session_id
   end
 
   def save_cloud_api_configs
@@ -109,17 +158,36 @@ class SuperAdmin::WhatsappController < SuperAdmin::ApplicationController
     end
   end
 
-  def revoke_orphan_sessions_for_account(account)
+  def disconnect_orphan_sessions_for_account(account)
     prefix = "#{account.id}_"
     current_session_ids = account.baileys_whatsapp_channels.pluck(:session_id).to_set
     orphan_sessions = sidecar_service.sessions[:sessions].select do |session|
-      session['session_id'].to_s.start_with?(prefix) && current_session_ids.exclude?(session['session_id'])
+      session_id = sidecar_session_id(session)
+      session_id.start_with?(prefix) && current_session_ids.exclude?(session_id)
     end
 
     orphan_sessions.count do |session|
-      response = sidecar_service.disconnect(session_id: session['session_id'], client_slug: session['client_slug'])
-      response['error'].blank?
+      disconnect_sidecar_session(session)
     end
+  end
+
+  def disconnect_sidecar_sessions_by_id(session_id)
+    sidecar_service.sessions[:sessions].select { |session| sidecar_session_id(session) == session_id }.count do |session|
+      disconnect_sidecar_session(session)
+    end
+  end
+
+  def disconnect_sidecar_session(session)
+    response = sidecar_service.disconnect(session_id: sidecar_session_id(session), client_slug: sidecar_client_slug(session))
+    response['error'].blank?
+  end
+
+  def sidecar_session_id(session)
+    (session['session_id'] || session[:session_id]).to_s
+  end
+
+  def sidecar_client_slug(session)
+    (session['client_slug'] || session[:client_slug]).presence
   end
 
   def valid_session_params?(session_id, client_slug)
