@@ -25,6 +25,11 @@ jobs:
         run: echo "https://chatwoot-pr-${{ github.event.pull_request.number }}.herokuapp.com"
       - name: Check Deployment Status
         run: |
+          if [ "${{ github.repository }}" != "chatwoot/chatwoot" ]; then
+            echo "Skipping deploy check: Heroku review apps are only configured for chatwoot/chatwoot"
+            exit 0
+          fi
+
           max_attempts=10
           attempt=1
           status_code=0

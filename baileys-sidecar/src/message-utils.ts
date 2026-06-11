@@ -23,6 +23,7 @@ const MIME_EXT: Record<string, string> = {
   'video/3gpp': '.3gp',
   'audio/ogg; codecs=opus': '.ogg',
   'audio/ogg': '.ogg',
+  'audio/opus': '.ogg',
   'audio/mpeg': '.mp3',
   'audio/mp4': '.m4a',
   'application/pdf': '.pdf',

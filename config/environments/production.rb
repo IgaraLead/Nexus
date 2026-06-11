@@ -1,3 +1,5 @@
+require Rails.root.join('lib/public_file_cache_headers')
+
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -24,6 +26,7 @@ Rails.application.configure do
   config.public_file_server.headers = {
     'Cache-Control' => "public, max-age=#{1.year.to_i}"
   }
+  config.middleware.insert_before 0, PublicFileCacheHeaders
   # Compress JavaScripts and CSS.
   # config.assets.js_compressor = :uglifier
   # config.assets.css_compressor = :sass
