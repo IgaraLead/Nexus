@@ -6,8 +6,8 @@ NODE_HEAP_OPTION = '--max-old-space-size=4096'
 
 task before_assets_precompile: :environment do
   node_options = ENV.fetch('NODE_OPTIONS', '').split
-  ENV['NODE_OPTIONS'] = (node_options + [NODE_HEAP_OPTION]).join(' ') unless node_options.any? do |option|
-    option.start_with?('--max-old-space-size=')
+  unless node_options.any? { |option| option.start_with?('--max-old-space-size=') }
+    ENV['NODE_OPTIONS'] = (node_options + [NODE_HEAP_OPTION]).join(' ')
   end
 
   # run a command which starts your packaging
